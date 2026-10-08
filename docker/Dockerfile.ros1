@@ -27,7 +27,7 @@ RUN mkdir -p /opt/catkin_ws/src && ln -s /workspace/ros1/omnivla_real_ros1 /opt/
     && (cd /workspace/ros1/omnivla_real_ros1 && find CMakeLists.txt package.xml include src web -type f | sort | xargs cat \
         | md5sum | cut -d' ' -f1) > /opt/catkin_ws/.src_hash \
     && python3 -c "import omnivla_real.ros_common, omnivla_real.remote; print('ros1 node deps OK')" \
-    && python3 tools/nav_config_json.py > /dev/null && ls /opt/catkin_ws/devel/lib/omnivla_real_ros1/
+    && python3 /workspace/tools/nav_config_json.py > /dev/null && ls /opt/catkin_ws/devel/lib/omnivla_real_ros1/
 
 COPY docker/entrypoint-ros1.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
