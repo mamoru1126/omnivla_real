@@ -1,6 +1,7 @@
 # 実機ナビゲーション用 (Jetson AGX Orin). 2 つのコンテナを localhost の HTTP でつなぐ:
 #   policy : 推論サーバ (PyTorch + GPU, ROS なし)            docker/Dockerfile.jetson
-#   nav    : ROS 1 Noetic のナビゲーションノード (torch なし)  docker/Dockerfile.ros1
+#   nav    : ROS 1 Noetic のナビゲーションノード (C++, torch なし)  docker/Dockerfile.ros1
+#            ブラウザのデバッグ画面: http://<Jetson の IP>:8080 (navigator.yaml の io.web_port)
 #
 #   docker compose -f docker-compose.jetson.yml build
 #   docker compose -f docker-compose.jetson.yml up            # policy と nav を起動 (ROS master は ROS_MASTER_URI)

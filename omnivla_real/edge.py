@@ -20,9 +20,10 @@ from __future__ import annotations
 import json
 import os
 import time
-from collections import deque
+import weakref
+from collections import OrderedDict, deque
 from dataclasses import dataclass, field
-from typing import Deque, Dict, List, Optional, Sequence, Union
+from typing import Any, Deque, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -114,22 +115,50 @@ class TextEncoder:
         return self.cache[key]
 
 
+class TensorCache:
+    """推論用: 同じ画像 (同じ PIL オブジェクト) の to_tensor_norm を使い回す.
+    観測履歴の過去画像とサブゴール画像は毎ステップ同じなので、縮小・正規化は 1 枚につき 1 回で済む."""
+
+    def __init__(self, size: int = 64):
+        self.size = size
+        self._d: "OrderedDict[Tuple[int, int], Tuple[Any, torch.Tensor]]" = OrderedDict()
+
+    def __call__(self, img: Image.Image, size: int) -> torch.Tensor:
+        key = (id(img), size)
+        ent = self._d.get(key)
+        if ent is not None and ent[0]() is img:
+            self._d.move_to_end(key)
+            return ent[1]
+        t = to_tensor_norm(img, size)
+        try:
+            self._d[key] = (weakref.ref(img), t)
+        except TypeError:
+            return t
+        while len(self._d) > self.size:
+            self._d.popitem(last=False)
+        return t
+
+    def clear(self) -> None:
+        self._d.clear()
+
+
 def make_edge_batch(obs: Sequence[Image.Image], goal: Image.Image, goal_pose: np.ndarray, modality: int,
-                    text_feat: torch.Tensor, context_size: int = 5) -> Dict[str, torch.Tensor]:
+                    text_feat: torch.Tensor, context_size: int = 5, tensor_fn=None) -> Dict[str, torch.Tensor]:
     """1 サンプル分の入力 (バッチ次元なし). obs は古い順で長さ context_size+1 (足りなければ先頭を複製)."""
+    tf = tensor_fn or to_tensor_norm
     obs = list(obs)[-(context_size + 1):]
     while len(obs) < context_size + 1:
         obs.insert(0, obs[0])
-    obs_t = [to_tensor_norm(im, 96) for im in obs]
+    obs_t = [tf(im, 96) for im in obs]
     cur96 = obs_t[-1]
     return {
         "obs_images": torch.cat(obs_t, dim=0),
         "goal_pose": torch.as_tensor(goal_pose, dtype=torch.float32),
         "map_images": torch.cat([black_map(96), black_map(96), cur96], dim=0),
-        "goal_image": to_tensor_norm(goal, 96),
+        "goal_image": tf(goal, 96),
         "modality_id": torch.tensor(int(modality), dtype=torch.long),
         "feat_text": text_feat.float(),
-        "cur_large": to_tensor_norm(obs[-1], 224),
+        "cur_large": tf(obs[-1], 224),
     }
 
 
@@ -204,6 +233,7 @@ class EdgePolicy:
         self.text = TextEncoder(clip_type, str(self.device), preset=preset)
         self.history: Deque[Image.Image] = deque(maxlen=self.context_size * self.context_stride + 1)
         self._emb_cache: Dict[str, np.ndarray] = {}
+        self._tensors = TensorCache()
         print(f"[edge] ready (device={self.device}, metric_waypoint_spacing={self.metric_spacing}, "
               f"context_stride={self.context_stride})")
 
@@ -245,7 +275,7 @@ class EdgePolicy:
         else:
             gp = np.zeros(4, dtype=np.float32)
         feat = self.text(instruction if mid in LANGUAGE_MODALITIES else None)
-        sample = make_edge_batch(obs, goal, gp, mid, feat, self.context_size)
+        sample = make_edge_batch(obs, goal, gp, mid, feat, self.context_size, tensor_fn=self._tensors)
         batch = {k: v.unsqueeze(0) for k, v in sample.items()}
         if self.cfg.half and self.device.type == "cuda":
             batch = {k: (v.half() if v.is_floating_point() else v) for k, v in batch.items()}
@@ -261,7 +291,7 @@ class EdgePolicy:
         """サブゴール判定用の画像特徴 (観測エンコーダ EfficientNet の平均プーリング, L2 正規化)."""
         if cache_key is not None and cache_key in self._emb_cache:
             return self._emb_cache[cache_key]
-        x = to_tensor_norm(_to_pil(image), 96).unsqueeze(0).to(self.device)
+        x = self._tensors(_to_pil(image), 96).unsqueeze(0).to(self.device)
         if self.cfg.half and self.device.type == "cuda":
             x = x.half()
         enc = self.model.obs_encoder
@@ -279,4 +309,4 @@ class EdgePolicy:
 def _to_pil(img: ImageLike) -> Image.Image:
     if isinstance(img, np.ndarray):
         return Image.fromarray(img.astype(np.uint8)).convert("RGB")
-    return img.convert("RGB")
+    return img if img.mode == "RGB" else img.convert("RGB")   # 同じオブジェクトを返す (TensorCache が効く)

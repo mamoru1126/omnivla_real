@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OmniVLA 走行モニタ</title>
+<style>
+:root {
+  --bg: #e9edf0; --panel: #f8fafb; --line: #cfd7dd; --text: #1c252c; --muted: #5f6d78;
+  --path: #f2c14e; --path-edge: #2a2306; --v: #1f8a80; --w: #6c55d6; --stop: #d1453b; --ok: #2e8b57;
+  --warn: #b7791f; --chip: #dde3e8; --prog: #c9971c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b2228; --panel: #232c33; --line: #33404a; --text: #e3e8ec; --muted: #8d9aa5;
+    --v: #4fb3a9; --w: #a08cf0; --stop: #e05a4f; --ok: #5cc48a; --warn: #e0a84c; --chip: #2c3740; --prog: #f2c14e;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b2228; --panel: #232c33; --line: #33404a; --text: #e3e8ec; --muted: #8d9aa5;
+  --v: #4fb3a9; --w: #a08cf0; --stop: #e05a4f; --ok: #5cc48a; --warn: #e0a84c; --chip: #2c3740; --prog: #f2c14e;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif; font-size: 15px;
+  line-height: 1.5; font-variant-numeric: tabular-nums; }
+button { font: inherit; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 16px 32px; }
+
+/* ---- 上の帯: 状態と操作 ---- */
+.bar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 10px 16px; }
+.state { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; min-width: 9em; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.live { background: var(--ok); }
+.dot.lost { background: var(--stop); }
+.progress { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 200px; }
+.progress .track { flex: 1; height: 8px; background: var(--chip); border-radius: 4px; overflow: hidden; }
+.progress .fill { height: 100%; width: 0; background: var(--prog); transition: width .3s; }
+.progress .num { white-space: nowrap; color: var(--muted); }
+.progress .num b { color: var(--text); font-size: 17px; }
+.mode { color: var(--muted); white-space: nowrap; }
+.actions { display: flex; gap: 8px; margin-left: auto; }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 8px;
+  padding: 8px 16px; cursor: pointer; font-weight: 600; }
+.btn.stop { background: var(--stop); border-color: var(--stop); color: #fff; padding: 8px 22px; }
+.btn:focus-visible, .theme:focus-visible { outline: 3px solid var(--path); outline-offset: 2px; }
+.theme { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 0 10px; min-width: 42px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.theme svg { width: 18px; height: 18px; }
+.lostmsg { display: none; width: 100%; color: var(--stop); font-weight: 600; }
+.lostmsg.show { display: block; }
+
+/* ---- 画像 2 枚 ---- */
+.views { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.view h2, .panel h2 { font-size: 14px; font-weight: 600; color: var(--muted); margin: 0 0 6px; display: flex; gap: 10px; align-items: baseline; }
+.view h2 b { color: var(--text); font-size: 15px; }
+.view h2 .aside { margin-left: auto; font-weight: 400; }
+.frame { position: relative; background: #0d1114; border-radius: 6px; overflow: hidden; aspect-ratio: 4 / 3; }
+.frame canvas, .frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+.frame .empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #8d9aa5;
+  font-size: 14px; padding: 20px; text-align: center; }
+
+/* ---- サブゴールの並び (コース上の位置) ---- */
+.strip { margin-top: 10px; display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scroll-behavior: smooth; }
+.strip figure { margin: 0; flex: 0 0 auto; width: 88px; text-align: center; color: var(--muted); font-size: 12px; opacity: .55; }
+.strip figure.done { opacity: .3; }
+.strip figure.now { opacity: 1; color: var(--text); font-weight: 700; }
+.strip img { width: 88px; height: 66px; object-fit: cover; border-radius: 4px; display: block; border: 2px solid transparent; background: #0d1114; }
+.strip figure.now img { border-color: var(--path); }
+
+/* ---- 数値と図 ---- */
+.grid { display: grid; grid-template-columns: 1.1fr 1fr 1.2fr; gap: 16px; margin-top: 18px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+.cmd { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; }
+.cmd .big { font-size: 34px; font-weight: 700; line-height: 1.1; }
+.cmd .unit { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+.cmd .lbl { color: var(--muted); font-size: 13px; }
+.meter { position: relative; height: 10px; background: var(--chip); border-radius: 5px; margin-top: 4px; }
+.meter i { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+.meter .mid { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+.v .big { color: var(--v); } .v .meter i { background: var(--v); left: 0; }
+.w .big { color: var(--w); } .w .meter i { background: var(--w); }
+.sub { color: var(--muted); font-size: 13px; margin-top: 10px; }
+.top canvas { width: 100%; height: 220px; display: block; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 0; }
+dl.facts dt { color: var(--muted); font-size: 13px; }
+dl.facts dd { margin: 0; font-weight: 600; }
+.simbar { position: relative; height: 10px; background: var(--chip); border-radius: 5px; margin-top: 4px; }
+.simbar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ok); border-radius: 5px; }
+.simbar s { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); text-decoration: none; }
+.chart { margin-top: 16px; }
+.chart canvas { width: 100%; height: 170px; display: block; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin-right: 6px; vertical-align: middle; background: var(--k); }
+.log { margin-top: 16px; }
+.log ol { list-style: none; margin: 0; padding: 0; max-height: 190px; overflow-y: auto; font-size: 13.5px; }
+.log li { padding: 3px 0; border-bottom: 1px solid var(--line); display: flex; gap: 12px; }
+.log li time { color: var(--muted); flex: none; width: 6.5em; }
+@media (max-width: 600px) { .view h2 .desc { display: none; } }
+@media (max-width: 900px) {
+  .views, .grid { grid-template-columns: 1fr; }
+  .actions { margin-left: 0; width: 100%; }
+  .actions .btn { flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .progress .fill { transition: none; } .strip { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="bar" role="region" aria-label="状態と操作">
+  <div class="state"><span class="dot" id="dot" aria-hidden="true"></span><span id="state">接続中…</span></div>
+  <div class="progress" title="サブゴールの進み具合">
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <span class="num">サブゴール <b id="sg">-</b> / <span id="sgn">-</span></span>
+  </div>
+  <span class="mode" id="mode" title="サブゴールの切り替え方"></span>
+  <div class="actions">
+    <button class="btn" id="startBtn" type="button">開始</button>
+    <button class="btn stop" id="stopBtn" type="button" title="Esc キーでも止まります">停止</button>
+    <button class="theme" id="themeBtn" type="button" aria-label="明るい表示と暗い表示を切り替える"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 2a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+  </div>
+  <div class="lostmsg" id="lost" role="alert">ノードとの接続が切れています。再接続を待っています (ロボット側の指示値は止まりません。止めるときはロボット側で)。</div>
+</div>
+
+<div class="wrap">
+  <section class="views">
+    <div class="view">
+      <h2><b>いまの画像</b> <span class="desc">モデルに入れた画像と予測した軌跡</span> <span class="aside" id="latency"></span></h2>
+      <div class="frame">
+        <canvas id="cur" width="640" height="480" aria-label="現在の画像と予測軌跡"></canvas>
+        <div class="empty" id="curEmpty">推論が始まると表示されます</div>
+      </div>
+    </div>
+    <div class="view">
+      <h2><b id="goalTitle">サブゴール</b> <span class="desc">いま目指している画像</span> <span class="aside" id="goalDist"></span></h2>
+      <div class="frame">
+        <img id="goal" alt="今のサブゴール画像">
+        <div class="empty" id="goalEmpty">topomap がありません</div>
+      </div>
+    </div>
+  </section>
+  <div class="strip" id="strip" aria-label="コースのサブゴール"></div>
+
+  <section class="grid">
+    <div class="panel">
+      <h2>指示値 (出している値)</h2>
+      <div class="cmd">
+        <div class="v"><span class="big" id="v">0.00</span><span class="unit">m/s</span></div>
+        <div class="v"><div class="lbl">前進 v</div><div class="meter"><i id="vbar"></i></div></div>
+        <div class="w"><span class="big" id="w">0.00</span><span class="unit">rad/s</span></div>
+        <div class="w"><div class="lbl">旋回 ω (右 ← → 左)</div><div class="meter"><span class="mid"></span><i id="wbar"></i></div></div>
+      </div>
+      <div class="sub" id="cmdsub"></div>
+    </div>
+    <div class="panel top">
+      <h2>予測した軌跡 (上から見た図, 0.5 m 方眼)</h2>
+      <canvas id="top" width="400" height="220" aria-label="上から見た予測軌跡"></canvas>
+    </div>
+    <div class="panel">
+      <h2>サブゴールの判定</h2>
+      <dl class="facts">
+        <dt>画像の類似度</dt><dd><span id="sim">-</span><div class="simbar" title="縦線: 切り替えるしきい値"><i id="simbar"></i><s id="thr"></s></div></dd>
+        <dt>サブゴールまで</dt><dd id="dist">-</dd>
+        <dt>走った距離</dt><dd id="travel">-</dd>
+        <dt>推論</dt><dd id="rate">-</dd>
+        <dt>モデル</dt><dd id="model">-</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="panel chart">
+    <h2>指示値の履歴 (直近 60 秒) <span class="legend"><span style="--k: var(--v)">v [m/s]</span><span style="--k: var(--w)">ω [rad/s]</span></span></h2>
+    <canvas id="chart" width="1200" height="170" aria-label="指示値の時系列"></canvas>
+  </section>
+
+  <section class="panel log">
+    <h2>出来事</h2>
+    <ol id="log"></ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var root = document.documentElement;
+  var cfg = null, last = null, topomapId = null, curSubgoal = null;
+  var hist = [];               // {t: 受信時刻 [s], v, w}
+  var stepTimes = [];          // 推論の時刻 (Hz の計算)
+  var imgBusy = false, imgWanted = 0;
+  var STATE = { running: "走行中", reached: "ゴールに到着", stopped: "停止中", idle: "待機中",
+                waiting_image: "カメラ画像待ち" };
+  var MODE = { pose: "自己位置で切り替え", odom: "オドメトリで切り替え", image: "画像で切り替え",
+               image_odom: "画像 + オドメトリで切り替え", none: "切り替えなし" };
+
+  // ---- テーマ ----
+  try { var saved = localStorage.getItem("omnivla-monitor-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  $("themeBtn").addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") ? root.getAttribute("data-theme") === "dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.setAttribute("data-theme", dark ? "light" : "dark");
+    try { localStorage.setItem("omnivla-monitor-theme", dark ? "light" : "dark"); } catch (e) {}
+    drawAll();
+  });
+  function css(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+
+  // ---- 開始 / 停止 ----
+  function enable(on) {
+    return fetch("/api/enable", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enable: on }) }).then(function (r) { return r.json(); })
+      .then(function (j) { if (!j.ok) addLog(on ? "開始できませんでした (topomap を確認)" : "停止できませんでした"); })
+      .catch(function () { addLog("ノードに届きませんでした"); });
+  }
+  $("stopBtn").addEventListener("click", function () { enable(false); });
+  $("startBtn").addEventListener("click", function () {
+    if (confirm("ロボットが動き出します。周りの安全を確認しましたか?")) enable(true);
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") enable(false); });
+
+  // ---- 設定 ----
+  function loadConfig() {
+    return fetch("/api/config").then(function (r) { return r.json(); }).then(function (c) {
+      cfg = c;
+      topomapId = c.topomap ? c.topomap.id : null;
+      $("sgn").textContent = c.topomap ? Math.max(0, c.topomap.num_nodes - 1) : "-";
+      $("model").textContent = (c.model && c.model.server) || "-";
+      buildStrip();
+      $("goalEmpty").style.display = c.topomap && c.topomap.num_nodes ? "none" : "flex";
+    });
+  }
+
+  function buildStrip() {
+    var s = $("strip");
+    s.innerHTML = "";
+    if (!cfg || !cfg.topomap) return;
+    for (var k = 0; k < cfg.topomap.num_nodes; k++) {
+      var f = document.createElement("figure");
+      f.dataset.k = k;
+      var im = document.createElement("img");
+      im.loading = "lazy";
+      im.alt = "サブゴール " + k;
+      im.src = "/img/goal/" + k + ".jpg?m=" + topomapId;
+      var c = document.createElement("figcaption");
+      c.textContent = k === cfg.topomap.num_nodes - 1 ? k + " ゴール" : k;
+      f.appendChild(im); f.appendChild(c); s.appendChild(f);
+    }
+  }
+
+  function setSubgoal(k) {
+    if (k == null || !cfg || !cfg.topomap) return;
+    if (k !== curSubgoal) {
+      curSubgoal = k;
+      $("goal").src = "/img/goal/" + k + ".jpg?m=" + topomapId;
+      var n = cfg.topomap.num_nodes - 1;
+      $("goalTitle").textContent = k === n ? "最終ゴール " + k : "サブゴール " + k;
+      var figs = $("strip").children;
+      for (var i = 0; i < figs.length; i++) {
+        figs[i].className = i < k ? "done" : (i === k ? "now" : "");
+      }
+      var now = figs[k];
+      if (now) $("strip").scrollLeft = now.offsetLeft - $("strip").clientWidth / 2 + now.clientWidth / 2;
+    }
+    var nn = cfg.topomap.num_nodes - 1;
+    $("sg").textContent = k;
+    $("fill").style.width = (nn > 0 ? (100 * k / nn) : 0) + "%";
+  }
+
+  // ---- 受信 ----
+  var lastSeq = -1, lastEvent = 0;
+  function onMessage(m) {
+    if (m.seq != null) { if (m.seq <= lastSeq) return; lastSeq = m.seq; }
+    if (m.topomap_id != null && m.topomap_id !== topomapId) loadConfig().then(function () { curSubgoal = null; setSubgoal(m.subgoal); });
+    var st = m.state || "idle";
+    $("state").textContent = STATE[st] || st;
+    $("mode").textContent = MODE[m.reach_check] || m.reach_check || "";
+    $("startBtn").disabled = st === "running";
+    if (m.subgoal != null) setSubgoal(m.subgoal);
+    if (m.similarity != null) {
+      $("sim").textContent = m.similarity.toFixed(3);
+      $("simbar").style.width = Math.max(0, Math.min(1, m.similarity)) * 100 + "%";
+    } else { $("sim").textContent = m.reach_check === "pose" ? "使っていません (位置で判定)" : "-"; $("simbar").style.width = "0"; }
+    if (cfg && cfg.engine && cfg.engine.tracker && cfg.topomap) {
+      var tr = cfg.engine.tracker, final = m.subgoal === cfg.topomap.num_nodes - 1;
+      $("thr").style.left = (100 * (final ? tr.goal_image_threshold : tr.image_threshold)) + "%";
+    }
+    $("dist").textContent = m.distance != null ? m.distance.toFixed(2) + " m" : "-";
+    $("goalDist").textContent = m.distance != null ? "あと " + m.distance.toFixed(1) + " m" : "";
+    if (m.travel_m != null) $("travel").textContent = m.travel_m.toFixed(1) + " m";
+    var now = performance.now() / 1000;
+    if (m.kind === "step") {
+      last = m;
+      stepTimes.push(now);
+      while (stepTimes.length && now - stepTimes[0] > 5) stepTimes.shift();
+      var hz = stepTimes.length > 1 ? (stepTimes.length - 1) / (stepTimes[stepTimes.length - 1] - stepTimes[0]) : 0;
+      $("rate").textContent = (m.latency * 1000).toFixed(0) + " ms / " + hz.toFixed(1) + " Hz";
+      $("latency").textContent = "推論 " + (m.latency * 1000).toFixed(0) + " ms";
+      (m.event_log || []).forEach(function (e) { if (e[0] > lastEvent) { lastEvent = e[0]; addLog(e[1]); } });
+      if (m.preview) requestImage(m.seq);
+      drawTop();
+      setCmd(m.v, m.w, false);
+    } else {
+      if (m.cmd_v != null) setCmd(m.cmd_v, m.cmd_w, true);
+      else setCmd(0, 0, true);
+    }
+    hist.push({ t: now, v: m.kind === "step" ? m.v : (m.cmd_v || 0), w: m.kind === "step" ? m.w : (m.cmd_w || 0) });
+    while (hist.length && now - hist[0].t > 60) hist.shift();
+    drawChart();
+    if (st !== lastState) { if (lastState) addLog("状態: " + (STATE[st] || st)); lastState = st; }
+  }
+  var lastState = null;
+
+  function setCmd(v, w, fromCmd) {
+    v = v || 0; w = w || 0;
+    $("v").textContent = v.toFixed(2).replace("-", "\u2212");
+    $("w").textContent = (w >= 0 ? "+" : "\u2212") + Math.abs(w).toFixed(2);
+    var vmax = (cfg && cfg.engine && cfg.engine.controller.track_max_v) || 0.6;
+    var wmax = (cfg && cfg.engine && cfg.engine.controller.track_max_w) || 1.0;
+    $("vbar").style.width = Math.max(0, Math.min(1, v / vmax)) * 100 + "%";
+    var f = Math.max(-1, Math.min(1, w / wmax)) * 50;
+    var wb = $("wbar");
+    wb.style.left = (f >= 0 ? 50 : 50 + f) + "%";
+    wb.style.width = Math.abs(f) + "%";
+    $("cmdsub").textContent = fromCmd ? "ロボットに出している値 (" + ((cfg && cfg.io.control_rate) || 10) + " Hz)"
+                                      : "最新の推論から計算した値";
+  }
+
+  function addLog(text) {
+    var li = document.createElement("li");
+    var t = document.createElement("time");
+    t.textContent = new Date().toLocaleTimeString("ja-JP");
+    var s = document.createElement("span");
+    s.textContent = text;
+    li.appendChild(t); li.appendChild(s);
+    var ol = $("log");
+    ol.insertBefore(li, ol.firstChild);
+    while (ol.children.length > 100) ol.removeChild(ol.lastChild);
+  }
+
+  // ---- 現在画像 + 軌跡 ----
+  var curImg = new Image();
+  function requestImage(seq) {
+    imgWanted = seq;
+    if (imgBusy) return;
+    imgBusy = true;
+    var want = seq;
+    var im = new Image();
+    im.onload = function () { curImg = im; imgBusy = false; $("curEmpty").style.display = "none"; drawCurrent(); if (imgWanted !== want) requestImage(imgWanted); };
+    im.onerror = function () { imgBusy = false; };
+    im.src = "/img/current.jpg?s=" + seq;
+  }
+
+  // omnivla_real/viz.py の CameraModel.project と同じ式 (下向きに pitch だけ傾いた前向きカメラ)
+  function project(x, y, W, H) {
+    var cam = (cfg && cfg.robot && cfg.robot.camera) || { hfov_deg: 90, height: 0.5, x_offset: 0.2 };
+    var fx = (W / 2) / Math.tan(cam.hfov_deg * Math.PI / 360);
+    var p = (cam.pitch_deg || 0) * Math.PI / 180;
+    var z0 = x - cam.x_offset, y0 = cam.height;
+    var yc = y0 * Math.cos(p) - z0 * Math.sin(p), zc = y0 * Math.sin(p) + z0 * Math.cos(p);
+    if (z0 <= 0.15 || zc <= 0.05) return null;
+    return [W / 2 + fx * (-y) / zc, H / 2 + fx * yc / zc];
+  }
+
+  function drawCurrent() {
+    var c = $("cur"), g = c.getContext("2d");
+    if (!curImg.naturalWidth) return;
+    var W = curImg.naturalWidth, H = curImg.naturalHeight;
+    if (c.width !== W * 2 || c.height !== H * 2) { c.width = W * 2; c.height = H * 2; }
+    g.setTransform(2, 0, 0, 2, 0, 0);
+    g.drawImage(curImg, 0, 0, W, H);
+    if (!last || !last.waypoints || !last.waypoints.length) return;
+    var cam = (cfg && cfg.robot && cfg.robot.camera) || { x_offset: 0.2 };
+    var pts = [[cam.x_offset + 0.16, 0]].concat(last.waypoints.map(function (p) { return [p[0], p[1]]; }));
+    var uv = pts.map(function (p) { return project(p[0], p[1], W, H); }).filter(Boolean);
+    if (uv.length < 2) return;
+    g.lineJoin = "round"; g.lineCap = "round";
+    [[css("--path-edge"), 6], [css("--path"), 3]].forEach(function (s) {
+      g.strokeStyle = s[0]; g.lineWidth = s[1] * W / 640 * 1.6;
+      g.beginPath(); g.moveTo(uv[0][0], uv[0][1]);
+      for (var i = 1; i < uv.length; i++) g.lineTo(uv[i][0], uv[i][1]);
+      g.stroke();
+    });
+    for (var i = 1; i < uv.length; i++) {          // 1/3 秒ごとの点
+      g.fillStyle = css("--path"); g.strokeStyle = css("--path-edge"); g.lineWidth = 1.5;
+      g.beginPath(); g.arc(uv[i][0], uv[i][1], Math.max(2.5, W / 110), 0, Math.PI * 2); g.fill(); g.stroke();
+    }
+  }
+
+  // ---- 上から見た図 ----
+  function drawTop() {
+    var c = $("top"), g = c.getContext("2d");
+    var dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = c.clientHeight;
+    if (!W) return;
+    c.width = W * dpr; c.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    var wps = last && last.waypoints ? last.waypoints : [];
+    var reach = 1.5;
+    wps.forEach(function (p) { reach = Math.max(reach, Math.abs(p[0]) + 0.4, Math.abs(p[1]) * 1.6 + 0.4); });
+    var s = (H - 24) / reach;                         // m -> px
+    var ox = W / 2, oy = H - 16;
+    function px(x, y) { return [ox - y * s, oy - x * s]; }
+    g.strokeStyle = css("--line"); g.lineWidth = 1;
+    for (var m = 0.5; m <= reach + 0.01; m += 0.5) { var a = px(m, 0); g.beginPath(); g.moveTo(0, a[1]); g.lineTo(W, a[1]); g.stroke(); }
+    for (var y = -Math.ceil(W / 2 / s / 0.5) * 0.5; y <= W / 2 / s; y += 0.5) { var b = px(0, y); g.beginPath(); g.moveTo(b[0], 0); g.lineTo(b[0], H); g.stroke(); }
+    g.fillStyle = css("--muted"); g.font = "11px sans-serif";
+    for (var mm = 1; mm <= reach - 0.2; mm += 1) { var q = px(mm, 0); g.fillText(mm + " m", 4, q[1] + 12); }
+    // ロボット
+    g.fillStyle = css("--text");
+    g.beginPath(); g.moveTo(ox, oy - 10); g.lineTo(ox - 7, oy + 6); g.lineTo(ox + 7, oy + 6); g.closePath(); g.fill();
+    if (!wps.length) return;
+    g.strokeStyle = css("--prog"); g.lineWidth = 3; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(ox, oy);
+    wps.forEach(function (p) { var a = px(p[0], p[1]); g.lineTo(a[0], a[1]); });
+    g.stroke();
+    wps.forEach(function (p) {                        // 向き
+      var a = px(p[0], p[1]), L = 10;
+      g.strokeStyle = css("--text"); g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(a[0] - Math.sin(p[2]) * L, a[1] - Math.cos(p[2]) * L); g.stroke();
+      g.fillStyle = css("--prog"); g.beginPath(); g.arc(a[0], a[1], 3.5, 0, Math.PI * 2); g.fill();
+    });
+  }
+
+  // ---- 時系列 ----
+  function drawChart() {
+    var c = $("chart"), g = c.getContext("2d");
+    var dpr = window.devicePixelRatio || 1, W = c.clientWidth, H = c.clientHeight;
+    if (!W) return;
+    c.width = W * dpr; c.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    var now = performance.now() / 1000, L = 44, R = W - 44, T = 8, B = H - 20;
+    var vmax = Math.max(0.2, (cfg && cfg.engine && cfg.engine.controller.track_max_v) || 0.6);
+    var wmax = Math.max(0.2, (cfg && cfg.engine && cfg.engine.controller.track_max_w) || 1.0);
+    g.strokeStyle = css("--line"); g.lineWidth = 1;
+    var mid = (T + B) / 2;
+    [T, mid, B].forEach(function (yy) { g.beginPath(); g.moveTo(L, yy); g.lineTo(R, yy); g.stroke(); });
+    g.fillStyle = css("--muted"); g.font = "11px sans-serif";
+    g.textAlign = "right"; g.fillText(vmax.toFixed(1), L - 6, T + 4); g.fillText("0", L - 6, mid + 4); g.fillText((-vmax).toFixed(1), L - 6, B + 4);
+    g.textAlign = "left"; g.fillText(wmax.toFixed(1), R + 6, T + 4); g.fillText("0", R + 6, mid + 4); g.fillText((-wmax).toFixed(1), R + 6, B + 4);
+    g.textAlign = "center";
+    for (var s = 0; s <= 60; s += 10) { var x = R - (R - L) * s / 60; g.fillText(s ? "-" + s + " s" : "いま", x, H - 4); }
+    function line(key, max, color) {
+      g.strokeStyle = color; g.lineWidth = 2; g.beginPath();
+      var first = true;
+      hist.forEach(function (h) {
+        var x = R - (R - L) * (now - h.t) / 60, y = mid - (Math.max(-max, Math.min(max, h[key])) / max) * (mid - T);
+        if (first) { g.moveTo(x, y); first = false; } else g.lineTo(x, y);
+      });
+      g.stroke();
+    }
+    line("v", vmax, css("--v"));
+    line("w", wmax, css("--w"));
+  }
+
+  function drawAll() { drawCurrent(); drawTop(); drawChart(); }
+  window.addEventListener("resize", drawAll);
+
+  // ---- 接続 ----
+  function setLive(ok) {
+    $("dot").className = "dot " + (ok ? "live" : "lost");
+    $("lost").className = "lostmsg" + (ok ? "" : " show");
+  }
+  loadConfig().catch(function () {}).then(function () {
+    var es = new EventSource("/api/events");
+    es.onopen = function () { setLive(true); };
+    es.onerror = function () { setLive(false); };
+    es.onmessage = function (e) { setLive(true); try { onMessage(JSON.parse(e.data)); } catch (err) { console.error(err); } };
+    fetch("/api/state").then(function (r) { return r.json(); }).then(function (m) { if (m && m.state) onMessage(m); }).catch(function () {});
+  });
+  setInterval(drawChart, 500);
+})();
+</script>
+</body>
+</html>

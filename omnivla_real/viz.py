@@ -19,20 +19,25 @@ PANEL = (320, 240)
 
 @dataclass
 class CameraModel:
-    """前向き水平カメラ (pitch=0) の簡易モデル. robot 座標 (x前, y左, z上)."""
+    """前向きカメラ (下向きに pitch だけ傾いている) の簡易モデル. robot 座標 (x前, y左, z上).
+    C++ ノードのデバッグ画面 (ros1/omnivla_real_ros1/web/index.html の project) も同じ式."""
     hfov: float = 1.57          # [rad] 水平画角 (表示用. robot.yaml の camera で設定)
     height: float = 0.5         # 地面からの高さ [m]
     x_offset: float = 0.2       # ロボット原点からの前方オフセット [m]
     y_offset: float = 0.0
+    pitch: float = 0.0          # 下向きの傾き [rad]
 
     def project(self, pts_xy: np.ndarray, width: int, height: int):
         pts = np.asarray(pts_xy, dtype=np.float64).reshape(-1, 2)
         fx = (width / 2.0) / math.tan(self.hfov / 2.0)
         fy = fx
-        zc = pts[:, 0] - self.x_offset
+        z0 = pts[:, 0] - self.x_offset
         xc = -(pts[:, 1] - self.y_offset)
-        yc = np.full_like(zc, self.height)
-        valid = zc > 0.15
+        y0 = np.full_like(z0, self.height)
+        cp, sp = math.cos(self.pitch), math.sin(self.pitch)
+        yc = y0 * cp - z0 * sp           # 下向きに傾けたカメラの座標
+        zc = y0 * sp + z0 * cp
+        valid = (z0 > 0.15) & (zc > 0.05)
         zc_safe = np.where(valid, zc, 1.0)
         u = width / 2.0 + fx * xc / zc_safe
         v = height / 2.0 + fy * yc / zc_safe

@@ -25,11 +25,14 @@ sys.path.insert(0, REPO)
 
 from omnivla_real.nav_config import load_nav_config, make_policy  # noqa: E402
 from omnivla_real.remote import DEFAULT_PORT, PolicyServer  # noqa: E402
+from omnivla_real.robot_config import RobotConfig  # noqa: E402
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--nav", default=os.path.join(REPO, "configs/navigator.yaml"), help="model: の既定値")
+    ap.add_argument("--robot", default=os.path.join(REPO, "configs/robot.yaml"),
+                    help="画像の前処理 (C++ ノードが送るカメラ画像をここで切り抜き・縮小する)")
     ap.add_argument("--model", default="", help="edge | 7b")
     ap.add_argument("--weights", default="")
     ap.add_argument("--finetuned_dir", default="")
@@ -58,8 +61,11 @@ def main(argv=None):
         if hasattr(policy, "reset_history"):
             policy.reset_history()
         print(f"[policy_server] warmup done (latency {out.latency * 1000:.0f} ms)", flush=True)
+    robot = RobotConfig.load(args.robot)
     server = PolicyServer(policy, nav.model.model.lower(), args.host, args.port,
-                          log=lambda s: print(s, flush=True))
+                          log=lambda s: print(s, flush=True), image_cfg=robot.image)
+    print(f"[policy_server] image preprocess (robot.yaml): crop={robot.image.crop} width={robot.image.width} "
+          f"rotate180={robot.image.rotate180}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

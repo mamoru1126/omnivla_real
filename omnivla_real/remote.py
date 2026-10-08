@@ -11,16 +11,29 @@ NavEngine・机上評価からは区別なく使える。画像は無圧縮 (uin
 プロセス内で推論した場合と同じ結果になる。
 
 通信: POST /predict, /embed, GET /info. 本文 = [4 byte: JSON の長さ][JSON][配列のバイト列 ...]
+画像は 1 度だけ送る: JSON の "images" に {key, array, kind, ...} (中身を送る) か {key} (前に送ったものを使う) を並べ、
+current / goal / observations はその番号で指す。サーバは最近の IMAGE_CACHE 枚を覚えている。
+覚えていない key を指すと 409 {"missing": [...]} が返るので、クライアントは中身を付けて送り直す。
+画像の中身 (kind):
+  rgb      前処理済みの RGB (H, W, 3) uint8            (Python のクライアント)
+  encoded  JPEG / PNG のバイト列 (sensor_msgs/CompressedImage の data そのまま)
+  raw      sensor_msgs/Image の data そのまま + encoding, width, height, step
+encoded / raw はサーバが robot.yaml の前処理 (切り抜き・縮小) をかける ("preprocess": false で無し. topomap の画像など)。
+C++ のノード (ros1/omnivla_real_ros1) はカメラの JPEG をデコードせずにそのまま送る。
+predict に "want_preview": true を付けると、モデルに入れた現在画像 (前処理後) の JPEG も返す (デバッグ画面用)。
 """
 from __future__ import annotations
 
 import http.client
+import io
 import json
+import socket
 import struct
 import threading
 import time
 import urllib.parse
-from collections import deque
+import weakref
+from collections import OrderedDict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Deque, Dict, List, Optional, Sequence, Tuple
 
@@ -29,7 +42,18 @@ from PIL import Image
 
 from .policy_base import PolicyOutput
 
+PREVIEW_QUALITY = 80
+
 DEFAULT_PORT = 8765
+PROTOCOL = 2
+IMAGE_CACHE = 64        # サーバが覚えておく画像の枚数
+CLIENT_KNOWN = 48       # クライアントが「サーバにある」とみなす枚数 (IMAGE_CACHE より少なく)
+
+
+class MissingImages(Exception):
+    def __init__(self, keys: List[str]):
+        super().__init__(f"missing images: {keys}")
+        self.keys = keys
 
 
 # ---------------------------------------------------------------------------
@@ -88,15 +112,20 @@ class PolicyServer:
     """policy (EdgePolicy / OmniVLAPolicy) を HTTP で公開する. 推論は 1 つずつ (ロック)."""
 
     def __init__(self, policy, model_name: str, host: str = "127.0.0.1", port: int = DEFAULT_PORT,
-                 log=print):
+                 log=print, image_cfg=None):
+        """image_cfg: robot.yaml の image (ImageConfig). encoded / raw の画像の前処理に使う."""
         self.policy = policy
+        self.image_cfg = image_cfg
         self.model_name = model_name
         self.lock = threading.Lock()
         self.log = log
         self.n_requests = 0
         self.busy_time = 0.0
         hist = getattr(policy, "history", None)
+        self._images: "OrderedDict[str, Image.Image]" = OrderedDict()
         self.info = {
+            "protocol": PROTOCOL,
+            "image_cache": IMAGE_CACHE,
             "model": model_name,
             "history": hist is not None,
             "context_size": int(getattr(policy, "context_size", 0) or 0),
@@ -109,6 +138,11 @@ class PolicyServer:
         class Handler(BaseHTTPRequestHandler):
             protocol_version = "HTTP/1.1"
 
+            def setup(self):
+                super().setup()
+                # 小さな応答を待たせない (Nagle + 遅延 ACK で 1 回 40ms 遅れるのを防ぐ)
+                self.request.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
             def log_message(self, fmt, *args):  # リクエストごとのログは出さない
                 pass
 
@@ -116,8 +150,10 @@ class PolicyServer:
                 self.send_response(code)
                 self.send_header("Content-Type", ctype)
                 self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
+                # ヘッダと本文を 1 回で書く
+                self._headers_buffer.append(b"\r\n")
+                self.wfile.write(b"".join(self._headers_buffer) + body)
+                self._headers_buffer = []
 
             def do_GET(self):
                 if self.path.rstrip("/") in ("/info", ""):
@@ -136,6 +172,8 @@ class PolicyServer:
                         server.n_requests += 1
                         server.busy_time += time.time() - t0
                     self._send(200, out)
+                except MissingImages as e:
+                    self._send(409, pack({"error": str(e), "missing": e.keys}))
                 except Exception as e:  # noqa: BLE001  (クライアントにエラーを返す)
                     self._send(500, pack({"error": f"{type(e).__name__}: {e}"}))
 
@@ -143,9 +181,58 @@ class PolicyServer:
         self.httpd.daemon_threads = True
         self.address = self.httpd.server_address
 
+    def _images_of(self, header: dict, arrays: List[np.ndarray]) -> List[Image.Image]:
+        spec = header.get("images")
+        if spec is None:                        # 古い形式: 配列がそのまま画像
+            return [_pil(a) for a in arrays]
+        out, missing = [], []
+        for ent in spec:
+            key = ent.get("key")
+            if ent.get("array") is not None:
+                img = self._decode(ent, arrays[int(ent["array"])])
+                if key:
+                    self._images[key] = img
+                    self._images.move_to_end(key)
+                    while len(self._images) > IMAGE_CACHE:
+                        self._images.popitem(last=False)
+            else:
+                img = self._images.get(key)
+                if img is None:
+                    missing.append(key)
+                else:
+                    self._images.move_to_end(key)
+            out.append(img)
+        if missing:
+            raise MissingImages(missing)
+        return out
+
+    def _decode(self, ent: dict, arr: np.ndarray) -> Image.Image:
+        kind = ent.get("kind", "rgb")
+        if kind == "rgb":
+            img = _pil(arr)
+        elif kind == "encoded":
+            img = Image.open(io.BytesIO(arr.tobytes()))
+            img.load()
+        elif kind == "raw":
+            from types import SimpleNamespace
+
+            from .bag.messages import image_to_rgb
+            msg = SimpleNamespace(encoding=ent["encoding"], width=int(ent["width"]), height=int(ent["height"]),
+                                  step=int(ent.get("step") or 0), is_bigendian=int(ent.get("is_bigendian", 0)),
+                                  data=arr)
+            img = Image.fromarray(image_to_rgb(msg, "sensor_msgs/msg/Image"))
+        else:
+            raise ValueError(f"unknown image kind '{kind}'")
+        if ent.get("preprocess", kind != "rgb"):
+            if self.image_cfg is None:
+                raise ValueError("this server has no robot.yaml image settings (start it with --robot)")
+            from .robot_config import preprocess_image
+            img = preprocess_image(img, self.image_cfg)
+        return img if img.mode == "RGB" else img.convert("RGB")
+
     def handle(self, op: str, header: dict, arrays: List[np.ndarray]) -> bytes:
         if op == "predict":
-            imgs = [_pil(a) for a in arrays]
+            imgs = self._images_of(header, arrays)
             cur = imgs[header["current"]]
             goal = imgs[header["goal"]] if header.get("goal") is not None else None
             kw = dict(goal_image=goal, goal_pose=header.get("goal_pose"), modality=header.get("modality", "image"))
@@ -154,12 +241,20 @@ class PolicyServer:
             if header.get("observations") is not None and self.info["history"]:
                 kw["observations"] = [imgs[i] for i in header["observations"]]
             out: PolicyOutput = self.policy.predict(cur, **kw)
-            return pack({"modality": int(out.modality), "latency": float(out.latency),
-                         "distance": None if out.distance is None else float(out.distance)},
-                        [np.asarray(out.waypoints, np.float64), np.asarray(out.normalized, np.float64),
-                         np.asarray(out.goal_pose_input, np.float64)])
+            res = [np.asarray(out.waypoints, np.float64), np.asarray(out.normalized, np.float64),
+                   np.asarray(out.goal_pose_input, np.float64)]
+            h = {"modality": int(out.modality), "latency": float(out.latency),
+                 "distance": None if out.distance is None else float(out.distance)}
+            if header.get("want_preview"):
+                buf = io.BytesIO()
+                cur.save(buf, format="JPEG", quality=PREVIEW_QUALITY)
+                h["preview"] = len(res)
+                h["preview_size"] = list(cur.size)
+                res.append(np.frombuffer(buf.getvalue(), dtype=np.uint8))
+            return pack(h, res)
         if op == "embed":
-            emb = self.policy.embed(_pil(arrays[0]))
+            imgs = self._images_of(header, arrays)
+            emb = self.policy.embed(imgs[int(header.get("image", 0))])
             return pack({}, [np.asarray(emb, np.float32)])
         raise ValueError(f"unknown op '{op}'")
 
@@ -192,8 +287,13 @@ class RemotePolicy:
         self._conn: Optional[http.client.HTTPConnection] = None
         self._lock = threading.Lock()
         self._emb_cache: Dict[str, np.ndarray] = {}
+        self._keys: Dict[int, Tuple[Any, str]] = {}        # id(画像) -> (weakref, key)
+        self._known: "OrderedDict[str, None]" = OrderedDict()  # サーバが覚えているはずの key
+        self._next_key = 0
+        self.bytes_sent = 0
         info = self._wait_info(wait, log)
         self.server_info = info
+        self.protocol = int(info.get("protocol", 1))
         self.model_name = info.get("model", "?")
         self.meta = info.get("meta") or {}
         self.metric_spacing = float(info.get("metric_spacing") or 0.0)
@@ -226,10 +326,14 @@ class RemotePolicy:
                 try:
                     if self._conn is None:
                         self._conn = http.client.HTTPConnection(self.host, self.port, timeout=self.timeout)
+                        self._conn.connect()
+                        self._conn.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                     self._conn.request(method, path, body=body,
                                        headers={"Content-Type": "application/octet-stream"} if body else {})
                     resp = self._conn.getresponse()
                     data = resp.read()
+                    if resp.status == 409:
+                        raise MissingImages(unpack(data)[0].get("missing", []))
                     if resp.status != 200:
                         msg = data.decode(errors="replace")
                         try:
@@ -244,6 +348,55 @@ class RemotePolicy:
                     self._conn = None
                     if attempt == 1:
                         raise
+        raise RuntimeError("unreachable")
+
+    def _key_of(self, img) -> str:
+        ent = self._keys.get(id(img))
+        if ent is not None and ent[0]() is img:
+            return ent[1]
+        key = f"c{self._next_key}"
+        self._next_key += 1
+        try:
+            ref = weakref.ref(img)
+        except TypeError:          # ndarray など weakref できないものは毎回送る
+            return key
+        self._keys[id(img)] = (ref, key)
+        if len(self._keys) > 4 * IMAGE_CACHE:
+            self._keys = {k: v for k, v in self._keys.items() if v[0]() is not None}
+        return key
+
+    def _call(self, path: str, header: Dict[str, Any], images: Sequence) -> Tuple[Dict[str, Any], List[np.ndarray]]:
+        """images を (サーバに無いものだけ中身付きで) 送る. header の画像の番号は images の並び."""
+        for attempt in range(2):
+            if self.protocol < 2:
+                arrays = [_rgb(im) for im in images]
+                h = dict(header)
+            else:
+                keys = [self._key_of(im) for im in images]
+                spec, arrays = [], []
+                for im, key in zip(images, keys):
+                    if key in self._known:
+                        spec.append({"key": key})
+                    else:
+                        spec.append({"key": key, "array": len(arrays)})
+                        arrays.append(_rgb(im))
+                h = dict(header, images=spec)
+            body = pack(h, arrays)
+            try:
+                data = self._request("POST", path, body)
+            except MissingImages:
+                if attempt == 1:
+                    raise
+                self._known.clear()          # サーバが再起動した等: 全部送り直す
+                continue
+            self.bytes_sent += len(body)
+            if self.protocol >= 2:
+                for key in keys:
+                    self._known[key] = None
+                    self._known.move_to_end(key)
+                while len(self._known) > CLIENT_KNOWN:
+                    self._known.popitem(last=False)
+            return unpack(data)
         raise RuntimeError("unreachable")
 
     # -- ポリシーとしてのインターフェース ------------------------------------
@@ -283,15 +436,14 @@ class RemotePolicy:
         if self.history is not None:
             obs = list(observations) if observations is not None else self.observation_window(current)
             header["observations"] = [add(o) for o in obs]
-        data = self._request("POST", "/predict", pack(header, [_rgb(im) for im in images]))
-        h, arr = unpack(data)
+        h, arr = self._call("/predict", header, images)
         return PolicyOutput(arr[0].copy(), arr[1].copy(), int(h["modality"]), time.time() - t0, arr[2].copy(),
                             distance=h.get("distance"))
 
     def embed(self, image, cache_key: Optional[str] = None) -> np.ndarray:
         if cache_key is not None and cache_key in self._emb_cache:
             return self._emb_cache[cache_key]
-        _, arr = unpack(self._request("POST", "/embed", pack({}, [_rgb(image)])))
+        _, arr = self._call("/embed", {"image": 0}, [image])
         emb = arr[0].copy()
         if cache_key is not None:
             self._emb_cache[cache_key] = emb

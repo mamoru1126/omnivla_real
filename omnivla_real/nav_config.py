@@ -40,6 +40,8 @@ class IOConfig:
     max_inference_rate: float = 0.0     # 推論の上限 [Hz] (0 = 新しい画像が来るたび. カメラの周期が上限)
     log_dir: str = "/workspace/log/nav"
     log_images: bool = True
+    web_port: int = 8080                # ブラウザのデバッグ画面 (C++ ノード). 0 で無効
+    web_host: str = "0.0.0.0"           # 127.0.0.1 にするとロボットの中からだけ見られる
 
 
 @dataclass

@@ -40,6 +40,7 @@ class CameraConfig:
     hfov_deg: float = 90.0     # 水平画角 (切り抜き後) [deg]
     height: float = 0.5        # 地面からの高さ [m]
     x_offset: float = 0.2      # ロボット原点からの前方オフセット [m]
+    pitch_deg: float = 0.0     # 下向きの傾き [deg] (水平なら 0)
 
 
 @dataclass
@@ -76,7 +77,8 @@ class RobotConfig:
 def camera_model(cfg: "RobotConfig"):
     from .viz import CameraModel
     import math
-    return CameraModel(hfov=math.radians(cfg.camera.hfov_deg), height=cfg.camera.height, x_offset=cfg.camera.x_offset)
+    return CameraModel(hfov=math.radians(cfg.camera.hfov_deg), height=cfg.camera.height, x_offset=cfg.camera.x_offset,
+                       pitch=math.radians(cfg.camera.pitch_deg))
 
 
 def _from_dict(cls, d: Dict[str, Any]):

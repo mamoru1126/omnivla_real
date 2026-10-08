@@ -145,12 +145,12 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
   <rect x="730" y="80" width="176" height="200" rx="10" fill="var(--surface2)" stroke="var(--c-ros)" stroke-width="2"/>
   <text x="742" y="104" font-size="14" font-weight="700" fill="var(--c-ros)">ROS 1 コンテナ</text>
   <text x="742" y="122" font-size="12" fill="var(--muted)">nav · Dockerfile.ros1</text>
-  <text x="742" y="148" font-size="13" fill="var(--text)">navigator ノード</text>
+  <text x="742" y="148" font-size="13" fill="var(--text)">navigator ノード (C++)</text>
   <text x="742" y="168" font-size="12" fill="var(--muted)">ROS 1 Noetic</text>
   <text x="742" y="186" font-size="12" fill="var(--muted)">PyTorch なし</text>
   <text x="742" y="212" font-size="12" fill="var(--muted)">サブゴールの切り替え</text>
   <text x="742" y="228" font-size="12" fill="var(--muted)">軌跡 → 指示値</text>
-  <text x="742" y="256" font-size="11.5" fill="var(--muted)">サブゴール画像列を読む</text>
+  <text x="742" y="256" font-size="11.5" fill="var(--muted)">デバッグ画面 :8080</text>
 
   <!-- HTTP -->
   <line x1="696" y1="150" x2="728" y2="150" stroke="var(--muted)" stroke-width="2" marker-start="url(#ar)" marker-end="url(#ar)"/>
@@ -181,7 +181,7 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
 </div>
 
 <!-- ============================================================ -->
-<h2 id="step">走行中の 1 ステップ (3Hz)</h2>
+<h2 id="step">走行中の 1 ステップ</h2>
 <div class="diagram" role="img" aria-label="1 ステップの流れ">
 <svg viewBox="0 0 940 470" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -217,7 +217,7 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
   <!-- 4 -->
   <line x1="472" y1="238" x2="816" y2="238" stroke="var(--c-gpu)" stroke-width="2" marker-end="url(#ar2)"/>
   <text x="490" y="230" font-size="13" fill="var(--text)">④ 画像を送る: 現在 · サブゴール (· 過去 5 枚)</text>
-  <text x="490" y="256" font-size="12" fill="var(--muted)">HTTP POST /predict</text>
+  <text x="490" y="256" font-size="12" fill="var(--muted)">JPEG のまま. 2 回目からは名前だけ</text>
 
   <!-- 5 self on policy -->
   <rect x="680" y="252" width="250" height="40" rx="6" fill="var(--surface2)"/>
@@ -234,18 +234,18 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
   <!-- 8 -->
   <line x1="468" y1="410" x2="124" y2="410" stroke="var(--c-ros)" stroke-width="2" marker-end="url(#ar2)"/>
   <text x="140" y="402" font-size="13" fill="var(--text)">⑧ /cmd_vel (10Hz で最新を出し続ける)</text>
-  <text x="140" y="436" font-size="12" fill="var(--muted)">/omnivla/path · /omnivla/debug_image も出す</text>
+  <text x="140" y="436" font-size="12" fill="var(--muted)">/omnivla/path も出す. 画面を開いていればブラウザにも送る</text>
   <text x="140" y="452" font-size="12" fill="var(--muted)">推論が 1 秒以上来なければ 0 (停止)</text>
 </svg>
 </div>
-<p class="caption">③ で最後のサブゴールに着いたら停止。① 〜 ⑧ を 3Hz で繰り返す (⑧ の指示値だけは 10Hz で出し続ける)。</p>
+<p class="caption">③ で最後のサブゴールに着いたら停止。① 〜 ⑧ は新しいカメラ画像が来るたびに繰り返す (上限はカメラの周期と推論時間)。過去画像は学習データと同じ 3Hz ごとに積む。⑧ の指示値は 10Hz で出し続ける。</p>
 
 <!-- ============================================================ -->
 <h2 id="why">なぜ 2 つのコンテナに分けるか</h2>
 <ul class="tight">
   <li>ROS 1 Noetic は <strong>Ubuntu 20.04</strong> 用。Jetson で GPU が使える PyTorch は <strong>JetPack ごとに Ubuntu が決まる</strong> (JetPack 6 は 22.04, 5 は 20.04)。</li>
   <li>分けておけば、JetPack が決まっていなくても ROS 1 側はそのまま。推論コンテナのベースイメージだけを JetPack に合わせて選べばよい。</li>
-  <li>ROS 1 コンテナは PyTorch 無し (rospy · numpy · Pillow · PyYAML だけ) なので、既存の ROS 1 環境にも入れやすい。</li>
+  <li>ROS 1 コンテナは PyTorch 無し (C++ のノード. 起動時の設定の読み込みにだけ python3 を使う) なので、既存の ROS 1 環境にも入れやすい。</li>
 </ul>
 
 <div class="tablewrap">
@@ -264,7 +264,7 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
 <div class="tablewrap">
 <table>
   <tr><th>方式</th><th>形</th><th>追加で必要なもの</th><th>判断</th></tr>
-  <tr><td class="pick">HTTP</td><td>リクエスト / レスポンス</td><td>なし (Python 標準ライブラリ)</td><td>採用。<code>curl :8765/info</code> で生存確認できる</td></tr>
+  <tr><td class="pick">HTTP</td><td>リクエスト / レスポンス</td><td>なし (Python は標準ライブラリ、C++ は同梱のヘッダ)</td><td>採用。<code>curl :8765/info</code> で生存確認できる</td></tr>
   <tr><td>ZeroMQ</td><td>リクエスト / レスポンス</td><td>両コンテナに pyzmq</td><td>同じくらい妥当。少し軽い</td></tr>
   <tr><td>MQTT</td><td>配信 / 購読</td><td>ブローカー (mosquitto など)</td><td>結果を待つ使い方に合わない。プロセスが 1 つ増える</td></tr>
   <tr><td>gRPC</td><td>リクエスト / レスポンス</td><td>grpcio · protobuf</td><td>7B の依存 (protobuf&lt;5) とぶつかりやすい</td></tr>
@@ -272,10 +272,33 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
 </div>
 <ul class="tight">
   <li>同じ Jetson の中 (localhost) だけの通信。ロボットの他のノードとのやりとりは今まで通り ROS 1 のトピック。</li>
-  <li>画像は無圧縮で送るので、ノードの中で推論した場合と同じ結果になる (CI で確認)。</li>
-  <li>通信部分は <code>omnivla_real/remote.py</code> だけに閉じているので、他の方式に替えても残りは変わらない。</li>
+  <li>カメラの JPEG はデコードせずに送り、切り抜き・縮小は推論コンテナが学習時と同じ関数で行う。Python 版のノードと同じ結果になる (CI で確認)。</li>
+  <li>推論コンテナは送られた画像を覚えている。観測履歴とサブゴール画像は 2 回目から名前だけを送るので、1 回に送るのは新しい画像 1 枚。</li>
+  <li>通信部分は <code>omnivla_real/remote.py</code> (推論コンテナ) と <code>policy_client.cpp</code> (ROS 1 コンテナ) だけに閉じているので、他の方式に替えても残りは変わらない。</li>
 </ul>
-<div class="note">通信にかかる時間は Jetson ではまだ測っていない。画像 7 枚 (約 1.6MB) で数 ms の見込みで、7B の推論 (数百 ms 以上) に比べれば小さい。</div>
+<div class="note">Jetson ではまだ測っていない。開発環境で偽のモデルを使ったときは、通信と前処理を含めて 1 回 約 6 ms だった。</div>
+
+<!-- ============================================================ -->
+<h2 id="debug">デバッグ画面</h2>
+<p>ROS 1 コンテナ (C++ のノード) が小さな Web サーバを持っていて、ロボットと同じネットワークのブラウザから http://&lt;Jetson の IP&gt;:8080 で開ける。</p>
+<figure style="margin: 10px 0;">
+  <img src="debug_page.jpg" alt="デバッグ画面: いまの画像に予測した軌跡を重ねたもの、サブゴール画像、コースのサブゴールの並び、指示値、上から見た軌跡、類似度、指示値の履歴" style="width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line);">
+  <figcaption class="caption">合成したコースの画像で動かしたときの表示。</figcaption>
+</figure>
+<div class="tablewrap">
+<table>
+  <tr><th>表示</th><th>中身</th></tr>
+  <tr><td>いまの画像</td><td>モデルに入れた画像 (切り抜き・縮小の後) に、予測した 8 点の軌跡を重ねたもの</td></tr>
+  <tr><td>サブゴール</td><td>いま目指している画像と、そこまでの距離。下にコースのサブゴールが並ぶ</td></tr>
+  <tr><td>指示値</td><td>ロボットに出している v と ω、直近 60 秒の履歴</td></tr>
+  <tr><td>予測した軌跡</td><td>上から見た図 (0.5 m 方眼)</td></tr>
+  <tr><td>サブゴールの判定</td><td>画像の類似度と切り替えのしきい値、推論時間と回数</td></tr>
+</table>
+</div>
+<ul class="tight">
+  <li>停止ボタンか Esc キーで止まる。画面を開いている人がいないときは、画面用の画像を作らない。</li>
+  <li>画像に重ねる軌跡は <code>robot.yaml</code> の <code>camera</code> (画角・高さ・下向きの傾き) で計算する。実機に合わせると重なりが正しくなる。</li>
+</ul>
 
 <!-- ============================================================ -->
 <h2 id="files">ファイルとの対応</h2>
@@ -283,7 +306,7 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
 <table>
   <tr><th>部分</th><th>Docker</th><th>compose</th><th>主なコード</th></tr>
   <tr><td>推論コンテナ (Jetson)</td><td><code class="nw">docker/Dockerfile.jetson</code></td><td><code>policy</code></td><td><code>tools/policy_server.py</code> · <code>omnivla_real/remote.py</code> · <code>edge.py</code> · <code>policy.py</code></td></tr>
-  <tr><td>ROS 1 コンテナ</td><td><code class="nw">docker/Dockerfile.ros1</code></td><td><code>nav</code> (Jetson) · <code>ros1</code> (PC)</td><td><code>ros1/omnivla_real_ros1</code> · <code>omnivla_real/engine.py</code> · <code>topomap.py</code> · <code>controller.py</code></td></tr>
+  <tr><td>ROS 1 コンテナ</td><td><code class="nw">docker/Dockerfile.ros1</code></td><td><code>nav</code> (Jetson) · <code>ros1</code> (PC)</td><td><code>ros1/omnivla_real_ros1</code>: <code>src/navigator_node.cpp</code> · <code>src/core/</code> (走行の中身) · <code>web/index.html</code> (デバッグ画面)</td></tr>
   <tr><td>学習 PC</td><td><code class="nw">docker/Dockerfile</code></td><td><code>shell</code> · <code>train_7b</code> · <code>train_edge</code> · <code>policy</code></td><td><code>tools/</code> (変換・topomap・机上評価) · <code>training/</code></td></tr>
   <tr><td>設定</td><td colspan="3"><code>configs/robot.yaml</code> (トピック名・画像の前処理) · <code>configs/navigator.yaml</code> (モデル・制御・サブゴール) · <code>.env</code> (JetPack・重み・ROS master)</td></tr>
 </table>

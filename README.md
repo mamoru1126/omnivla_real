@@ -182,7 +182,7 @@ docker compose run --rm ros1 bash scripts/replay_bag_ros1.sh /bags/run2.bag /dat
 - 出力は `/runs/replay/<時刻>/` に出ます。
   - `out.bag`: ノードが出した `/cmd_vel` と `/omnivla/path`
   - `nav/`: 走行ログと `overview.png`
-- 走行中の画像は `rqt_image_view /omnivla/debug_image` で見られます。
+- 再生中はブラウザで http://localhost:8080 を開くと、デバッグ画面 (下の「デバッグ画面」) で様子を見られます。
 
 ## 8. Jetson AGX Orin で走らせる (ROS 1)
 
@@ -190,8 +190,8 @@ docker compose run --rm ros1 bash scripts/replay_bag_ros1.sh /bags/run2.bag /dat
 
 | コンテナ | 中身 | Dockerfile |
 |---|---|---|
-| `policy` | 推論サーバ。OmniVLA を GPU で動かす。ROS なし | `docker/Dockerfile.jetson` |
-| `nav` | ROS 1 Noetic のナビゲーションノード。PyTorch なし | `docker/Dockerfile.ros1` |
+| `policy` | 推論サーバ (Python)。OmniVLA を GPU で動かす。ROS なし | `docker/Dockerfile.jetson` |
+| `nav` | ROS 1 Noetic のナビゲーションノード (C++) とデバッグ画面。PyTorch なし | `docker/Dockerfile.ros1` |
 
 分けている理由: ROS 1 Noetic は Ubuntu 20.04 用ですが、Jetson で GPU を使える PyTorch は JetPack ごとに Ubuntu が決まっています (JetPack 6 は 22.04)。分けておけば、JetPack が決まっていなくても ROS 1 側はそのまま使えます。
 
@@ -223,17 +223,46 @@ docker compose -f docker-compose.jetson.yml --profile standalone up   # roscore 
 | 入力 | `/omnivla/topomap` | `std_msgs/String`。topomap を切り替えて開始 |
 | 出力 | `/cmd_vel` | `Twist` (`io.cmd_stamped: true` で `TwistStamped`) |
 | 出力 | `/omnivla/path` | `nav_msgs/Path`。予測軌跡 8 点 (`base_link` 座標) |
-| 出力 | `/omnivla/debug_image` | 予測軌跡を重ねた画像 |
 | 出力 | `/omnivla/status` | JSON。状態, サブゴール番号, 類似度, 推論時間 |
+| ブラウザ | http://&lt;Jetson の IP&gt;:8080 | デバッグ画面 |
 
 - 速度の上限は `navigator.yaml` の `engine.controller.track_max_v` / `track_max_w` で、ロボットに合わせます。
 - 推論結果が `io.cmd_timeout` 秒より古くなると 0 を出します。推論サーバが止まった場合も 0 になります。
 - 走行ログは `log/nav/<時刻>/` に保存されます。
   - `python3 tools/plot_nav_log.py log/nav/latest` で、図とレポートを作れます。
-- ROS 1 ノードは既存の ROS 1 環境に入れても動きます。必要なのは rospy, numpy, Pillow, PyYAML で、`ros1/omnivla_real_ros1` を catkin ワークスペースに置き、`OMNIVLA_REAL_ROOT` に本リポジトリを指定します。
+- ROS 1 ノードは既存の ROS 1 環境 (catkin ワークスペース) に入れても動きます。
+  - `ros1/omnivla_real_ros1` を置いて `catkin_make` します。C++ の依存は同梱のヘッダだけです。
+  - 起動時に設定を読むため、python3 と PyYAML / numpy / Pillow が要ります。`OMNIVLA_REAL_ROOT` に本リポジトリを指定します。
 - 推論サーバは別の PC (学習 PC など) で動かしても構いません。その場合はサーバを `--host 0.0.0.0` で起動し、`policy_url:=http://<IP>:8765` を指定します。
+- Python 版の ROS 1 ノードも残しています (`roslaunch ... impl:=py`)。デバッグ画面は C++ 版だけです。
 
 ROS 2 で使う場合は `ros2 launch omnivla_real_ros navigator.launch.py` で起動します (ROS 2 ノードも同梱)。
+
+### デバッグ画面
+
+走行中にブラウザで http://&lt;Jetson の IP&gt;:8080 を開きます (ロボットと同じネットワークの PC やタブレットから)。
+
+| 表示 | 中身 |
+|---|---|
+| いまの画像 | モデルに入れた画像 (切り抜き・縮小の後) に、予測した 8 点の軌跡を重ねたもの |
+| サブゴール | いま目指しているサブゴール画像と、そこまでの距離。下にコースのサブゴールが並び、今の位置が分かる |
+| 指示値 | ロボットに出している v と ω、直近 60 秒の履歴 |
+| 予測した軌跡 | 上から見た図 (0.5 m 方眼) |
+| サブゴールの判定 | 画像の類似度と切り替えのしきい値、推論時間と回数 |
+| 出来事 | サブゴールの切り替え、開始・停止 |
+
+- 画面の「停止」ボタンか Esc キーで止まります。「開始」は確認してから動き出します。
+- 画面を開いている人がいないときは、画面用の画像を作りません (走行の負荷は増えません)。
+- 認証はありません。ロボットの中のネットワークだけで使い、外から見せたくないときは `navigator.yaml` の `io.web_host: 127.0.0.1` にします。ポートは `io.web_port` (0 で無効) です。
+- 画面を閉じたり接続が切れたりしても、ノードは走り続けます。止めるときは停止ボタンかロボット側で止めます。
+
+### 軽くするためにしていること
+
+- ROS 1 ノードは C++ です。カメラの JPEG はデコードせずに、そのまま推論サーバとブラウザに渡します (メッセージのコピーもしません)。
+- 画像の切り抜き・縮小は推論サーバ側で、学習時と同じ関数で行います。
+- 推論サーバは送られた画像を覚えています。観測履歴とサブゴール画像は 2 回目から名前だけを送ります。
+- 推論は新しいカメラ画像が来たときだけです。指示値は 10Hz で最新の結果を出し続けます。
+- PyTorch で動かすモデル本体 (推論サーバ) は Python のままです。
 
 ## 設定ファイル
 
@@ -247,7 +276,7 @@ ROS 2 で使う場合は `ros2 launch omnivla_real_ros navigator.launch.py` で�
 ## テスト
 
 ```bash
-python3 -m pytest -q tests                 # 単体テスト + 本物の rosbag を書いて読む
+python3 -m pytest -q tests                 # 単体テスト + 本物の rosbag を書いて読む + C++ と Python の突き合わせ
 bash tests/e2e_cli.sh /tmp/e2e             # 合成した bag で 1〜6 を通しで実行
 ```
 
@@ -256,7 +285,8 @@ CI (GitHub Actions) では合成したコース走行の bag を使い、次を�
 - ROS 1 / ROS 2 sqlite3 / ROS 2 mcap の bag を読む
 - 変換 → edge の学習 (CPU で数 step) → topomap → 机上評価
 - 推論サーバ経由の推論が、プロセス内の推論と同じ結果になる
-- ROS 1: 推論サーバ + ROS 1 コンテナ (`docker/Dockerfile.ros1`) で bag を再生し、`/cmd_vel` と `/omnivla/path` が出る (`scripts/replay_bag_ros1.sh` も)
+- C++ のノードの中身 (制御・サブゴールの切り替え・走行全体) が Python の実装と同じ結果になる (`tests/test_cpp.py`)
+- ROS 1: 推論サーバ + ROS 1 コンテナ (`docker/Dockerfile.ros1`) で bag を再生し、`/cmd_vel` と `/omnivla/path` が出る。デバッグ画面に結果と画像が届く (C++ / Python 両方のノード、`scripts/replay_bag_ros1.sh` も)
 - ROS 2 ノードも同様
 - 学習用イメージのビルド、Jetson 用推論サーバの Dockerfile (x86 の PyTorch イメージを代わりのベースにして依存のインストールまで)
 

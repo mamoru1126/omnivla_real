@@ -356,6 +356,12 @@ def test_remote_policy_matches_local():
                 b = local.predict(img, goal_image=goal, goal_pose=(1.0, 0.5, 0.2), modality="image_pose")
                 assert np.array_equal(a.waypoints, b.waypoints) and np.array_equal(a.normalized, b.normalized)
                 assert a.distance == b.distance and np.allclose(a.goal_pose_input, b.goal_pose_input)
+        # 画像は 1 度だけ送る: 過去画像・サブゴール画像は 2 回目からは key だけ
+        assert remote.protocol == 2 and remote.bytes_sent < 9 * 64 * 48 * 3 * 2
+        server._images.clear()                                  # サーバ再起動相当 -> 409 -> 送り直し
+        a = remote.predict(frames[-1], goal_image=goal)
+        b = local.predict(frames[-1], goal_image=goal)
+        assert np.array_equal(a.waypoints, b.waypoints)
         assert np.allclose(remote.embed(goal, cache_key="g"), simple_embedding(goal), atol=1e-6)
         assert "g" in remote._emb_cache
         try:
@@ -383,6 +389,54 @@ def test_remote_policy_matches_local():
         raise AssertionError("should fail")
     except ConnectionError:
         pass
+
+
+def test_remote_server_preprocess_and_keys():
+    """C++ ノードの送り方: カメラの JPEG / raw をそのまま送り、サーバが robot.yaml の前処理をかける."""
+    import http.client
+    from fake_policy import FakeEdgePolicy
+    from omnivla_real.remote import PolicyServer, pack, unpack
+    cfg = ImageConfig(crop=[0.1, 0.2, 0.05, 0.05], width=48)
+    server = PolicyServer(FakeEdgePolicy(context_size=2), "fake", "127.0.0.1", 0, log=lambda s: None, image_cfg=cfg)
+    server.start_background()
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", server.address[1], timeout=5)
+
+        def post(path, header, arrays):
+            conn.request("POST", path, pack(header, arrays))
+            r = conn.getresponse()
+            return r.status, unpack(r.read())
+
+        cam_a, cam_b = render(1, 0, 0.3, (96, 72)), render(1.5, 0.2, -0.2, (96, 72))
+        jpg = jpeg_bytes(cam_a)
+        bgr = np.asarray(cam_b)[..., ::-1].copy()
+        goal = preprocess_image(render(3, 0, 0, (96, 72)), cfg)       # topomap の画像は前処理済み
+        st, (h, arr) = post("/predict", {
+            "images": [{"key": "f1", "array": 0, "kind": "encoded"},
+                       {"key": "f2", "array": 1, "kind": "raw", "encoding": "bgr8", "width": 96, "height": 72,
+                        "step": 96 * 3},
+                       {"key": "g0", "array": 2}],
+            "current": 0, "goal": 2, "observations": [1, 1, 0], "want_preview": True},
+            [np.frombuffer(jpg.tobytes(), np.uint8), bgr.reshape(-1), np.asarray(goal)])
+        assert st == 200, h
+        local = FakeEdgePolicy(context_size=2)
+        cur = preprocess_image(Image.open(io.BytesIO(jpg.tobytes())), cfg)
+        prev = preprocess_image(cam_b, cfg)
+        exp = local.predict(cur, goal_image=goal, observations=[prev, prev, cur])
+        assert np.array_equal(arr[0], exp.waypoints)
+        prev_img = Image.open(io.BytesIO(arr[h["preview"]].tobytes()))
+        assert prev_img.size == cur.size == tuple(h["preview_size"])
+        # 2 回目からは key だけ (中身を送らない)
+        st, (h2, arr2) = post("/predict", {"images": [{"key": "f1"}, {"key": "g0"}, {"key": "f2"}],
+                                           "current": 0, "goal": 1, "observations": [2, 2, 0]}, [])
+        assert st == 200 and np.array_equal(arr2[0], exp.waypoints)
+        st, (h3, _) = post("/predict", {"images": [{"key": "nope"}], "current": 0}, [])
+        assert st == 409 and h3["missing"] == ["nope"]
+        st, (h4, emb) = post("/embed", {"images": [{"key": "g0"}], "image": 0}, [])
+        assert st == 200 and np.allclose(emb[0], simple_embedding(goal), atol=1e-6)
+        conn.close()
+    finally:
+        server.shutdown()
 
 
 def test_engine_and_runner():

@@ -6,3 +6,4 @@ checkpoints/
 *.pyc
 __pycache__/
 .env
+tests/.build_cpp/

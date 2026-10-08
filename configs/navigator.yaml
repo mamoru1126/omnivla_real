@@ -51,4 +51,6 @@ io:
   cmd_timeout: 1.0             # 推論結果がこれより古くなったら止める [s]
   max_inference_rate: 0.0      # 推論の上限 [Hz] (0 = 新しい画像が来るたび. カメラの周期が上限)
   log_dir: /workspace/log/nav
-  log_images: true
+  log_images: true             # 推論に使った画像も保存する (log_dir/<時刻>/raw)
+  web_port: 8080               # ブラウザのデバッグ画面 http://<Jetson の IP>:8080 (C++ ノード). 0 で無効
+  web_host: 0.0.0.0            # 127.0.0.1 にするとロボットの中からだけ見られる

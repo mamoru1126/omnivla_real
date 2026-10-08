@@ -81,11 +81,13 @@ def _pose(entry) -> Optional[Pose]:
     return float(vals[0]), float(vals[1]), float(vals[2]) if len(vals) > 2 else 0.0
 
 
-def load_topomap(path: str) -> Topomap:
-    """ディレクトリ (topomap) か画像 1 枚 (ゴール 1 つ) を読む."""
+def topomap_index(path: str) -> dict:
+    """topomap の中身の一覧 (画像は読まない). C++ ノードの設定 (tools/nav_config_json.py) にも使う.
+    {"directory", "frame", "start": (x,y,yaw)|None, "meta", "nodes": [{"path", "pose": (x,y,yaw)|None, "s"}]}"""
     path = os.path.abspath(os.path.expanduser(path))
     if os.path.isfile(path):
-        return Topomap([GoalNode(Image.open(path).convert("RGB"), None, None, path)], directory=os.path.dirname(path))
+        return {"directory": os.path.dirname(path), "frame": "odom", "start": None, "meta": {},
+                "nodes": [{"path": path, "pose": None, "s": None}]}
     if not os.path.isdir(path):
         raise FileNotFoundError(f"topomap not found: {path}")
     info: Dict[str, dict] = {}
@@ -116,10 +118,17 @@ def load_topomap(path: str) -> Topomap:
     nodes = []
     for p in images:
         it = info.get(os.path.basename(p), {})
-        nodes.append(GoalNode(Image.open(p).convert("RGB"), _pose(it), it.get("s"), p))
-    if start is None and nodes and nodes[0].pose is not None:
-        start = nodes[0].pose
-    return Topomap(nodes, frame, start, meta, path)
+        nodes.append({"path": p, "pose": _pose(it), "s": it.get("s")})
+    if start is None and nodes and nodes[0]["pose"] is not None:
+        start = nodes[0]["pose"]
+    return {"directory": path, "frame": frame, "start": start, "meta": meta, "nodes": nodes}
+
+
+def load_topomap(path: str) -> Topomap:
+    """ディレクトリ (topomap) か画像 1 枚 (ゴール 1 つ) を読む."""
+    idx = topomap_index(path)
+    nodes = [GoalNode(Image.open(n["path"]).convert("RGB"), n["pose"], n["s"], n["path"]) for n in idx["nodes"]]
+    return Topomap(nodes, idx["frame"], idx["start"], idx["meta"], idx["directory"])
 
 
 def write_topomap(out_dir: str, images: Sequence[Image.Image], poses: Sequence[Optional[Pose]],

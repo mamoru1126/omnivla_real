@@ -31,7 +31,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p ci
-          python -m pytest -q tests/test_core.py tests/test_bags.py 2>&1 | tee ci/pytest.log
+          python -m pytest -q tests/test_core.py tests/test_bags.py tests/test_cpp.py 2>&1 | tee ci/pytest.log
       - name: End-to-end (bags -> dataset -> train edge -> topomap -> desk eval)
         run: |
           set -o pipefail
@@ -145,11 +145,18 @@ jobs:
           nohup python tools/policy_server.py --model edge --weights "$CKPT" --device cpu --port 8765 > ci/policy_server.log 2>&1 &
           for i in $(seq 120); do curl -sf http://127.0.0.1:8765/info > /dev/null && break; sleep 1; done
           curl -sf http://127.0.0.1:8765/info; echo
-      - name: Node test (rosbag play -> /cmd_vel, /omnivla/path)
+      - name: C++ node test (rosbag play -> /cmd_vel, /omnivla/path, debug page)
         run: |
           set -o pipefail
           docker run --rm --network host -v "$PWD":/workspace -v /tmp/e2e:/tmp/e2e -e POLICY_URL=http://127.0.0.1:8765 \
             omnivla_real:ros1 bash tests/ros_node_test.sh ros1 /tmp/e2e 2>&1 | tee ci/ros1_node.log
+      - name: Python node test (same, NODE_IMPL=py)
+        run: |
+          set -o pipefail
+          sudo mv /tmp/e2e/ros1_node /tmp/e2e/ros1_node_cpp
+          docker run --rm --network host -v "$PWD":/workspace -v /tmp/e2e:/tmp/e2e -e POLICY_URL=http://127.0.0.1:8765 \
+            -e NODE_IMPL=py omnivla_real:ros1 bash tests/ros_node_test.sh ros1 /tmp/e2e 2>&1 | tee ci/ros1_node_py.log
+          sudo mv /tmp/e2e/ros1_node /tmp/e2e/ros1_node_py && sudo mv /tmp/e2e/ros1_node_cpp /tmp/e2e/ros1_node
       - name: Analyze the navigation log (tools/plot_nav_log.py)
         run: |
           set -o pipefail
@@ -169,11 +176,12 @@ jobs:
           D=/tmp/cilog; rm -rf $D; mkdir -p $D
           cp ci/*.log $D/ 2>/dev/null || true
           sudo cp -r /tmp/e2e/ros1_node $D/ 2>/dev/null || true
+          sudo cp -r /tmp/e2e/ros1_node_py $D/ 2>/dev/null || true
           sudo mkdir -p $D/replay && sudo cp /tmp/e2e/replay/*.log $D/replay/ 2>/dev/null || true
           sudo find /tmp/e2e/replay/nav -maxdepth 2 \( -name "*.png" -o -name "*.txt" -o -name "*.json" -o -name "*.csv" \) -exec cp {} $D/replay/ \; 2>/dev/null || true
           sudo chown -R $(id -u) $D
           find $D -name "*.jpg" -size +200k -delete
-          rm -rf $D/ros1_node/nav/*/raw
+          rm -rf $D/ros1_node/nav/*/raw $D/ros1_node_py/nav/*/raw
           echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
           cd $D && git init -q && git add . \
             && git -c user.name=ci -c user.email=ci@example.com commit -qm "ros1 ${{ github.run_id }}" \
