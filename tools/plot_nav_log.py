@@ -1,0 +1,290 @@
+#!/usr/bin/env python3
+"""navigator の走行ログ (<log_dir>/<時刻>/) を解析して図とレポートを作る (GPU・ROS 不要).
+
+  python3 tools/plot_nav_log.py log/nav/20261005_184500
+  python3 tools/plot_nav_log.py log/nav/latest           # 一番新しい走行
+
+出力 (ログディレクトリ内):
+  overview.png   サブゴール (topomap の poses.yaml. 番号と向き) + 走行軌跡 + 予測軌跡 (左旋回=青 / 右旋回=赤)
+                 位置は topomap の座標 (自己位置があれば map, 無ければスタートを合わせたオドメトリ)
+  timeline.png   時間ごとの「サブゴールの方向」「予測軌跡の方向」「旋回指令 w」「サブゴール番号」
+  report.txt     サブゴールごとの区間, 予測がサブゴールと逆を向いたステップ, 指令が予測と逆のステップ,
+                 予測した旋回を実行できていない区間 (モデルは曲がろうとしているのに指令 w が小さい)
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import glob
+import json
+import math
+import os
+import sys
+
+import numpy as np
+import yaml
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, REPO)
+
+import matplotlib  # noqa: E402
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+
+from omnivla_real.controller import ControllerConfig, trajectory_command  # noqa: E402
+from omnivla_real.geometry import to_world  # noqa: E402
+
+OPPOSITE_MIN_DEG = 15.0   # これより大きく横にあるサブゴールだけ「逆向き」を判定
+UNDER_TURN_MIN_W = 0.15   # 予測の旋回がこれ [rad/s] 以上のときだけ「実行できていない」を判定
+UNDER_TURN_RATIO = 0.5    # 実行した w が予測の旋回のこの割合未満なら「実行できていない」
+
+
+def resolve_run_dir(path: str) -> str:
+    path = os.path.abspath(path)
+    if os.path.basename(path) == "latest":
+        runs = sorted(d for d in glob.glob(os.path.join(os.path.dirname(path), "*"))
+                      if os.path.isfile(os.path.join(d, "steps.csv")))
+        if not runs:
+            raise SystemExit(f"no runs in {os.path.dirname(path)}")
+        return runs[-1]
+    if not os.path.isfile(os.path.join(path, "steps.csv")):
+        raise SystemExit(f"{path} has no steps.csv")
+    return path
+
+
+def _value(v):
+    if v in ("", None):
+        return math.nan
+    try:
+        return float(v)
+    except ValueError:
+        return v
+
+
+def load_steps(run_dir: str):
+    with open(os.path.join(run_dir, "steps.csv")) as f:
+        return [{k: _value(v) for k, v in r.items()} for r in csv.DictReader(f)]
+
+
+def waypoints_of(r) -> np.ndarray:
+    return np.array([[r[f"wp{i}_x"], r[f"wp{i}_y"]] for i in range(8)])
+
+
+def predicted_turn_rate(r) -> float:
+    """予測 8 点 (位置と向き) が表す旋回の速さ [rad/s] (= trajectory 制御が出す w, 上限なし)."""
+    wps = np.array([[r[f"wp{i}_x"], r[f"wp{i}_y"], math.cos(math.radians(r[f"wp{i}_yaw_deg"])),
+                     math.sin(math.radians(r[f"wp{i}_yaw_deg"]))] for i in range(8)])
+    if not np.isfinite(wps).all():
+        return math.nan
+    return trajectory_command(wps, ControllerConfig(mode="trajectory", track_max_v=1e9, track_max_w=1e9))[1]
+
+
+def under_turn_segments(rows):
+    """モデルが曲がる予測をしているのに、実行した w がその半分未満 (または逆向き) の連続区間."""
+    segs, cur = [], []
+    for r in rows:
+        wp = r["pred_w"]
+        bad = (not math.isnan(wp) and abs(wp) >= UNDER_TURN_MIN_W
+               and (sign(r["w"]) != sign(wp) or abs(r["w"]) < UNDER_TURN_RATIO * abs(wp)))
+        if bad:
+            cur.append(r)
+        elif cur:
+            segs.append(cur)
+            cur = []
+    if cur:
+        segs.append(cur)
+    return segs
+
+
+def circular_mean_deg(a) -> float:
+    a = np.radians(np.asarray(a, dtype=np.float64))
+    return float(np.degrees(np.arctan2(np.nanmean(np.sin(a)), np.nanmean(np.cos(a)))))
+
+
+def sign(x: float, eps: float = 1e-6) -> int:
+    return 0 if abs(x) < eps else (1 if x > 0 else -1)
+
+
+def analyze(rows, meta):
+    """逆向きの予測・指令を検出する."""
+    pred_opposite, cmd_opposite = [], []
+    for r in rows:
+        gb, pb, w = r["goal_bearing_deg"], r["pred_bearing_deg"], r["w"]
+        if not math.isnan(gb) and abs(gb) > OPPOSITE_MIN_DEG and sign(pb) == -sign(gb) and abs(pb) > 3:
+            pred_opposite.append(r)
+        if abs(w) > 1e-3 and abs(pb) > 3 and sign(w) == -sign(pb):
+            cmd_opposite.append(r)
+    return pred_opposite, cmd_opposite
+
+
+def write_report(run_dir, rows, meta, summary, pred_opp, cmd_opp) -> str:
+    lines = []
+    lines.append(f"run: {run_dir}")
+    eng = meta.get("engine", {})
+    ctrl = (eng.get("controller") or {}).get("mode")
+    lines.append(f"topomap: {meta.get('topomap')} ({meta.get('num_nodes')} subgoals)  modality: {eng.get('modality')}  "
+                 f"controller: {ctrl}  reach_check: {(eng.get('tracker') or {}).get('reach_check')}")
+    lines.append(f"model: {meta.get('model')}")
+    if ctrl == "upstream":
+        lines.append("WARNING: controller=upstream (公式の式) は予測した向きを使わないので、モデルが「その場で曲がる」"
+                     "予測をしても曲がりません。navigator.yaml の engine.controller.mode: trajectory を確認してください")
+    if summary:
+        lines.append("summary: " + ", ".join(f"{k}={summary[k]}" for k in
+                                              ("reason", "reached", "steps", "final_dist_to_goal",
+                                               "min_dist_to_goal", "path_length_m", "subgoal_index")
+                                              if k in summary))
+    lines.append("")
+    lines.append("== サブゴールごとの区間 ==")
+    seg = {}
+    for r in rows:
+        seg.setdefault(int(r["subgoal"]), []).append(r)
+    for k, rs in sorted(seg.items()):
+        lines.append(f"subgoal {k:2d}: steps {int(rs[0]['step'])}-{int(rs[-1]['step'])} ({len(rs)} steps)  "
+                     f"goal_bearing {rs[0]['goal_bearing_deg']:+.0f} -> {rs[-1]['goal_bearing_deg']:+.0f} deg  "
+                     f"dist {rs[0]['dist']:.2f} -> {rs[-1]['dist']:.2f} m")
+    lines.append("")
+    lines.append(f"== 予測軌跡がサブゴールと逆側を向いたステップ ({len(pred_opp)}/{len(rows)}) ==")
+    lines.append("   (サブゴールが |bearing|>15deg の横にあるのに, 予測の 5 点目が反対側) -> モデル側の問題")
+    for r in pred_opp[:40]:
+        lines.append(f"step {int(r['step']):4d} subgoal {int(r['subgoal']):2d}  goal {r['goal_bearing_deg']:+6.0f}deg  "
+                     f"pred {r['pred_bearing_deg']:+6.0f}deg  v={r['v']:.2f} w={r['w']:+.2f}")
+    lines.append("")
+    lines.append(f"== 旋回指令が予測軌跡と逆のステップ ({len(cmd_opp)}/{len(rows)}) ==")
+    lines.append("   -> 制御 (軌跡 -> v, w の変換) 側の問題。0 であるべき")
+    for r in cmd_opp[:40]:
+        lines.append(f"step {int(r['step']):4d}  pred {r['pred_bearing_deg']:+6.0f}deg  w={r['w']:+.2f}")
+    segs = under_turn_segments(rows)
+    n_bad = sum(len(s) for s in segs)
+    lines.append("")
+    lines.append(f"== 予測した旋回を実行できていない区間 ({n_bad}/{len(rows)} steps) ==")
+    lines.append(f"   (予測 8 点が |w|>={UNDER_TURN_MIN_W}rad/s の旋回を表すのに, 指令 w がその {UNDER_TURN_RATIO:.0%} 未満)"
+                 " -> 制御側の問題。0 に近いべき")
+    for s in segs:
+        if len(s) < 3:
+            continue
+        dur = s[-1]["sim_time"] - s[0]["sim_time"]
+        lines.append(f"steps {int(s[0]['step']):4d}-{int(s[-1]['step']):4d} ({dur:5.1f}s) subgoal {int(s[0]['subgoal']):2d}  "
+                     f"goal {circular_mean_deg([r['goal_bearing_deg'] for r in s]):+5.0f}deg  "
+                     f"predicted w={np.mean([r['pred_w'] for r in s]):+.2f}  executed w={np.mean([r['w'] for r in s]):+.2f}  "
+                     f"v={np.mean([r['v'] for r in s]):.2f}")
+    text = "\n".join(lines) + "\n"
+    with open(os.path.join(run_dir, "report.txt"), "w") as f:
+        f.write(text)
+    return text
+
+
+def topomap_nodes(path: str):
+    """topomap の poses.yaml -> [{"index", "pose"}] (位置の無い topomap なら空)."""
+    pf = os.path.join(path or "", "poses.yaml")
+    if not path or not os.path.exists(pf):
+        return []
+    with open(pf) as f:
+        data = yaml.safe_load(f) or {}
+    out = []
+    for i, n in enumerate(data.get("nodes", [])):
+        if n.get("x") is not None:
+            out.append({"index": i, "pose": (float(n["x"]), float(n["y"]), float(n.get("yaw", 0.0)))})
+    return out
+
+
+def plot_overview(run_dir, rows, meta, nodes, every: int):
+    fig, ax = plt.subplots(figsize=(12, 9), dpi=110)
+    pts = [(r["x"], r["y"]) for r in rows if not math.isnan(r["x"])]
+    # subgoals
+    for n in nodes:
+        x, y, yaw = n["pose"]
+        ax.plot(x, y, "s", color="#b7791f", ms=7)
+        ax.arrow(x, y, 0.45 * math.cos(yaw), 0.45 * math.sin(yaw), head_width=0.12, color="#b7791f", lw=1.2)
+        ax.annotate(str(n["index"]), (x, y), textcoords="offset points", xytext=(5, 5), fontsize=9,
+                    color="#8a5a12", weight="bold")
+    # predicted trajectories
+    for r in rows[::max(1, every)]:
+        if math.isnan(r["x"]):
+            continue
+        wp = to_world(waypoints_of(r), (r["x"], r["y"]), r["yaw"])
+        color = "#2f6fdb" if r["w"] > 0.02 else ("#d0302f" if r["w"] < -0.02 else "#777777")
+        ax.plot(np.r_[r["x"], wp[:, 0]], np.r_[r["y"], wp[:, 1]], "-", color=color, lw=0.9, alpha=0.75)
+    # robot path
+    if pts:
+        p = np.array(pts)
+        sc = ax.scatter(p[:, 0], p[:, 1], c=np.arange(len(p)), cmap="viridis", s=9, zorder=5)
+        fig.colorbar(sc, ax=ax, fraction=0.03, label="step")
+        ax.plot(p[0, 0], p[0, 1], "o", color="green", ms=10, label="start", zorder=6)
+        ax.plot(p[-1, 0], p[-1, 1], "X", color="black", ms=11, label="end", zorder=6)
+        allx = np.r_[p[:, 0], [n["pose"][0] for n in nodes]]
+        ally = np.r_[p[:, 1], [n["pose"][1] for n in nodes]]
+        m = 1.5
+        ax.set_xlim(allx.min() - m, allx.max() + m)
+        ax.set_ylim(ally.min() - m, ally.max() + m)
+    ax.plot([], [], "-", color="#2f6fdb", label="predicted (w>0, left)")
+    ax.plot([], [], "-", color="#d0302f", label="predicted (w<0, right)")
+    ax.plot([], [], "s", color="#b7791f", label="subgoal (pose, heading)")
+    ax.set_aspect("equal")
+    ax.legend(loc="best", fontsize=8)
+    ax.set_title(f"{os.path.basename(run_dir)}  topomap={os.path.basename(str(meta.get('topomap') or '?'))}  "
+                 f"modality={(meta.get('engine') or {}).get('modality')}")
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
+    fig.tight_layout()
+    out = os.path.join(run_dir, "overview.png")
+    fig.savefig(out)
+    plt.close(fig)
+    return out
+
+
+def plot_timeline(run_dir, rows):
+    t = np.array([r["step"] for r in rows])
+    fig, axs = plt.subplots(3, 1, figsize=(12, 8), dpi=110, sharex=True)
+    axs[0].plot(t, [r["goal_bearing_deg"] for r in rows], label="subgoal bearing", color="#b7791f")
+    axs[0].plot(t, [r["pred_bearing_deg"] for r in rows], label="predicted (wp5) bearing", color="#2f6fdb")
+    axs[0].plot(t, [r.get("wp7_yaw_deg", math.nan) for r in rows], label="predicted heading after 2.7s (wp8 yaw)",
+                color="#2f6fdb", ls=":", lw=1.2)
+    axs[0].axhline(0, color="#999", lw=0.8)
+    axs[0].set_ylabel("deg (+ = left)")
+    axs[0].legend(fontsize=8)
+    axs[1].plot(t, [r["w"] for r in rows], label="w [rad/s] (command)", color="#d0602f")
+    axs[1].plot(t, [r["pred_w"] for r in rows], label="predicted turn rate [rad/s]", color="#d0602f", ls=":", lw=1.2)
+    axs[1].plot(t, [r["v"] for r in rows], label="v [m/s]", color="#2e8b57")
+    axs[1].axhline(0, color="#999", lw=0.8)
+    axs[1].legend(fontsize=8)
+    axs[2].step(t, [r["subgoal"] for r in rows], where="post", color="#7a4fd0", label="subgoal index")
+    axs[2].plot(t, [r["dist"] for r in rows], color="#555", label="dist to subgoal [m]")
+    if any(not math.isnan(r.get("similarity", math.nan)) for r in rows):
+        axs[2].plot(t, [r.get("similarity", math.nan) for r in rows], color="#2e8b57", label="image similarity")
+    axs[2].legend(fontsize=8)
+    axs[2].set_xlabel("step")
+    fig.tight_layout()
+    out = os.path.join(run_dir, "timeline.png")
+    fig.savefig(out)
+    plt.close(fig)
+    return out
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("run_dir")
+    ap.add_argument("--topomap", default="", help="サブゴールの位置を読む topomap (既定: meta.json の topomap)")
+    ap.add_argument("--every", type=int, default=3, help="予測軌跡を何ステップごとに描くか")
+    args = ap.parse_args(argv)
+    run_dir = resolve_run_dir(args.run_dir)
+    with open(os.path.join(run_dir, "meta.json")) as f:
+        meta = json.load(f)
+    summary = {}
+    if os.path.exists(os.path.join(run_dir, "summary.json")):
+        with open(os.path.join(run_dir, "summary.json")) as f:
+            summary = json.load(f)
+    rows = load_steps(run_dir)
+    if not rows:
+        raise SystemExit("steps.csv is empty (navigator が推論する前に終了した)")
+    nodes = topomap_nodes(args.topomap or meta.get("topomap") or "")
+    for r in rows:
+        r["pred_w"] = predicted_turn_rate(r)
+    pred_opp, cmd_opp = analyze(rows, meta)
+    print(write_report(run_dir, rows, meta, summary, pred_opp, cmd_opp))
+    print("->", plot_overview(run_dir, rows, meta, nodes, args.every))
+    print("->", plot_timeline(run_dir, rows))
+
+
+if __name__ == "__main__":
+    main()

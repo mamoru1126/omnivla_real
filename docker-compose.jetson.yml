@@ -1,0 +1,47 @@
+# 実機ナビゲーション用 (Jetson AGX Orin, JetPack 6)
+#   docker compose -f docker-compose.jetson.yml build
+#   TOPOMAP=/data/topomaps/course_a docker compose -f docker-compose.jetson.yml run --rm nav
+x-omnivla: &omnivla
+  image: omnivla_real:jetson
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.jetson
+  runtime: nvidia
+  network_mode: host
+  ipc: host
+  environment:
+    NVIDIA_VISIBLE_DEVICES: all
+    NVIDIA_DRIVER_CAPABILITIES: all
+    ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
+    RMW_IMPLEMENTATION: ${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
+    TOPOMAP: ${TOPOMAP:-}
+    NAV_MODEL: ${NAV_MODEL:-}
+    NAV_WEIGHTS: ${NAV_WEIGHTS:-}
+    FINETUNED_DIR: ${FINETUNED_DIR:-}
+  volumes:
+    - ./:/workspace
+    - ${CHECKPOINT_DIR:-./checkpoints}:/checkpoints
+    - ${DATA_DIR:-./data}:/data
+    - ${RUNS_DIR:-./runs}:/runs
+    - model-cache:/root/.cache
+  working_dir: /workspace
+  stdin_open: true
+  tty: true
+
+services:
+  shell:
+    <<: *omnivla
+    command: bash
+  nav:
+    <<: *omnivla
+    # 空の引数 (name:=) は ros2 launch が受け付けないので bash で組み立てる
+    command:
+      - bash
+      - -c
+      - >-
+        exec ros2 launch omnivla_real_ros navigator.launch.py
+        $${TOPOMAP:+topomap:=$$TOPOMAP} $${NAV_MODEL:+model:=$$NAV_MODEL}
+        $${NAV_WEIGHTS:+weights:=$$NAV_WEIGHTS} $${FINETUNED_DIR:+finetuned_dir:=$$FINETUNED_DIR}
+
+volumes:
+  model-cache:

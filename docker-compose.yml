@@ -1,0 +1,51 @@
+# 学習・変換・机上評価用 (x86_64 + NVIDIA GPU). 実機 (Jetson) は docker-compose.jetson.yml
+#   docker compose build
+#   docker compose run --rm shell bash scripts/download_checkpoints.sh
+#   docker compose run --rm shell python3 tools/bag_to_dataset.py --out /data/dataset /bags/run1
+#   docker compose run --rm train_edge          # or train_7b
+# 変数は .env (cp .env.example .env)
+x-omnivla: &omnivla
+  image: omnivla_real:latest
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+  network_mode: host
+  ipc: host
+  environment:
+    NVIDIA_VISIBLE_DEVICES: all
+    NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
+    HF_HOME: /root/.cache/huggingface
+    DISPLAY: ${DISPLAY:-:0}
+  volumes:
+    - ./:/workspace
+    - ${CHECKPOINT_DIR:-./checkpoints}:/checkpoints
+    - ${DATA_DIR:-./data}:/data
+    - ${BAG_DIR:-./bags}:/bags
+    - ${RUNS_DIR:-./runs}:/runs
+    - model-cache:/root/.cache
+    - /tmp/.X11-unix:/tmp/.X11-unix:rw
+  working_dir: /workspace
+  stdin_open: true
+  tty: true
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+services:
+  shell:
+    <<: *omnivla
+    command: bash
+  train_edge:
+    <<: *omnivla
+    command: python3 training/finetune_edge.py --config ${EDGE_CONFIG:-configs/finetune_edge.yaml}
+  train_7b:
+    <<: *omnivla
+    command: python3 training/finetune_omnivla.py --config ${TRAIN_7B_CONFIG:-configs/finetune_7b.yaml}
+
+volumes:
+  model-cache:

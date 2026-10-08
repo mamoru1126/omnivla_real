@@ -1,0 +1,46 @@
+# syntax=docker/dockerfile:1
+# =============================================================================
+# 実機ナビゲーション用 (Jetson AGX Orin, JetPack 6 / L4T r36)
+#   ベース: dustynv/l4t-pytorch (Ubuntu 22.04, Python 3.10, CUDA 対応 PyTorch 同梱)
+#   + ROS 2 Humble (ros-base) + OmniVLA (最小限の依存) + OmniVLA-edge
+#   JetPack のバージョンが違う場合は BASE_IMAGE を合わせる (例 dustynv/l4t-pytorch:r36.2.0)
+# =============================================================================
+ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
+FROM ${BASE_IMAGE}
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    TOKENIZERS_PARALLELISM=false OMNIVLA_ROOT=/opt/OmniVLA OMNIVLA_REAL_ROOT=/workspace \
+    PYTHONPATH=/workspace:/opt/OmniVLA \
+    PIP_INDEX_URL=https://pypi.org/simple PIP_EXTRA_INDEX_URL= PIP_TRUSTED_HOST=
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# ---- ROS 2 Humble (ros-base) ----
+RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg lsb-release ca-certificates git \
+    && curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
+        > /etc/apt/sources.list.d/ros2.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        ros-humble-ros-base python3-colcon-common-extensions ros-humble-rosbag2-storage-mcap \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- Python 依存 (ベースの torch / torchvision / numpy は置き換えない) ----
+COPY docker/requirements.txt docker/install_omnivla.sh /tmp/
+RUN python3 -c "import torch, torchvision; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())" \
+    && python3 -m pip freeze | grep -iE '^(torch|torchvision|torchaudio|numpy)==' > /tmp/keep.txt; cat /tmp/keep.txt \
+    && grep -v -E '^(pytest)' /tmp/requirements.txt > /tmp/req.txt \
+    && python3 -m pip install -c /tmp/keep.txt -r /tmp/req.txt \
+    && bash /tmp/install_omnivla.sh
+
+COPY . /workspace
+WORKDIR /workspace
+RUN source /opt/ros/humble/setup.bash && mkdir -p /opt/omnivla_ws \
+    && colcon --log-base /opt/omnivla_ws/log build --symlink-install --base-paths /workspace/ros2 \
+        --build-base /opt/omnivla_ws/build --install-base /opt/omnivla_ws/install
+RUN python3 -c "import torch, transformers, peft, clip, efficientnet_pytorch; import omnivla_real.edge, omnivla_real.policy; \
+print('torch', torch.__version__, 'transformers', transformers.__version__)"
+
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

@@ -1,0 +1,154 @@
+name: tests
+
+# 合成した rosbag (ROS1 .bag / ROS2 sqlite3 / ROS2 mcap) で、変換 → 学習 (edge, CPU 数 step) → topomap →
+# 机上評価 → ROS 1 / ROS 2 ノード (bag 再生で /cmd_vel と /omnivla/path が出るか) まで通しで確認する。
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  TORCH_INDEX: https://download.pytorch.org/whl/cpu
+
+jobs:
+  core:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install (CPU)
+        run: |
+          pip install torch==2.2.2 torchvision==0.17.2 --index-url $TORCH_INDEX
+          pip install "numpy<2" pillow pyyaml matplotlib scipy pytest "rosbags>=0.10.4,<0.11" efficientnet_pytorch==0.7.1
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          mkdir -p ci
+          python -m pytest -q tests/test_core.py tests/test_bags.py 2>&1 | tee ci/pytest.log
+      - name: End-to-end (bags -> dataset -> train edge -> topomap -> desk eval)
+        run: |
+          set -o pipefail
+          bash tests/e2e_cli.sh "$RUNNER_TEMP/e2e" 2>&1 | tee ci/e2e.log
+      - name: Keep inputs for the ROS node tests
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e
+          retention-days: 3
+          path: |
+            ${{ runner.temp }}/e2e/bags
+            ${{ runner.temp }}/e2e/topomap
+            ${{ runner.temp }}/e2e/runs/edge_ci/checkpoints
+      - name: Publish logs and reports to ci-logs-core branch
+        if: always()
+        run: |
+          E=$RUNNER_TEMP/e2e
+          D=/tmp/cilog; rm -rf $D; mkdir -p $D
+          cp ci/*.log $D/ 2>/dev/null || true
+          for d in check_odometry desk_eval_oracle desk_eval_oracle_loc desk_eval_edge topomap topomap_loc inspect; do
+            [ -d $E/$d ] || continue
+            mkdir -p $D/$d
+            find $E/$d -maxdepth 1 \( -name "*.txt" -o -name "*.json" -o -name "*.png" -o -name "*.yaml" \) -exec cp {} $D/$d/ \;
+          done
+          [ -d $E/desk_eval_edge/debug ] && mkdir -p $D/desk_eval_edge/debug && cp $E/desk_eval_edge/debug/*.jpg $D/desk_eval_edge/debug/ 2>/dev/null || true
+          cp $E/dataset/dataset_info.json $D/ 2>/dev/null || true
+          cp -r $E/dataset/_reports $D/convert_reports 2>/dev/null || true
+          echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
+          cd $D && git init -q && git add . \
+            && git -c user.name=ci -c user.email=ci@example.com commit -qm "core ${{ github.run_id }}" \
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-core
+
+  ros2_node:
+    needs: core
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    container: ros:humble-ros-base-jammy
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: e2e
+          path: /tmp/e2e
+      - name: Install
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends python3-pip git
+          pip3 install torch==2.2.2 torchvision==0.17.2 --index-url $TORCH_INDEX
+          pip3 install "numpy<2" pillow pyyaml matplotlib efficientnet_pytorch==0.7.1
+      - name: colcon build
+        run: |
+          source /opt/ros/humble/setup.bash
+          mkdir -p /tmp/ws/src && cp -r ros2/omnivla_real_ros /tmp/ws/src/
+          cd /tmp/ws && colcon build --symlink-install
+      - name: Node test (ros2 bag play -> /cmd_vel, /omnivla/path)
+        run: |
+          set -o pipefail
+          source /opt/ros/humble/setup.bash && source /tmp/ws/install/setup.bash
+          ls -R /tmp/e2e | head -30
+          bash tests/ros_node_test.sh ros2 /tmp/e2e 2>&1 | tee /tmp/ros2_node.log
+      - name: Analyze the navigation log (tools/plot_nav_log.py)
+        run: python3 tools/plot_nav_log.py /tmp/e2e/ros2_node/nav/latest
+      - name: Launch file parses
+        run: |
+          source /opt/ros/humble/setup.bash && source /tmp/ws/install/setup.bash
+          OMNIVLA_REAL_ROOT=$PWD ros2 launch omnivla_real_ros navigator.launch.py --show-args
+      - name: Publish log to ci-logs-ros2 branch
+        if: always()
+        run: |
+          git config --global --add safe.directory '*'
+          D=/tmp/cilog; rm -rf $D; mkdir -p $D
+          cp /tmp/ros2_node.log $D/ 2>/dev/null || echo "not run" > $D/ros2_node.log
+          cp -r /tmp/e2e/ros2_node $D/ 2>/dev/null || true
+          find $D -name "*.jpg" -size +200k -delete
+          echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
+          cd $D && git init -q && git add . \
+            && git -c user.name=ci -c user.email=ci@example.com commit -qm "ros2 ${{ github.run_id }}" \
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-ros2
+
+  ros1_node:
+    needs: core
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    container: ros:noetic-ros-base-focal
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: e2e
+          path: /tmp/e2e
+      - name: Install
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends python3-pip git
+          pip3 install torch==2.2.2 torchvision==0.17.2 --index-url $TORCH_INDEX
+          pip3 install "numpy<2" pillow pyyaml matplotlib efficientnet_pytorch==0.7.1
+      - name: Node test (rosbag play -> /cmd_vel, /omnivla/path)
+        run: |
+          set -o pipefail
+          source /opt/ros/noetic/setup.bash
+          bash tests/ros_node_test.sh ros1 /tmp/e2e 2>&1 | tee /tmp/ros1_node.log
+      - name: Analyze the navigation log (tools/plot_nav_log.py)
+        run: python3 tools/plot_nav_log.py /tmp/e2e/ros1_node/nav/latest
+      - name: Publish log to ci-logs-ros1 branch
+        if: always()
+        run: |
+          git config --global --add safe.directory '*'
+          D=/tmp/cilog; rm -rf $D; mkdir -p $D
+          cp /tmp/ros1_node.log $D/ 2>/dev/null || echo "not run" > $D/ros1_node.log
+          cp -r /tmp/e2e/ros1_node $D/ 2>/dev/null || true
+          find $D -name "*.jpg" -size +200k -delete
+          echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
+          cd $D && git init -q && git add . \
+            && git -c user.name=ci -c user.email=ci@example.com commit -qm "ros1 ${{ github.run_id }}" \
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-ros1

@@ -1,0 +1,52 @@
+# 実機ナビゲーションの設定 (ROS1 / ROS2 ノード, 机上評価で共通). トピック名と画像の前処理は robot.yaml
+model:
+  model: edge                  # edge (OmniVLA-edge, Jetson で速い) | 7b (OmniVLA 7B)
+  weights: /checkpoints/omnivla-edge         # 7b の場合は /checkpoints/omnivla-original
+  finetuned_dir: ""            # 学習結果 runs/<run>/checkpoints/step_XXXXXX (空なら公式の重みのまま)
+  device: cuda:0
+  half: false                  # edge を fp16 で推論 (Jetson で速くしたい場合)
+  metric_waypoint_spacing: 0.0 # 0 = 学習結果の値
+
+engine:
+  modality: image              # image (画像のみ) | image_pose (+ 相対ゴール位置. 自己位置がある場合)
+  sample_rate: 0.0             # 0 = 学習データの周期 (finetune_meta.json, 無ければ 3Hz)
+  max_image_age: 0.5           # これより古い画像しか無ければ止まる [s]
+  stuck_timeout: 0.0           # 前進指令中にこの秒数動かなければ停止 (0 で無効)
+  stop_at_goal: true
+  debug_image: true
+  controller:                  # 予測軌跡 -> (v, w)
+    mode: trajectory           # 予測した旋回・速度をそのまま実行 (upstream = 公式の式)
+    track_horizon: 4           # 先頭 5 点に合わせる
+    track_max_v: 0.6           # 速度の上限 [m/s] (ロボットに合わせる)
+    track_max_w: 1.0           # 角速度の上限 [rad/s]
+  tracker:                     # サブゴールの切り替え
+    reach_check: auto          # auto | pose (自己位置) | odom | image | image_odom
+    subgoal_radius: 0.5        # pose/odom: これ以内で到達 [m]
+    goal_radius: 0.5           # 最終ゴール [m]
+    reach_angle_deg: 30.0      # pose/odom: 向きの差もこれ以内 (曲がり角で内側に詰めない)
+    pass_radius: 1.5
+    pass_angle_deg: 90.0
+    image_threshold: 0.80      # image: 類似度がこれ以上で「そのノードに着いた」 (desk_eval で調整)
+    goal_image_threshold: 0.85 # image: 最終ゴール
+    search_window: 2           # image: 今のノードから何個先まで比べるか
+    confirm: 2                 # image: 何回続けて同じ判定なら切り替えるか
+    odom_gate_m: 2.5           # image_odom: オドメトリ上これより遠いノードには切り替えない
+    odom_pass_m: 1.0           # image_odom: オドメトリ上これだけ通り過ぎたら進める (最終ゴールなら停止)
+    goal_odom_gate_m: 1.5      # image_odom: 最終ゴールはオドメトリ上これ以内でだけ画像で判定
+    min_travel_m: 0.2
+
+io:
+  cmd_vel: /cmd_vel
+  cmd_stamped: false           # TwistStamped で出す
+  base_frame: base_link
+  path: /omnivla/path          # 予測軌跡 (nav_msgs/Path, base_frame)
+  debug_image: /omnivla/debug_image
+  status: /omnivla/status      # std_msgs/String (JSON)
+  enable: /omnivla/enable      # std_msgs/Bool で開始/停止
+  topomap: /omnivla/topomap    # std_msgs/String で topomap を切り替えて開始
+  localization_type: PoseWithCovarianceStamped   # robot.yaml の localization の型
+  control_rate: 10.0           # 指示値を出す周期 [Hz]
+  cmd_timeout: 1.0             # 推論結果がこれより古くなったら止める [s]
+  max_inference_rate: 0.0      # 推論の上限 [Hz] (0 = できるだけ速く)
+  log_dir: /workspace/log/nav
+  log_images: true

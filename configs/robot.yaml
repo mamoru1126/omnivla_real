@@ -1,0 +1,29 @@
+# ロボット固有の設定. bag の変換・サブゴール作成・机上評価・実機走行で共通に使う
+# (トピック名は `python3 tools/bag_info.py <bag>` で確認できる)
+name: my_robot
+
+topics:
+  image: /camera/image_raw/compressed   # sensor_msgs/CompressedImage or sensor_msgs/Image
+  odom: /odom                           # nav_msgs/Odometry (ホイールオドメトリ)
+  cmd: /cmd_vel                         # geometry_msgs/Twist or TwistStamped (指示値)
+  localization: ""                      # 任意: 自己位置 (PoseStamped / PoseWithCovarianceStamped / Odometry / /tf)
+  localization_frame: map               # localization が /tf のとき: 親フレーム
+  localization_child_frame: base_link   #                            子フレーム
+  cmd_v_field: ""                       # 指示値が独自メッセージの場合のフィールド (例 "drive.speed")
+  cmd_w_field: ""
+
+# 画像の前処理 (学習と走行で同じものを使う)
+image:
+  crop: [0.0, 0.0, 0.0, 0.0]   # 上, 下, 左, 右 を割合で削る (車体が写り込む場合など. 例 下 15% -> [0, 0.15, 0, 0])
+  width: 320                    # 保存する幅 [px] (縦横比は維持). モデルの入力は 224x224 (edge は 96x96)
+  rotate180: false
+  jpeg_quality: 95
+
+# 時刻: auto = header.stamp があればそれ (無ければ記録時刻) / header / bag = 全て記録時刻
+time_source: auto
+
+# 予測軌跡を画像に重ねて表示するためのカメラの値 (表示だけに使う)
+camera:
+  hfov_deg: 90.0   # 水平画角 (切り抜き後)
+  height: 0.5      # 地面からの高さ [m]
+  x_offset: 0.2    # ロボット中心から前方 [m]

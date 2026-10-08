@@ -1,0 +1,29 @@
+<!-- OmniVLA 実機ナビゲーション (ROS 1)
+  roslaunch omnivla_real_ros1 navigator.launch topomap:=/data/topomaps/course_a
+-->
+<launch>
+  <arg name="root" default="$(optenv OMNIVLA_REAL_ROOT /workspace)"/>
+  <arg name="robot_config" default="$(arg root)/configs/robot.yaml"/>
+  <arg name="nav_config" default="$(arg root)/configs/navigator.yaml"/>
+  <arg name="topomap" default=""/>
+  <arg name="autostart" default="true"/>
+  <arg name="model" default=""/>
+  <arg name="weights" default=""/>
+  <arg name="finetuned_dir" default=""/>
+  <arg name="device" default=""/>
+  <arg name="log_dir" default=""/>
+  <!-- bag 再生で試す: use_sim_time:=true にして rosbag play に clock オプションを付ける -->
+  <arg name="use_sim_time" default="false"/>
+  <param name="/use_sim_time" value="$(arg use_sim_time)"/>
+  <node pkg="omnivla_real_ros1" type="navigator_node.py" name="omnivla_navigator" output="screen">
+    <param name="robot_config" value="$(arg robot_config)"/>
+    <param name="nav_config" value="$(arg nav_config)"/>
+    <param name="topomap" value="$(arg topomap)"/>
+    <param name="autostart" value="$(arg autostart)"/>
+    <param name="model" value="$(arg model)"/>
+    <param name="weights" value="$(arg weights)"/>
+    <param name="finetuned_dir" value="$(arg finetuned_dir)"/>
+    <param name="device" value="$(arg device)"/>
+    <param name="log_dir" value="$(arg log_dir)"/>
+  </node>
+</launch>

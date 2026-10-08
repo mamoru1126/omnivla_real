@@ -1,0 +1,8 @@
+log/
+data/
+bags/
+runs/
+checkpoints/
+*.pyc
+__pycache__/
+.env

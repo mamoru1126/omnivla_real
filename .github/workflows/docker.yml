@@ -1,0 +1,48 @@
+name: docker
+
+# 学習用イメージ (x86_64, docker/Dockerfile) が作れるか (中で import と単体テストも走る).
+# Jetson 用 (docker/Dockerfile.jetson) は arm64 + L4T なのでここでは作らない.
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docker/**"
+      - "ros2/**"
+      - ".github/workflows/docker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af
+          df -h /
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -o pipefail
+          mkdir -p ci
+          DOCKER_BUILDKIT=1 docker build --progress=plain -f docker/Dockerfile -t omnivla_real:ci . 2>&1 | tee ci/docker-build.log
+      - name: Navigator launch file in the image
+        run: |
+          docker run --rm omnivla_real:ci bash -c \
+            'source /opt/omnivla_ws/install/setup.bash && ros2 launch omnivla_real_ros navigator.launch.py --show-args' \
+            2>&1 | tee ci/launch.log
+      - name: Publish log to ci-logs-docker branch
+        if: always()
+        run: |
+          D=/tmp/cilog; rm -rf $D; mkdir -p $D
+          tail -n 400 ci/docker-build.log > $D/tail.log 2>/dev/null || echo "no log" > $D/tail.log
+          grep -n -i -E "error|failed|conflict|cannot|not found" ci/docker-build.log | tail -200 > $D/errors.txt || true
+          cp ci/launch.log $D/ 2>/dev/null || true
+          echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
+          cd $D && git init -q && git add . \
+            && git -c user.name=ci -c user.email=ci@example.com commit -qm "docker ${{ github.run_id }}" \
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-docker
