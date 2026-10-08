@@ -6,6 +6,8 @@
 #   robot   : 実機の代わり. bag のカメラ画像・オドメトリ (・自己位置) をシミュレーション時刻で流す (scripts/bag_robot.sh)
 #   record  : ノードの出力 (/cmd_vel, /omnivla/path, /omnivla/status) を /runs/replay/out_<時刻>.bag に記録
 #
+#   bin/replay.sh run2.bag course_a        (= 下の up. もう一度: bin/replay.sh again  片付け: bin/replay.sh down)
+#
 #   docker compose -f docker-compose.replay.yml build
 #   REPLAY_BAG=run2.bag TOPOMAP=/data/topomaps/course_a docker compose -f docker-compose.replay.yml up
 #   → ブラウザで http://localhost:8080  (別の PC からは http://<この PC の IP>:8080)

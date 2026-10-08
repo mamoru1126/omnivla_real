@@ -1,4 +1,5 @@
 # 学習・変換・机上評価用 (x86_64 + NVIDIA GPU). 実機 (Jetson) は docker-compose.jetson.yml
+# ふだんは bin/ のスクリプト (bin/setup.sh, bin/make_dataset.sh, bin/train.sh, ...) から使う. 中身は次のとおり:
 #   docker compose build
 #   docker compose run --rm shell bash scripts/download_checkpoints.sh
 #   docker compose run --rm shell python3 tools/bag_to_dataset.py --out /data/dataset /bags/run1

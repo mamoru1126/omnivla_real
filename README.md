@@ -34,9 +34,7 @@ Docker と NVIDIA Container Toolkit が必要です。
 
 ```bash
 git clone https://github.com/mamoru1126/omnivla_real.git && cd omnivla_real
-cp .env.example .env
-docker compose build
-docker compose run --rm shell bash scripts/download_checkpoints.sh        # 公式の重み (7B と edge). edge だけなら引数 edge
+bin/setup.sh          # .env を作る + イメージのビルド + 公式の重み (7B と edge). edge だけなら bin/setup.sh edge
 ```
 
 フォルダとコンテナ内のパスの対応 (`.env` で変更可):
@@ -48,13 +46,35 @@ docker compose run --rm shell bash scripts/download_checkpoints.sh        # 公�
 | `./runs` | `/runs` (学習・評価の結果) |
 | `./checkpoints` | `/checkpoints` (公式の重み) |
 
-以下のコマンドは `docker compose run --rm shell` の中で実行します。
+### コマンド (`bin/`)
+
+各段階は `bin/` のスクリプトで実行します。中で `docker compose` を呼ぶので、どこから実行しても構いません。
+
+| 段階 | コマンド | 中でしていること |
+|---|---|---|
+| 準備 | `bin/setup.sh [all\|edge\|7b\|none]` | `.env` を作る、`docker compose build`、`scripts/download_checkpoints.sh` |
+| 1 | `bin/bag_info.sh BAG` | `tools/bag_info.py` |
+| 2 | `bin/check_odometry.sh BAG` | `tools/check_odometry.py` |
+| 3 | `bin/make_dataset.sh BAG...` | `tools/bag_to_dataset.py` + `training/inspect_dataset.py` |
+| 4 | `bin/train.sh 7b\|edge [-d]` | `training/finetune_omnivla.py` / `finetune_edge.py` |
+| 5 | `bin/make_topomap.sh 名前 BAG` | `tools/make_topomap.py` |
+| 6 | `bin/desk_eval.sh BAG [topomap]` | `tools/desk_eval.py` |
+| 7 | `bin/replay.sh BAG [topomap]` / `again` / `down` | `docker-compose.replay.yml` |
+| | `bin/plot_nav_log.sh [ログ]` | `tools/plot_nav_log.py` |
+| 8 | `bin/to_jetson.sh user@jetson` (学習 PC で) | 重みと topomap を rsync で送る |
+| 8 | `bin/jetson.sh build\|up\|status\|logs\|plot\|down` (Jetson で) | `docker-compose.jetson.yml` |
+| | `bin/shell.sh [コマンド]` | 学習用コンテナに入る / 1 コマンド実行 |
+
+- bag や topomap は、名前 (`run1.bag`, `course_a`)、ホストのパス (`./bags/run1.bag`)、コンテナのパス (`/bags/run1.bag`) のどれで指定しても構いません。分割された bag は `a_0.bag,a_1.bag` です。
+- 後ろに付けたオプション (`--start_sec 10` など) は、そのまま中のツールに渡します。
+- モデルと topomap は `.env` の `NAV_MODEL` / `FINETUNED_DIR` / `NAV_WEIGHTS` / `TOPOMAP` を使います (机上評価・bag での確認・Jetson で同じ)。
+- 使い方は `-h` で表示します。`OMNIVLA_DRY_RUN=1` を付けると、実行せずに中のコマンドを表示します。
 
 ## 1. bag の中身を見る
 
 ```bash
-python3 tools/bag_info.py /bags/run1.bag      # ROS 1
-python3 tools/bag_info.py /bags/run1          # ROS 2: bag のディレクトリ (.db3 / .mcap)
+bin/bag_info.sh run1.bag      # ROS 1 (./bags/run1.bag)
+bin/bag_info.sh run1          # ROS 2: bag のディレクトリ (.db3 / .mcap)
 ```
 
 表示されたトピック名を `configs/robot.yaml` の `topics` に書きます。
@@ -72,7 +92,7 @@ python3 tools/bag_info.py /bags/run1          # ROS 2: bag のディレクトリ
 ## 2. オドメトリが使えるか確かめる
 
 ```bash
-python3 tools/check_odometry.py --out /runs/check/run1 /bags/run1
+bin/check_odometry.sh run1.bag     # 結果は runs/check/run1/
 ```
 
 学習ラベルは「この先約 2.7 秒の動き」です。ラベルに使える位置の候補は 3 つ (自己位置があれば 4 つ) あり、このツールはそれらの短時間の動きがどれだけ一致するかを比べます。
@@ -90,8 +110,7 @@ python3 tools/check_odometry.py --out /runs/check/run1 /bags/run1
 ## 3. 学習データに変換する
 
 ```bash
-python3 tools/bag_to_dataset.py --out /data/dataset /bags/run1 /bags/run2.bag
-python3 training/inspect_dataset.py /data/dataset --num_viz 16 --out /runs/inspect   # 正解軌跡を画像に重ねて確認
+bin/make_dataset.sh run1.bag run2.bag      # data/dataset に追加. runs/inspect に正解軌跡を画像に重ねた確認用の図
 ```
 
 - bag はエピソード単位でなくて構いません。変換時に次のように区切ります。
@@ -106,11 +125,13 @@ python3 training/inspect_dataset.py /data/dataset --num_viz 16 --out /runs/inspe
 ## 4. 学習
 
 ```bash
-docker compose run --rm train_7b       # OmniVLA 7B, LoRA (24GB 以上). configs/finetune_7b.yaml
-docker compose run --rm train_edge     # OmniVLA-edge (数 GB の GPU で可). configs/finetune_edge.yaml
+bin/train.sh 7b                    # OmniVLA 7B, LoRA (24GB 以上). configs/finetune_7b.yaml
+bin/train.sh edge                  # OmniVLA-edge (数 GB の GPU で可). configs/finetune_edge.yaml
+bin/train.sh 7b -d                 # 裏で動かす (端末を閉じても続く). ログは docker logs -f omnivla_train_7b
+bin/train.sh 7b --max_steps 3000   # 設定ファイルの値をオプションで上書き
 ```
 
-- 結果は `/runs/<run>/checkpoints/step_XXXXXX/` に出ます。
+- 結果は `runs/<run>/checkpoints/step_XXXXXX/` に出ます。走行に使うものを `.env` の `NAV_MODEL` と `FINETUNED_DIR` (例 `/runs/<run>/checkpoints/step_005000`) に書きます。
 - 検証に使う走行は `val_bags: [run2]` のように bag 名で指定できます。
 - 7B をマージ済みモデルにしたい場合は `training/merge_lora.py` を使います。
 
@@ -119,7 +140,7 @@ docker compose run --rm train_edge     # OmniVLA-edge (数 GB の GPU で可). c
 コースを 1 回走った bag から、1 m ごとに画像を切り出します。
 
 ```bash
-python3 tools/make_topomap.py --out /data/topomaps/course_a --spacing 1.0 /bags/run1
+bin/make_topomap.sh course_a run1.bag --spacing 1.0     # data/topomaps/course_a/. .env の TOPOMAP=/data/topomaps/course_a
 ```
 
 - 出力は `0.jpg, 1.jpg, ...`、`poses.yaml` (各画像の位置)、`overview.png` です。
@@ -134,10 +155,8 @@ topomap を作った走行とは別の走行の bag で評価します。録画�
 - 予測軌跡 → 指示値
 
 ```bash
-python3 tools/desk_eval.py --bag /bags/run2.bag --topomap /data/topomaps/course_a \
-    --model 7b --finetuned_dir /runs/<run>/checkpoints/step_005000 --out /runs/desk_eval/run2 --debug_every 10
-# edge: --model edge --weights /runs/<run>/checkpoints/step_010000
-# 推論サーバ経由 (実機と同じ): --model remote --url http://127.0.0.1:8765
+bin/desk_eval.sh run2.bag course_a     # モデルは .env の NAV_MODEL / FINETUNED_DIR. 結果は runs/desk_eval/run2_<時刻>/
+# 推論サーバ経由 (bin/replay.sh で推論サーバが動いているとき): bin/desk_eval.sh run2.bag course_a --model remote --url http://127.0.0.1:8765
 ```
 
 | 出力 | 中身 |
@@ -182,27 +201,29 @@ python3 tools/desk_eval.py --bag /bags/run2.bag --topomap /data/topomaps/course_
 
 ```bash
 # .env に NAV_MODEL / FINETUNED_DIR (Jetson と同じ値) を書いておく
-docker compose -f docker-compose.replay.yml build
-REPLAY_BAG=run2.bag TOPOMAP=/data/topomaps/course_a docker compose -f docker-compose.replay.yml up
+bin/replay.sh run2.bag course_a          # 起動して robot と nav のログを表示 (Ctrl-C でログの表示だけ止まる)
 # → ブラウザで http://localhost:8080 (別の PC からは http://<学習 PC の IP>:8080)
+bin/replay.sh again                      # もう一度最初から流す (推論サーバはそのまま)
+bin/replay.sh down                       # 片付け
 ```
 
 - `robot` は、`nav` が準備できる (推論サーバのモデルを読み終わる) のを待ってから bag を流し始めます。7B は数分かかります。
 - bag からは `robot.yaml` の画像・オドメトリ (・自己位置) だけを流します。記録された `/cmd_vel` は流しません。
 - ROS master はこの PC の中だけです (`.env` の `ROS_MASTER_URI` がロボットを指していても使いません)。
 
-| 変数 | 意味 |
-|---|---|
-| `REPLAY_BAG` | `BAG_DIR` の中の bag。カンマ区切りで複数、ディレクトリなら中の `*.bag` 全部 |
-| `REPLAY_RATE` | 再生速度 (既定 1.0) |
-| `REPLAY_START` | 先頭から何秒飛ばすか |
-| `REPLAY_ARGS` | `rosbag play` にそのまま渡す (例 `-u 60` で 60 秒だけ) |
-| `NAV_AUTOSTART` | `false` にすると、ブラウザの「開始」を押してから走り出す (実機と同じ確認ができる) |
+| オプション | `.env` | 意味 |
+|---|---|---|
+| (bag) | `REPLAY_BAG` | bag。カンマ区切りで複数、ディレクトリなら中の `*.bag` 全部 |
+| `--rate R` | `REPLAY_RATE` | 再生速度 (既定 1.0) |
+| `--start S` | `REPLAY_START` | 先頭から何秒飛ばすか |
+| `--args "-u 60"` | `REPLAY_ARGS` | `rosbag play` にそのまま渡す (この例は 60 秒だけ) |
+| `--manual` | `NAV_AUTOSTART=false` | ブラウザの「開始」を押してから走り出す (実機と同じ確認ができる) |
 
 - 出力は `RUNS_DIR/replay/` に出ます。
   - `out_<時刻>.bag`: ノードが出した指示値・予測軌跡・状態
-  - `nav/<時刻>/`: 走行ログ。`python3 tools/plot_nav_log.py runs/replay/nav/latest` で図とレポート
-- bag が終わっても画面はそのまま見られます。もう一度流すときは `docker compose -f docker-compose.replay.yml restart nav && docker compose -f docker-compose.replay.yml restart robot`。終わりは Ctrl-C です。
+  - `nav/<時刻>/`: 走行ログ。`bin/plot_nav_log.sh` で図とレポート
+- bag が終わっても画面はそのまま見られます。
+- `bin/replay.sh` を使わずに `docker compose -f docker-compose.replay.yml up` (`REPLAY_BAG` と `TOPOMAP` は `.env` か環境変数) でも同じです。
 - bag の画像は指示値に反応しません (開ループ)。モデルが曲がり損ねても、画像は記録どおりに進みます。ロボットが指示どおりに動いたらどう見えるか、までは分かりません。
 
 ## 8. Jetson AGX Orin で走らせる (ROS 1)
@@ -225,13 +246,19 @@ REPLAY_BAG=run2.bag TOPOMAP=/data/topomaps/course_a docker compose -f docker-com
 | 5.1.2 (L4T r35.4) | `dustynv/l4t-pytorch:2.2-r35.4.1` |
 
 ```bash
+# Jetson で
 git clone https://github.com/mamoru1126/omnivla_real.git && cd omnivla_real
-cp .env.example .env    # JETSON_BASE_IMAGE, NAV_MODEL, FINETUNED_DIR, TOPOMAP, ROS_MASTER_URI を書く
-docker compose -f docker-compose.jetson.yml build
-# 学習 PC から ./runs/<run>/checkpoints/step_XXXXXX と ./data/topomaps/course_a をコピー
-# (7B の場合は ./checkpoints/omnivla-original も)
-docker compose -f docker-compose.jetson.yml up               # ROS master は ROS_MASTER_URI のもの
-docker compose -f docker-compose.jetson.yml --profile standalone up   # roscore もここで立てる場合
+cp .env.example .env    # JETSON_BASE_IMAGE, ROS_MASTER_URI を書く
+bin/jetson.sh build
+
+# 学習 PC で: .env の NAV_MODEL / FINETUNED_DIR / TOPOMAP の重みと topomap を送る (7B は元のモデルも)
+bin/to_jetson.sh user@jetson          # 最後に Jetson の .env に書く行が表示される
+
+# Jetson で
+bin/jetson.sh up                      # ROS master は ROS_MASTER_URI のもの. ログを表示 (Ctrl-C で表示だけ止まる)
+bin/jetson.sh up --standalone         # roscore もここで立てる場合
+bin/jetson.sh status                  # 状態と推論サーバの応答
+bin/jetson.sh down                    # 止める
 ```
 
 - `nav` は推論サーバの準備ができるのを待ってから始まります。7B の読み込みには数分かかります。
@@ -250,7 +277,7 @@ docker compose -f docker-compose.jetson.yml --profile standalone up   # roscore 
 - 速度の上限は `navigator.yaml` の `engine.controller.track_max_v` / `track_max_w` で、ロボットに合わせます。
 - 推論結果が `io.cmd_timeout` 秒より古くなると 0 を出します。推論サーバが止まった場合も 0 になります。
 - 走行ログは `log/nav/<時刻>/` に保存されます。
-  - `python3 tools/plot_nav_log.py log/nav/latest` で、図とレポートを作れます。
+  - `bin/jetson.sh plot` で、一番新しい走行の図とレポートを作れます。学習 PC に持ってきたものは `bin/plot_nav_log.sh log/nav/<時刻>`。
 - ROS 1 ノードは既存の ROS 1 環境 (catkin ワークスペース) に入れても動きます。
   - `ros1/omnivla_real_ros1` を置いて `catkin_make` します。C++ の依存は同梱のヘッダだけです。
   - 起動時に設定を読むため、python3 と PyYAML / numpy / Pillow が要ります。`OMNIVLA_REAL_ROOT` に本リポジトリを指定します。
@@ -299,6 +326,7 @@ ROS 2 で使う場合は `ros2 launch omnivla_real_ros navigator.launch.py` で�
 ```bash
 python3 -m pytest -q tests                 # 単体テスト + 本物の rosbag を書いて読む + C++ と Python の突き合わせ
 bash tests/e2e_cli.sh /tmp/e2e             # 合成した bag で 1〜6 を通しで実行
+bash tests/bin_check.sh                    # bin/ のスクリプトが正しいコマンドを組み立てるか (docker は実行しない)
 ```
 
 CI (GitHub Actions) では合成したコース走行の bag を使い、次を確認しています。

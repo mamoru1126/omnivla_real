@@ -32,6 +32,11 @@ jobs:
           set -o pipefail
           mkdir -p ci
           python -m pytest -q tests/test_core.py tests/test_bags.py tests/test_cpp.py 2>&1 | tee ci/pytest.log
+      - name: bin/ scripts (dry run) and shellcheck
+        run: |
+          set -o pipefail
+          shellcheck -S warning bin/*.sh bin/_lib.sh scripts/*.sh tests/*.sh docker/*.sh
+          bash tests/bin_check.sh 2>&1 | tee ci/bin_check.log
       - name: End-to-end (bags -> dataset -> train edge -> topomap -> desk eval)
         run: |
           set -o pipefail

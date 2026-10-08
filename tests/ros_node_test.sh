@@ -32,7 +32,7 @@ else
     NODE_IMPL=${NODE_IMPL:-cpp}
     roscore > "$OUT/roscore.log" 2>&1 &
     PIDS+=($!)
-    for i in $(seq 30); do rostopic list > /dev/null 2>&1 && break; sleep 1; done
+    for _ in $(seq 30); do rostopic list > /dev/null 2>&1 && break; sleep 1; done
     rosparam set /use_sim_time true
     if [ "$NODE_IMPL" = cpp ]; then
         rosrun omnivla_real_ros1 navigator _repo_root:="$ROOT" _topomap:="$E2E/topomap" \
@@ -44,7 +44,7 @@ else
     PIDS+=($!)
 fi
 
-for i in $(seq 180); do grep -q "ready:" "$OUT/node.log" && break; sleep 1; done
+for _ in $(seq 180); do grep -q "ready:" "$OUT/node.log" && break; sleep 1; done
 if ! grep -q "ready:" "$OUT/node.log"; then
     echo "node did not become ready"; cat "$OUT/node.log"
     echo "----- processes"; ps aux | grep -E "navigator|nav_config|policy" | grep -v grep | head

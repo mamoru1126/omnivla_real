@@ -309,6 +309,7 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
   <tr><td>ROS 1 コンテナ</td><td><code class="nw">docker/Dockerfile.ros1</code></td><td><code>nav</code> (Jetson · replay) · <code>ros1</code> (PC)</td><td><code>ros1/omnivla_real_ros1</code>: <code>src/navigator_node.cpp</code> · <code>src/core/</code> (走行の中身) · <code>web/index.html</code> (デバッグ画面)</td></tr>
   <tr><td>学習 PC</td><td><code class="nw">docker/Dockerfile</code></td><td><code>shell</code> · <code>train_7b</code> · <code>train_edge</code> · <code>policy</code></td><td><code>tools/</code> (変換・topomap・机上評価) · <code>training/</code></td></tr>
   <tr><td>学習 PC で実機と同じ構成</td><td>上の 2 つ</td><td><code class="nw">docker-compose.replay.yml</code>: <code>roscore</code> · <code>policy</code> · <code>nav</code> (Jetson の定義そのまま) · <code>robot</code> · <code>record</code></td><td><code>scripts/bag_robot.sh</code> (bag をロボットの代わりに流す)</td></tr>
+  <tr><td>コマンド</td><td colspan="3"><code>bin/</code>: <code>setup.sh</code> · <code>bag_info.sh</code> · <code>check_odometry.sh</code> · <code>make_dataset.sh</code> · <code>train.sh</code> · <code>make_topomap.sh</code> · <code>desk_eval.sh</code> · <code>replay.sh</code> · <code>plot_nav_log.sh</code> · <code>to_jetson.sh</code> · <code>jetson.sh</code> (中で docker compose を呼ぶ. <code>-h</code> で使い方)</td></tr>
   <tr><td>設定</td><td colspan="3"><code>configs/robot.yaml</code> (トピック名・画像の前処理) · <code>configs/navigator.yaml</code> (モデル・制御・サブゴール) · <code>.env</code> (JetPack・重み・ROS master)</td></tr>
 </table>
 </div>

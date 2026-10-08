@@ -87,6 +87,6 @@ wait $PLAY
 rc=$?
 trap - INT TERM
 say "bag の再生が終わりました (rc=$rc). 画面はそのまま見られます: http://localhost:$WEB_PORT"
-say "記録: /runs/replay (ホストの RUNS_DIR/replay). out_<時刻>.bag と nav/<時刻>/ (python3 tools/plot_nav_log.py で図に)"
-say "もう一度流す: docker compose -f docker-compose.replay.yml restart nav && docker compose -f docker-compose.replay.yml restart robot"
+say "記録: /runs/replay (ホストの RUNS_DIR/replay). out_<時刻>.bag と nav/<時刻>/ (図にする: bin/plot_nav_log.sh)"
+say "もう一度流す: bin/replay.sh again  (または docker compose -f docker-compose.replay.yml restart nav && ... restart robot)"
 exit $rc
