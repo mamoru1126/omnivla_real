@@ -1,6 +1,7 @@
 # omnivla_real
 
 実機ロボットで [OmniVLA](https://github.com/NHirose/OmniVLA) を動かすための環境です。
+構成図: <https://mamoru1126.github.io/omnivla_real/>
 
 - **学習**: 決まったコースを走ったときの rosbag (ROS 1 / ROS 2) をそのまま材料にします。
 - **机上評価**: 別の走行の bag を使い、モデルの指示値を積算した軌跡がコースに沿うかを確かめます。

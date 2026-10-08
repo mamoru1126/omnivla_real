@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OmniVLA 実機 構成図</title>
+<meta name="description" content="omnivla_real の構成: 学習 PC と Jetson AGX Orin (推論コンテナ + ROS 1 コンテナ) とロボットのつながり">
+<style>
+:root {
+  --bg: #f7f6f2; --surface: #ffffff; --surface2: #efede6; --text: #1f2328; --muted: #5d6470;
+  --line: #d9d6cc; --accent: #2f6fdb; --accent-soft: #e3ecfb; --warn: #b7791f; --warn-soft: #fbf0dc;
+  --c-pc: #2f6fdb; --c-gpu: #d0602f; --c-ros: #7a4fd0; --c-robot: #2e8b57; --c-data: #b7791f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171c; --surface: #1c2027; --surface2: #232833; --text: #e6e9ef; --muted: #9aa3b2;
+    --line: #333a46; --accent: #6ea0ff; --accent-soft: #1f2d48; --warn: #e0a84c; --warn-soft: #3a2e17;
+    --c-pc: #6ea0ff; --c-gpu: #f08a5d; --c-ros: #a98bf0; --c-robot: #5cc48a; --c-data: #e0a84c;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171c; --surface: #1c2027; --surface2: #232833; --text: #e6e9ef; --muted: #9aa3b2;
+  --line: #333a46; --accent: #6ea0ff; --accent-soft: #1f2d48; --warn: #e0a84c; --warn-soft: #3a2e17;
+  --c-pc: #6ea0ff; --c-gpu: #f08a5d; --c-ros: #a98bf0; --c-robot: #5cc48a; --c-data: #e0a84c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+  line-height: 1.75; font-size: 16px;
+}
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 16px 80px; }
+header.hero { padding: 56px 0 24px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+.kicker { color: var(--accent); font-weight: 700; letter-spacing: .08em; font-size: 13px; }
+h1 { font-size: clamp(26px, 4.5vw, 36px); line-height: 1.3; margin: 8px 0 12px; }
+.lead { color: var(--muted); max-width: 760px; margin: 6px 0; }
+h2 { font-size: 22px; margin: 48px 0 10px; }
+a { color: var(--accent); }
+code { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: .88em;
+  background: var(--surface2); padding: 1px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 680px; height: auto; }
+.diagram svg text { font-family: inherit; }
+.caption { color: var(--muted); font-size: 14px; margin-top: 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13.5px; color: var(--muted); margin: 8px 0 0; }
+.legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+  margin-right: 6px; vertical-align: -1px; border: 2px solid var(--k); }
+.note { background: var(--warn-soft); border-left: 4px solid var(--warn); border-radius: 6px; padding: 8px 12px; margin: 12px 0; font-size: 15px; }
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+th { background: var(--surface2); font-weight: 700; white-space: nowrap; }
+td.pick { color: var(--c-robot); font-weight: 700; white-space: nowrap; }
+td code.nw { white-space: nowrap; overflow-wrap: normal; }
+ul.tight { margin: 6px 0; padding-left: 22px; }
+footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+.theme-toggle { position: fixed; right: 14px; top: 14px; background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" aria-label="表示テーマ切り替え">◐ テーマ</button>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">OMNIVLA × JETSON AGX ORIN × ROS 1</div>
+  <h1>omnivla_real の構成</h1>
+  <p class="lead">学習 PC でコース走行の rosbag から OmniVLA を学習し、Jetson ではサブゴール画像を切り替えながら走る。
+  Jetson の中は <strong>推論コンテナ</strong> と <strong>ROS 1 コンテナ</strong> の 2 つに分かれている。</p>
+  <p class="lead">実行手順は <a href="https://github.com/mamoru1126/omnivla_real#readme">README</a> にあります。</p>
+</header>
+
+<!-- ============================================================ -->
+<h2 id="whole">全体</h2>
+<div class="diagram" role="img" aria-label="学習 PC、Jetson、ロボットの構成図">
+<svg viewBox="0 0 940 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+
+  <!-- ===== 学習 PC ===== -->
+  <rect x="16" y="16" width="420" height="468" rx="14" fill="none" stroke="var(--c-pc)" stroke-width="2"/>
+  <text x="34" y="44" font-size="16" font-weight="700" fill="var(--c-pc)">学習 PC</text>
+  <text x="34" y="64" font-size="12.5" fill="var(--muted)">x86_64 + RTX 3090 以上 · docker/Dockerfile</text>
+
+  <rect x="36" y="82" width="380" height="64" rx="8" fill="var(--surface2)" stroke="var(--c-data)" stroke-width="1.5"/>
+  <text x="50" y="106" font-size="14" font-weight="700" fill="var(--text)">rosbag (ROS 1)　コースを走った記録</text>
+  <text x="50" y="128" font-size="12.5" fill="var(--muted)">カメラ画像 · ホイールオドメトリ · 指示値 (+自己位置)</text>
+
+  <rect x="36" y="176" width="180" height="70" rx="8" fill="var(--surface2)"/>
+  <text x="50" y="200" font-size="13.5" fill="var(--text)">学習データに変換</text>
+  <text x="50" y="220" font-size="12" fill="var(--muted)">3Hz に間引き · 停止で区切る</text>
+  <text x="50" y="237" font-size="12" fill="var(--muted)">bag_to_dataset.py</text>
+
+  <rect x="236" y="176" width="180" height="70" rx="8" fill="var(--surface2)"/>
+  <text x="250" y="200" font-size="13.5" fill="var(--text)">サブゴール画像列</text>
+  <text x="250" y="220" font-size="12" fill="var(--muted)">1m ごとに切り出し</text>
+  <text x="250" y="237" font-size="12" fill="var(--muted)">make_topomap.py</text>
+
+  <rect x="36" y="276" width="180" height="70" rx="8" fill="var(--surface2)" stroke="var(--c-gpu)" stroke-width="1.5"/>
+  <text x="50" y="300" font-size="13.5" fill="var(--text)">学習</text>
+  <text x="50" y="320" font-size="12" fill="var(--muted)">OmniVLA 7B (LoRA) / edge</text>
+  <text x="50" y="337" font-size="12" fill="var(--muted)">→ 重み (step_XXXXXX)</text>
+
+  <rect x="236" y="276" width="180" height="70" rx="8" fill="var(--surface2)"/>
+  <text x="250" y="300" font-size="13.5" fill="var(--text)">机上評価</text>
+  <text x="250" y="320" font-size="12" fill="var(--muted)">別の走行の bag で指示値を</text>
+  <text x="250" y="337" font-size="12" fill="var(--muted)">積算 → コースに沿うか</text>
+
+  <rect x="36" y="376" width="380" height="88" rx="8" fill="none" stroke="var(--line)" stroke-dasharray="5 4"/>
+  <text x="50" y="400" font-size="13.5" fill="var(--text)">bag 再生で試す (Jetson と同じ 2 コンテナ構成)</text>
+  <text x="50" y="421" font-size="12" fill="var(--muted)">docker compose up policy  +  ros1 コンテナ</text>
+  <text x="50" y="440" font-size="12" fill="var(--muted)">scripts/replay_bag_ros1.sh → 出した /cmd_vel を記録</text>
+
+  <line x1="126" y1="146" x2="126" y2="174" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="300" y1="146" x2="320" y2="174" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="126" y1="246" x2="126" y2="274" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="326" y1="246" x2="326" y2="274" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="216" y1="311" x2="234" y2="311" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- PC -> Jetson -->
+  <path d="M436,250 C470,250 470,150 498,150" stroke="var(--c-data)" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <text x="442" y="278" font-size="11" fill="var(--c-data)">重み ·</text>
+  <text x="442" y="294" font-size="11" fill="var(--c-data)">画像列を</text>
+  <text x="442" y="310" font-size="11" fill="var(--c-data)">コピー</text>
+
+  <!-- ===== Jetson ===== -->
+  <rect x="500" y="16" width="424" height="282" rx="14" fill="none" stroke="var(--text)" stroke-width="2"/>
+  <text x="518" y="44" font-size="16" font-weight="700" fill="var(--text)">Jetson AGX Orin</text>
+  <text x="518" y="64" font-size="12.5" fill="var(--muted)">docker-compose.jetson.yml · ネットワークは host</text>
+
+  <rect x="518" y="80" width="176" height="200" rx="10" fill="var(--surface2)" stroke="var(--c-gpu)" stroke-width="2"/>
+  <text x="530" y="104" font-size="14" font-weight="700" fill="var(--c-gpu)">推論コンテナ</text>
+  <text x="530" y="122" font-size="12" fill="var(--muted)">policy · Dockerfile.jetson</text>
+  <text x="530" y="148" font-size="13" fill="var(--text)">OmniVLA 7B / edge</text>
+  <text x="530" y="168" font-size="12" fill="var(--muted)">PyTorch + GPU</text>
+  <text x="530" y="186" font-size="12" fill="var(--muted)">ROS なし</text>
+  <text x="530" y="212" font-size="12" fill="var(--muted)">ベースは JetPack に</text>
+  <text x="530" y="228" font-size="12" fill="var(--muted)">合わせて選ぶ</text>
+  <text x="530" y="256" font-size="11.5" fill="var(--muted)">tools/policy_server.py</text>
+
+  <rect x="730" y="80" width="176" height="200" rx="10" fill="var(--surface2)" stroke="var(--c-ros)" stroke-width="2"/>
+  <text x="742" y="104" font-size="14" font-weight="700" fill="var(--c-ros)">ROS 1 コンテナ</text>
+  <text x="742" y="122" font-size="12" fill="var(--muted)">nav · Dockerfile.ros1</text>
+  <text x="742" y="148" font-size="13" fill="var(--text)">navigator ノード</text>
+  <text x="742" y="168" font-size="12" fill="var(--muted)">ROS 1 Noetic</text>
+  <text x="742" y="186" font-size="12" fill="var(--muted)">PyTorch なし</text>
+  <text x="742" y="212" font-size="12" fill="var(--muted)">サブゴールの切り替え</text>
+  <text x="742" y="228" font-size="12" fill="var(--muted)">軌跡 → 指示値</text>
+  <text x="742" y="256" font-size="11.5" fill="var(--muted)">サブゴール画像列を読む</text>
+
+  <!-- HTTP -->
+  <line x1="696" y1="150" x2="728" y2="150" stroke="var(--muted)" stroke-width="2" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text x="712" y="140" font-size="11" fill="var(--muted)" text-anchor="middle">HTTP</text>
+  <text x="712" y="170" font-size="10.5" fill="var(--muted)" text-anchor="middle">:8765</text>
+
+  <!-- ===== ロボット ===== -->
+  <rect x="500" y="352" width="424" height="132" rx="14" fill="none" stroke="var(--c-robot)" stroke-width="2"/>
+  <text x="518" y="380" font-size="16" font-weight="700" fill="var(--c-robot)">ロボット (ROS 1 システム)</text>
+  <text x="518" y="406" font-size="13" fill="var(--text)">roscore · カメラ · ホイールオドメトリ · 足回り</text>
+  <text x="518" y="428" font-size="12.5" fill="var(--muted)">自己位置 (任意) があればサブゴールを位置で切り替え</text>
+  <text x="518" y="450" font-size="12.5" fill="var(--muted)">開始/停止: /omnivla/enable · 状態: /omnivla/status</text>
+
+  <!-- nav <-> robot -->
+  <line x1="790" y1="350" x2="790" y2="282" stroke="var(--c-ros)" stroke-width="2" marker-end="url(#ar)"/>
+  <text x="782" y="320" font-size="12" fill="var(--c-ros)" text-anchor="end">画像 · /odom</text>
+  <line x1="850" y1="282" x2="850" y2="350" stroke="var(--c-ros)" stroke-width="2" marker-end="url(#ar)"/>
+  <text x="858" y="312" font-size="12" fill="var(--c-ros)">/cmd_vel</text>
+  <text x="858" y="328" font-size="12" fill="var(--c-ros)">/omnivla/path</text>
+</svg>
+</div>
+<div class="legend">
+  <span style="--k: var(--c-pc)">学習 PC</span>
+  <span style="--k: var(--c-gpu)">GPU (PyTorch)</span>
+  <span style="--k: var(--c-ros)">ROS 1</span>
+  <span style="--k: var(--c-robot)">ロボット</span>
+  <span style="--k: var(--c-data)">データ</span>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="step">走行中の 1 ステップ (3Hz)</h2>
+<div class="diagram" role="img" aria-label="1 ステップの流れ">
+<svg viewBox="0 0 940 470" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <!-- lifelines -->
+  <rect x="40" y="14" width="160" height="40" rx="8" fill="var(--surface2)" stroke="var(--c-robot)" stroke-width="2"/>
+  <text x="120" y="39" font-size="14" font-weight="700" fill="var(--c-robot)" text-anchor="middle">ロボット</text>
+  <rect x="390" y="14" width="160" height="40" rx="8" fill="var(--surface2)" stroke="var(--c-ros)" stroke-width="2"/>
+  <text x="470" y="39" font-size="14" font-weight="700" fill="var(--c-ros)" text-anchor="middle">ROS 1 コンテナ</text>
+  <rect x="740" y="14" width="160" height="40" rx="8" fill="var(--surface2)" stroke="var(--c-gpu)" stroke-width="2"/>
+  <text x="820" y="39" font-size="14" font-weight="700" fill="var(--c-gpu)" text-anchor="middle">推論コンテナ</text>
+  <line x1="120" y1="54" x2="120" y2="456" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 5"/>
+  <line x1="470" y1="54" x2="470" y2="456" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 5"/>
+  <line x1="820" y1="54" x2="820" y2="456" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 5"/>
+
+  <!-- 1 -->
+  <line x1="122" y1="86" x2="466" y2="86" stroke="var(--c-ros)" stroke-width="2" marker-end="url(#ar2)"/>
+  <text x="140" y="78" font-size="13" fill="var(--text)">① カメラ画像 · /odom (· 自己位置)</text>
+
+  <!-- 2 self -->
+  <rect x="476" y="102" width="330" height="48" rx="6" fill="var(--surface2)"/>
+  <text x="488" y="122" font-size="13" fill="var(--text)">② 画像の前処理 (切り抜き・縮小)</text>
+  <text x="488" y="141" font-size="12" fill="var(--muted)">edge は 3Hz ごとに観測履歴 (過去 5 枚) に積む</text>
+
+  <!-- 3 self -->
+  <rect x="476" y="160" width="330" height="48" rx="6" fill="var(--surface2)"/>
+  <text x="488" y="180" font-size="13" fill="var(--text)">③ サブゴールに着いたか判定 → 次の画像へ</text>
+  <text x="488" y="199" font-size="12" fill="var(--muted)">自己位置あり: 位置 / なし: 画像の類似度 + オドメトリ</text>
+
+  <!-- 4 -->
+  <line x1="472" y1="238" x2="816" y2="238" stroke="var(--c-gpu)" stroke-width="2" marker-end="url(#ar2)"/>
+  <text x="490" y="230" font-size="13" fill="var(--text)">④ 画像を送る: 現在 · サブゴール (· 過去 5 枚)</text>
+  <text x="490" y="256" font-size="12" fill="var(--muted)">HTTP POST /predict</text>
+
+  <!-- 5 self on policy -->
+  <rect x="680" y="252" width="250" height="40" rx="6" fill="var(--surface2)"/>
+  <text x="692" y="277" font-size="13" fill="var(--text)">⑤ OmniVLA で推論 (GPU)</text>
+
+  <!-- 6 -->
+  <line x1="818" y1="320" x2="474" y2="320" stroke="var(--c-gpu)" stroke-width="2" marker-end="url(#ar2)"/>
+  <text x="490" y="312" font-size="13" fill="var(--text)">⑥ 8 点の軌跡 (約 2.7 秒先まで, x・y・向き)</text>
+
+  <!-- 7 self -->
+  <rect x="476" y="336" width="330" height="40" rx="6" fill="var(--surface2)"/>
+  <text x="488" y="361" font-size="13" fill="var(--text)">⑦ 軌跡をなぞる (v, ω) を計算</text>
+
+  <!-- 8 -->
+  <line x1="468" y1="410" x2="124" y2="410" stroke="var(--c-ros)" stroke-width="2" marker-end="url(#ar2)"/>
+  <text x="140" y="402" font-size="13" fill="var(--text)">⑧ /cmd_vel (10Hz で最新を出し続ける)</text>
+  <text x="140" y="436" font-size="12" fill="var(--muted)">/omnivla/path · /omnivla/debug_image も出す</text>
+  <text x="140" y="452" font-size="12" fill="var(--muted)">推論が 1 秒以上来なければ 0 (停止)</text>
+</svg>
+</div>
+<p class="caption">③ で最後のサブゴールに着いたら停止。① 〜 ⑧ を 3Hz で繰り返す (⑧ の指示値だけは 10Hz で出し続ける)。</p>
+
+<!-- ============================================================ -->
+<h2 id="why">なぜ 2 つのコンテナに分けるか</h2>
+<ul class="tight">
+  <li>ROS 1 Noetic は <strong>Ubuntu 20.04</strong> 用。Jetson で GPU が使える PyTorch は <strong>JetPack ごとに Ubuntu が決まる</strong> (JetPack 6 は 22.04, 5 は 20.04)。</li>
+  <li>分けておけば、JetPack が決まっていなくても ROS 1 側はそのまま。推論コンテナのベースイメージだけを JetPack に合わせて選べばよい。</li>
+  <li>ROS 1 コンテナは PyTorch 無し (rospy · numpy · Pillow · PyYAML だけ) なので、既存の ROS 1 環境にも入れやすい。</li>
+</ul>
+
+<div class="tablewrap">
+<table>
+  <tr><th>JetPack</th><th>Ubuntu</th><th>推論コンテナのベース (<code>JETSON_BASE_IMAGE</code>)</th></tr>
+  <tr><td>6.1 / 6.2</td><td>22.04</td><td><code>dustynv/l4t-pytorch:r36.4.0</code> (既定)</td></tr>
+  <tr><td>6.0</td><td>22.04</td><td><code>dustynv/l4t-pytorch:r36.2.0</code></td></tr>
+  <tr><td>5.1.2</td><td>20.04</td><td><code>dustynv/l4t-pytorch:2.2-r35.4.1</code></td></tr>
+</table>
+</div>
+<p class="caption">ROS 1 コンテナは JetPack に関係なく <code>ros:noetic-ros-base</code> (arm64 / x86 両対応)。</p>
+
+<!-- ============================================================ -->
+<h2 id="link">コンテナ間の通信</h2>
+<p>やりとりは「画像を渡して、その結果を待つ」だけなので、リクエスト / レスポンス型で、追加のライブラリが要らないものを選んだ。</p>
+<div class="tablewrap">
+<table>
+  <tr><th>方式</th><th>形</th><th>追加で必要なもの</th><th>判断</th></tr>
+  <tr><td class="pick">HTTP</td><td>リクエスト / レスポンス</td><td>なし (Python 標準ライブラリ)</td><td>採用。<code>curl :8765/info</code> で生存確認できる</td></tr>
+  <tr><td>ZeroMQ</td><td>リクエスト / レスポンス</td><td>両コンテナに pyzmq</td><td>同じくらい妥当。少し軽い</td></tr>
+  <tr><td>MQTT</td><td>配信 / 購読</td><td>ブローカー (mosquitto など)</td><td>結果を待つ使い方に合わない。プロセスが 1 つ増える</td></tr>
+  <tr><td>gRPC</td><td>リクエスト / レスポンス</td><td>grpcio · protobuf</td><td>7B の依存 (protobuf&lt;5) とぶつかりやすい</td></tr>
+</table>
+</div>
+<ul class="tight">
+  <li>同じ Jetson の中 (localhost) だけの通信。ロボットの他のノードとのやりとりは今まで通り ROS 1 のトピック。</li>
+  <li>画像は無圧縮で送るので、ノードの中で推論した場合と同じ結果になる (CI で確認)。</li>
+  <li>通信部分は <code>omnivla_real/remote.py</code> だけに閉じているので、他の方式に替えても残りは変わらない。</li>
+</ul>
+<div class="note">通信にかかる時間は Jetson ではまだ測っていない。画像 7 枚 (約 1.6MB) で数 ms の見込みで、7B の推論 (数百 ms 以上) に比べれば小さい。</div>
+
+<!-- ============================================================ -->
+<h2 id="files">ファイルとの対応</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>部分</th><th>Docker</th><th>compose</th><th>主なコード</th></tr>
+  <tr><td>推論コンテナ (Jetson)</td><td><code class="nw">docker/Dockerfile.jetson</code></td><td><code>policy</code></td><td><code>tools/policy_server.py</code> · <code>omnivla_real/remote.py</code> · <code>edge.py</code> · <code>policy.py</code></td></tr>
+  <tr><td>ROS 1 コンテナ</td><td><code class="nw">docker/Dockerfile.ros1</code></td><td><code>nav</code> (Jetson) · <code>ros1</code> (PC)</td><td><code>ros1/omnivla_real_ros1</code> · <code>omnivla_real/engine.py</code> · <code>topomap.py</code> · <code>controller.py</code></td></tr>
+  <tr><td>学習 PC</td><td><code class="nw">docker/Dockerfile</code></td><td><code>shell</code> · <code>train_7b</code> · <code>train_edge</code> · <code>policy</code></td><td><code>tools/</code> (変換・topomap・机上評価) · <code>training/</code></td></tr>
+  <tr><td>設定</td><td colspan="3"><code>configs/robot.yaml</code> (トピック名・画像の前処理) · <code>configs/navigator.yaml</code> (モデル・制御・サブゴール) · <code>.env</code> (JetPack・重み・ROS master)</td></tr>
+</table>
+</div>
+
+<footer>
+  リポジトリ: <a href="https://github.com/mamoru1126/omnivla_real">mamoru1126/omnivla_real</a> ·
+  手順: <a href="https://github.com/mamoru1126/omnivla_real#readme">README</a> ·
+  公式 OmniVLA: <a href="https://github.com/NHirose/OmniVLA">NHirose/OmniVLA</a> ·
+  シミュレータ版: <a href="https://mamoru1126.github.io/omnivla_gazebo/">omnivla_gazebo</a>
+</footer>
+</div>
+<script>
+(function () {
+  var root = document.documentElement, btn = document.getElementById("themeToggle"), saved = null;
+  try { saved = localStorage.getItem("omnivla-theme"); } catch (e) {}
+  if (saved) root.setAttribute("data-theme", saved);
+  btn.addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") ? root.getAttribute("data-theme") === "dark"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var next = dark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("omnivla-theme", next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
