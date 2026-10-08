@@ -1,0 +1,5 @@
+GET / 200 text/html; charset=utf-8 25721 bytes
+GET /api/config 200 camera {'height': 0.5, 'hfov_deg': 90.0, 'pitch_deg': 0.0, 'x_offset': 0.2} nodes 24
+SSE: 0 step messages, 0 status messages
+NG: no step messages with 8 waypoints
+FAILED

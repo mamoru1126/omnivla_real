@@ -1,0 +1,8 @@
+[policy_server] loading edge ...
+/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[edge] ready (device=cpu, metric_waypoint_spacing=0.1803149800959821, context_stride=1)
+[policy_server] loaded in 2.4s
+[policy_server] warmup done (latency 133 ms)
+[policy_server] image preprocess (robot.yaml): crop=[0.0, 0.0, 0.0, 0.0] width=320 rotate180=False
+[policy_server] edge on http://127.0.0.1:8765
