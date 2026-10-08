@@ -18,9 +18,13 @@ class PolicyOutput:
 
 
 def load_policy(model: str, weights: str = "", finetuned_dir: str = "", device: str = "cuda:0",
-                metric_waypoint_spacing: Optional[float] = None, half: bool = False):
-    """model: '7b' (OmniVLA) | 'edge' (OmniVLA-edge)."""
+                metric_waypoint_spacing: Optional[float] = None, half: bool = False, url: str = "",
+                timeout: float = 10.0):
+    """model: '7b' (OmniVLA) | 'edge' (OmniVLA-edge) | 'remote' (tools/policy_server.py を url で呼ぶ. torch 不要)."""
     model = model.lower()
+    if model == "remote":
+        from .remote import DEFAULT_PORT, RemotePolicy
+        return RemotePolicy(url or f"http://127.0.0.1:{DEFAULT_PORT}", timeout=timeout)
     if model in ("7b", "omnivla"):
         from .policy import OmniVLAPolicy, PolicyConfig
         return OmniVLAPolicy(PolicyConfig(vla_path=weights or "/checkpoints/omnivla-original",
@@ -31,4 +35,4 @@ def load_policy(model: str, weights: str = "", finetuned_dir: str = "", device: 
         return EdgePolicy(EdgePolicyConfig(weights=finetuned_dir or weights or "/checkpoints/omnivla-edge",
                                            device=device, metric_waypoint_spacing=metric_waypoint_spacing,
                                            half=half))
-    raise ValueError(f"unknown model '{model}' (7b | edge)")
+    raise ValueError(f"unknown model '{model}' (7b | edge | remote)")

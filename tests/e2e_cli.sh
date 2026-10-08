@@ -74,6 +74,29 @@ if python3 -c "import torch, efficientnet_pytorch" 2>/dev/null; then
     python3 tools/desk_eval.py --robot configs/robot.yaml --bag "$EVAL" --topomap "$OUT/topomap" \
         --model edge --weights "$CKPT" --device cpu --end_sec 30 --debug_every 20 --out "$OUT/desk_eval_edge"
     head -40 "$OUT/desk_eval_edge/report.txt"
+
+    step "policy_server + desk_eval --model remote (ROS 1 コンテナから推論サーバを呼ぶ構成) == プロセス内推論"
+    python3 tools/policy_server.py --model edge --weights "$CKPT" --device cpu --port 8799 > "$OUT/policy_server.log" 2>&1 &
+    SERVER=$!
+    trap 'kill $SERVER 2>/dev/null || true' EXIT
+    python3 tools/desk_eval.py --robot configs/robot.yaml --bag "$EVAL" --topomap "$OUT/topomap" \
+        --model remote --url http://127.0.0.1:8799 --end_sec 30 --out "$OUT/desk_eval_remote"
+    kill $SERVER
+    cat "$OUT/policy_server.log"
+    python3 - "$OUT" <<'PYEOF'
+import json, math, sys
+a = json.load(open(f"{sys.argv[1]}/desk_eval_edge/report.json"))
+b = json.load(open(f"{sys.argv[1]}/desk_eval_remote/report.json"))
+n = 0
+for sec in ("waypoints", "commands"):
+    for k, v in a[sec].items():
+        w = b[sec].get(k)
+        if isinstance(v, float) and not math.isnan(v):
+            assert abs(v - w) < 1e-4, (sec, k, v, w)
+            n += 1
+assert n > 3, a
+print(f"remote == local ({n} metrics)")
+PYEOF
 else
     echo "(torch / efficientnet_pytorch not installed: skip edge training and model desk_eval)"
 fi

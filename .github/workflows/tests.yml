@@ -115,39 +115,63 @@ jobs:
             && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-ros2
 
   ros1_node:
+    # 実機 (Jetson) と同じ構成: 推論サーバ (PyTorch, ここではホストの CPU) + ROS 1 コンテナ (docker/Dockerfile.ros1, torch なし)
     needs: core
     runs-on: ubuntu-22.04
     timeout-minutes: 40
-    container: ros:noetic-ros-base-focal
-    defaults:
-      run:
-        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: e2e
           path: /tmp/e2e
-      - name: Install
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install policy server deps (CPU)
         run: |
-          apt-get update && apt-get install -y --no-install-recommends python3-pip git
-          pip3 install torch==2.2.2 torchvision==0.17.2 --index-url $TORCH_INDEX
-          pip3 install "numpy<2" pillow pyyaml matplotlib efficientnet_pytorch==0.7.1
+          pip install torch==2.2.2 torchvision==0.17.2 --index-url $TORCH_INDEX
+          pip install "numpy<2" pillow pyyaml efficientnet_pytorch==0.7.1
+      - name: Build ROS 1 image (docker/Dockerfile.ros1)
+        run: |
+          set -o pipefail
+          mkdir -p ci
+          docker build -f docker/Dockerfile.ros1 -t omnivla_real:ros1 . 2>&1 | tee ci/ros1-build.log | tail -20
+      - name: Start policy server
+        run: |
+          CKPT=$(ls -d /tmp/e2e/runs/edge_ci/checkpoints/step_* | tail -1)
+          nohup python tools/policy_server.py --model edge --weights "$CKPT" --device cpu --port 8765 > ci/policy_server.log 2>&1 &
+          for i in $(seq 120); do curl -sf http://127.0.0.1:8765/info > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:8765/info; echo
       - name: Node test (rosbag play -> /cmd_vel, /omnivla/path)
         run: |
           set -o pipefail
-          source /opt/ros/noetic/setup.bash
-          bash tests/ros_node_test.sh ros1 /tmp/e2e 2>&1 | tee /tmp/ros1_node.log
+          docker run --rm --network host -v "$PWD":/workspace -v /tmp/e2e:/tmp/e2e -e POLICY_URL=http://127.0.0.1:8765 \
+            omnivla_real:ros1 bash tests/ros_node_test.sh ros1 /tmp/e2e 2>&1 | tee ci/ros1_node.log
       - name: Analyze the navigation log (tools/plot_nav_log.py)
-        run: python3 tools/plot_nav_log.py /tmp/e2e/ros1_node/nav/latest
-      - name: Publish log to ci-logs-ros1 branch
+        run: |
+          set -o pipefail
+          docker run --rm -v "$PWD":/workspace -v /tmp/e2e:/tmp/e2e omnivla_real:ros1 \
+            python3 tools/plot_nav_log.py /tmp/e2e/ros1_node/nav/latest 2>&1 | tee ci/plot_nav_log.log
+      - name: scripts/replay_bag_ros1.sh (split ROS 1 bag, roslaunch, rosbag record)
+        run: |
+          set -o pipefail
+          docker run --rm --network host -v "$PWD":/workspace -v /tmp/e2e:/tmp/e2e omnivla_real:ros1 bash -c '
+            bash scripts/replay_bag_ros1.sh /tmp/e2e/bags/course_ros1_0.bag,/tmp/e2e/bags/course_ros1_1.bag /tmp/e2e/topomap /tmp/e2e/replay
+            rosbag info /tmp/e2e/replay/out.bag
+            python3 -c "import rosbag; b = rosbag.Bag(\"/tmp/e2e/replay/out.bag\"); n = b.get_message_count(\"/cmd_vel\"); p = b.get_message_count(\"/omnivla/path\"); print(\"cmd_vel\", n, \"path\", p); assert n > 10 and p > 3"
+          ' 2>&1 | tee ci/replay.log
+      - name: Publish logs to ci-logs-ros1 branch
         if: always()
         run: |
-          git config --global --add safe.directory '*'
           D=/tmp/cilog; rm -rf $D; mkdir -p $D
-          cp /tmp/ros1_node.log $D/ 2>/dev/null || echo "not run" > $D/ros1_node.log
-          cp -r /tmp/e2e/ros1_node $D/ 2>/dev/null || true
+          cp ci/*.log $D/ 2>/dev/null || true
+          sudo cp -r /tmp/e2e/ros1_node $D/ 2>/dev/null || true
+          sudo mkdir -p $D/replay && sudo cp /tmp/e2e/replay/*.log $D/replay/ 2>/dev/null || true
+          sudo find /tmp/e2e/replay/nav -maxdepth 2 \( -name "*.png" -o -name "*.txt" -o -name "*.json" -o -name "*.csv" \) -exec cp {} $D/replay/ \; 2>/dev/null || true
+          sudo chown -R $(id -u) $D
           find $D -name "*.jpg" -size +200k -delete
+          rm -rf $D/ros1_node/nav/*/raw
           echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
           cd $D && git init -q && git add . \
             && git -c user.name=ci -c user.email=ci@example.com commit -qm "ros1 ${{ github.run_id }}" \

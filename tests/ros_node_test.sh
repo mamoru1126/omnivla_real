@@ -5,13 +5,14 @@
 #   bash tests/ros_node_test.sh ros2 E2E_DIR     # ROS 2 Humble (colcon build 済みの install を source してから)
 #   bash tests/ros_node_test.sh ros1 E2E_DIR     # ROS 1 Noetic
 # E2E_DIR は tests/e2e_cli.sh の出力 (bags/, topomap/, runs/edge_ci/checkpoints/step_*).
+# POLICY_URL=http://127.0.0.1:8765 を付けると、ノードの中では推論せず推論サーバを呼ぶ (実機の構成).
 set -uo pipefail
 WHICH=$1
 E2E=$(cd "$2" && pwd)
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 export OMNIVLA_REAL_ROOT=$ROOT
 export PYTHONUNBUFFERED=1
-CKPT=$(ls -d "$E2E"/runs/edge_ci/checkpoints/step_* | tail -1)
+CKPT=$(ls -d "$E2E"/runs/edge_ci/checkpoints/step_* 2>/dev/null | tail -1)
 OUT="$E2E/${WHICH}_node"
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -19,9 +20,12 @@ PIDS=()
 cleanup() { for p in "${PIDS[@]}"; do kill "$p" 2>/dev/null; done; sleep 1; }
 trap cleanup EXIT
 
+POLICY_URL=${POLICY_URL:-}
+EXTRA2=()
+if [ -n "$POLICY_URL" ]; then EXTRA2=(-p policy_url:="$POLICY_URL"); fi
 if [ "$WHICH" = ros2 ]; then
     ros2 run omnivla_real_ros navigator --ros-args -p topomap:="$E2E/topomap" -p model:=edge -p weights:="$CKPT" \
-        -p device:=cpu -p log_dir:="$OUT/nav" -p use_sim_time:=true > "$OUT/node.log" 2>&1 &
+        -p device:=cpu -p log_dir:="$OUT/nav" "${EXTRA2[@]}" -p use_sim_time:=true > "$OUT/node.log" 2>&1 &
     PIDS+=($!)
 else
     roscore > "$OUT/roscore.log" 2>&1 &
@@ -29,7 +33,7 @@ else
     for i in $(seq 30); do rostopic list > /dev/null 2>&1 && break; sleep 1; done
     rosparam set /use_sim_time true
     python3 "$ROOT/ros1/omnivla_real_ros1/scripts/navigator_node.py" _topomap:="$E2E/topomap" _model:=edge \
-        _weights:="$CKPT" _device:=cpu _log_dir:="$OUT/nav" > "$OUT/node.log" 2>&1 &
+        _weights:="$CKPT" _device:=cpu _log_dir:="$OUT/nav" _policy_url:="$POLICY_URL" > "$OUT/node.log" 2>&1 &
     PIDS+=($!)
 fi
 

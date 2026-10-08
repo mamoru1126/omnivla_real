@@ -1,26 +1,7 @@
-# OmniVLA (prismatic) の推論・学習に必要な最小限の依存 + 本リポジトリの依存.
-# OmniVLA の pyproject.toml の依存一式 (tensorflow, dlimp, wandb など RLDS 学習用) は入れない.
-# 代わりに docker/install_omnivla.sh が prismatic の __init__.py を空にして、必要なモジュールだけ import できるようにする.
-transformers @ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab
-tokenizers==0.19.1
-timm==0.9.10
-peft==0.11.1
-accelerate==0.34.2
-huggingface_hub==0.29.1
-sentencepiece<0.3
-protobuf<5
-einops
-json-numpy
-# OmniVLA-edge
-efficientnet_pytorch==0.7.1
-ftfy
-regex
-clip @ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
-# 本リポジトリ
+# 学習 PC (x86_64) 用: 7B + edge + bag の変換・評価
+-r requirements-7b.txt
+-r requirements-edge.txt
 rosbags>=0.10.4,<0.11
-numpy<2
-pillow
-pyyaml
 matplotlib
 scipy
 pytest

@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python3 -m pip install -U "pip>=24,<26" "setuptools>=68,<70" wheel \
     && python3 -m pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu121
 
-COPY docker/requirements.txt docker/install_omnivla.sh /tmp/
+COPY docker/requirements*.txt docker/install_omnivla.sh /tmp/
 RUN echo -e "torch==2.2.0\ntorchvision==0.17.0" > /tmp/keep.txt \
     && python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements.txt \
     && bash /tmp/install_omnivla.sh

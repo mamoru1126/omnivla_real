@@ -9,12 +9,12 @@
 | | 入力 | 出力 |
 |---|---|---|
 | 学習 (RTX 3090 以上) | rosbag: カメラ画像, ホイールオドメトリ, 指示値 (+任意で自己位置) | ファインチューニングした重み |
-| 走行 (Jetson AGX Orin) | 今のカメラ画像 (+オドメトリ), サブゴール画像列 | 指示値 `/cmd_vel`, 予測軌跡 (約 2.7 秒 / 数 m) `/omnivla/path` |
+| 走行 (Jetson AGX Orin, ROS 1) | 今のカメラ画像 (+オドメトリ), サブゴール画像列 | 指示値 `/cmd_vel`, 予測軌跡 (約 2.7 秒 / 数 m) `/omnivla/path` |
 
-モデルは次の 2 つから選べます。
+モデルは次の 2 つから選べます (学習・走行とも同じ手順)。
 
-- **OmniVLA-edge** (軽量, Jetson 向け, 既定)
 - **OmniVLA 7B** (LoRA で学習)
+- **OmniVLA-edge** (軽量. Jetson で速い)
 
 ## 流れ
 
@@ -24,7 +24,8 @@
 4. 学習する (`finetune_edge.py` / `finetune_omnivla.py`)
 5. サブゴール画像列 (topomap) を作る (`make_topomap.py`)
 6. 机上評価する (`desk_eval.py`)
-7. Jetson で走らせる (ROS 2 / ROS 1 ノード)
+7. bag を再生して ROS 1 ノードを試す (PC)
+8. Jetson で走らせる (ROS 1)
 
 ## 準備 (学習 PC: x86_64 + NVIDIA GPU)
 
@@ -34,7 +35,7 @@ Docker と NVIDIA Container Toolkit が必要です。
 git clone https://github.com/mamoru1126/omnivla_real.git && cd omnivla_real
 cp .env.example .env
 docker compose build
-docker compose run --rm shell bash scripts/download_checkpoints.sh edge   # 7B も使うなら引数なし
+docker compose run --rm shell bash scripts/download_checkpoints.sh        # 公式の重み (7B と edge). edge だけなら引数 edge
 ```
 
 フォルダとコンテナ内のパスの対応 (`.env` で変更可):
@@ -51,8 +52,8 @@ docker compose run --rm shell bash scripts/download_checkpoints.sh edge   # 7B �
 ## 1. bag の中身を見る
 
 ```bash
-python3 tools/bag_info.py /bags/run1          # ROS 2: bag のディレクトリ (.db3 / .mcap)
 python3 tools/bag_info.py /bags/run1.bag      # ROS 1
+python3 tools/bag_info.py /bags/run1          # ROS 2: bag のディレクトリ (.db3 / .mcap)
 ```
 
 表示されたトピック名を `configs/robot.yaml` の `topics` に書きます。
@@ -104,8 +105,8 @@ python3 training/inspect_dataset.py /data/dataset --num_viz 16 --out /runs/inspe
 ## 4. 学習
 
 ```bash
-docker compose run --rm train_edge     # OmniVLA-edge (数 GB の GPU で可). configs/finetune_edge.yaml
 docker compose run --rm train_7b       # OmniVLA 7B, LoRA (24GB 以上). configs/finetune_7b.yaml
+docker compose run --rm train_edge     # OmniVLA-edge (数 GB の GPU で可). configs/finetune_edge.yaml
 ```
 
 - 結果は `/runs/<run>/checkpoints/step_XXXXXX/` に出ます。
@@ -132,8 +133,10 @@ topomap を作った走行とは別の走行の bag で評価します。録画�
 - 予測軌跡 → 指示値
 
 ```bash
-python3 tools/desk_eval.py --bag /bags/run2 --topomap /data/topomaps/course_a \
-    --model edge --weights /runs/<run>/checkpoints/step_010000 --out /runs/desk_eval/run2 --debug_every 10
+python3 tools/desk_eval.py --bag /bags/run2.bag --topomap /data/topomaps/course_a \
+    --model 7b --finetuned_dir /runs/<run>/checkpoints/step_005000 --out /runs/desk_eval/run2 --debug_every 10
+# edge: --model edge --weights /runs/<run>/checkpoints/step_010000
+# 推論サーバ経由 (実機と同じ): --model remote --url http://127.0.0.1:8765
 ```
 
 | 出力 | 中身 |
@@ -164,20 +167,53 @@ python3 tools/desk_eval.py --bag /bags/run2 --topomap /data/topomaps/course_a \
 
 画像の類似度のしきい値 (`image_threshold`) は、机上評価の `report.json` の `similarity_threshold` を見て決めます。
 
-## 7. Jetson AGX Orin で走らせる
+## 7. bag を再生して ROS 1 ノードを試す (PC)
 
-JetPack 6 (L4T r36) を前提とし、ROS 2 Humble 入りのイメージを使います。学習 PC から重みと topomap をコピーしておきます。
+実機と同じ構成 (推論サーバ + ROS 1 ノード) で、別の走行の bag を流して動きを確認します。
+
+```bash
+# .env に NAV_MODEL / FINETUNED_DIR を書いておく
+docker compose up -d policy                       # 推論サーバ (GPU)
+docker compose run --rm ros1 bash scripts/replay_bag_ros1.sh /bags/run2.bag /data/topomaps/course_a
+```
+
+- bag からは `robot.yaml` の画像・オドメトリ (・自己位置) だけを流します。記録された `/cmd_vel` は流しません。
+- 出力は `/runs/replay/<時刻>/` に出ます。
+  - `out.bag`: ノードが出した `/cmd_vel` と `/omnivla/path`
+  - `nav/`: 走行ログと `overview.png`
+- 走行中の画像は `rqt_image_view /omnivla/debug_image` で見られます。
+
+## 8. Jetson AGX Orin で走らせる (ROS 1)
+
+コンテナを 2 つに分け、localhost の HTTP でつなぎます。
+
+| コンテナ | 中身 | Dockerfile |
+|---|---|---|
+| `policy` | 推論サーバ。OmniVLA を GPU で動かす。ROS なし | `docker/Dockerfile.jetson` |
+| `nav` | ROS 1 Noetic のナビゲーションノード。PyTorch なし | `docker/Dockerfile.ros1` |
+
+分けている理由: ROS 1 Noetic は Ubuntu 20.04 用ですが、Jetson で GPU を使える PyTorch は JetPack ごとに Ubuntu が決まっています (JetPack 6 は 22.04)。分けておけば、JetPack が決まっていなくても ROS 1 側はそのまま使えます。
+
+推論サーバのベースイメージは、JetPack に合わせて `.env` の `JETSON_BASE_IMAGE` で選びます。
+
+| JetPack | `JETSON_BASE_IMAGE` |
+|---|---|
+| 6.1 / 6.2 (L4T r36.4) | `dustynv/l4t-pytorch:r36.4.0` (既定) |
+| 6.0 (L4T r36.2) | `dustynv/l4t-pytorch:r36.2.0` |
+| 5.1.2 (L4T r35.4) | `dustynv/l4t-pytorch:2.2-r35.4.1` |
 
 ```bash
 git clone https://github.com/mamoru1126/omnivla_real.git && cd omnivla_real
-cp .env.example .env              # JetPack が違う場合は docker/Dockerfile.jetson の BASE_IMAGE を合わせる
+cp .env.example .env    # JETSON_BASE_IMAGE, NAV_MODEL, FINETUNED_DIR, TOPOMAP, ROS_MASTER_URI を書く
 docker compose -f docker-compose.jetson.yml build
-# ./runs/<run>/checkpoints/step_010000 と ./data/topomaps/course_a を置いてから
-TOPOMAP=/data/topomaps/course_a FINETUNED_DIR=/runs/<run>/checkpoints/step_010000 \
-    docker compose -f docker-compose.jetson.yml run --rm nav
+# 学習 PC から ./runs/<run>/checkpoints/step_XXXXXX と ./data/topomaps/course_a をコピー
+# (7B の場合は ./checkpoints/omnivla-original も)
+docker compose -f docker-compose.jetson.yml up               # ROS master は ROS_MASTER_URI のもの
+docker compose -f docker-compose.jetson.yml --profile standalone up   # roscore もここで立てる場合
 ```
 
-カメラ画像とオドメトリ (自己位置があればそれも) が届くと、走り出します (`autostart`)。
+- `nav` は推論サーバの準備ができるのを待ってから始まります。7B の読み込みには数分かかります。
+- カメラ画像とオドメトリ (自己位置があればそれも) が届くと走り出します (`autostart`)。
 
 | | トピック | 型 |
 |---|---|---|
@@ -186,20 +222,17 @@ TOPOMAP=/data/topomaps/course_a FINETUNED_DIR=/runs/<run>/checkpoints/step_01000
 | 入力 | `/omnivla/topomap` | `std_msgs/String`。topomap を切り替えて開始 |
 | 出力 | `/cmd_vel` | `Twist` (`io.cmd_stamped: true` で `TwistStamped`) |
 | 出力 | `/omnivla/path` | `nav_msgs/Path`。予測軌跡 8 点 (`base_link` 座標) |
-| 出力 | `/omnivla/debug_image` | 予測軌跡を重ねた画像 (rqt_image_view で見る) |
+| 出力 | `/omnivla/debug_image` | 予測軌跡を重ねた画像 |
 | 出力 | `/omnivla/status` | JSON。状態, サブゴール番号, 類似度, 推論時間 |
 
 - 速度の上限は `navigator.yaml` の `engine.controller.track_max_v` / `track_max_w` で、ロボットに合わせます。
-- 推論結果が `io.cmd_timeout` 秒より古くなると 0 を出します。
+- 推論結果が `io.cmd_timeout` 秒より古くなると 0 を出します。推論サーバが止まった場合も 0 になります。
 - 走行ログは `log/nav/<時刻>/` に保存されます。
   - `python3 tools/plot_nav_log.py log/nav/latest` で、図とレポートを作れます。
-- bag の再生でも試せます。
-  ```bash
-  ros2 launch omnivla_real_ros navigator.launch.py topomap:=... use_sim_time:=true
-  ros2 bag play <bag> --clock --topics <画像> <odom>
-  ```
+- ROS 1 ノードは既存の ROS 1 環境に入れても動きます。必要なのは rospy, numpy, Pillow, PyYAML で、`ros1/omnivla_real_ros1` を catkin ワークスペースに置き、`OMNIVLA_REAL_ROOT` に本リポジトリを指定します。
+- 推論サーバは別の PC (学習 PC など) で動かしても構いません。その場合はサーバを `--host 0.0.0.0` で起動し、`policy_url:=http://<IP>:8765` を指定します。
 
-ROS 1 の場合は `roslaunch omnivla_real_ros1 navigator.launch topomap:=...` で起動します。中身は ROS 2 版と共通です。rospy と PyTorch が同じ Python で動く環境が必要です。JetPack 6 (Ubuntu 22.04) には ROS 1 が無いので、Jetson では ROS 2 版 + ros1_bridge を推奨します。
+ROS 2 で使う場合は `ros2 launch omnivla_real_ros navigator.launch.py` で起動します (ROS 2 ノードも同梱)。
 
 ## 設定ファイル
 
@@ -221,12 +254,15 @@ CI (GitHub Actions) では合成したコース走行の bag を使い、次を�
 
 - ROS 1 / ROS 2 sqlite3 / ROS 2 mcap の bag を読む
 - 変換 → edge の学習 (CPU で数 step) → topomap → 机上評価
-- ROS 2 / ROS 1 ノードに bag を再生して、`/cmd_vel` と `/omnivla/path` が出る
+- 推論サーバ経由の推論が、プロセス内の推論と同じ結果になる
+- ROS 1: 推論サーバ + ROS 1 コンテナ (`docker/Dockerfile.ros1`) で bag を再生し、`/cmd_vel` と `/omnivla/path` が出る (`scripts/replay_bag_ros1.sh` も)
+- ROS 2 ノードも同様
+- 学習用イメージのビルド、Jetson 用推論サーバの Dockerfile (x86 の PyTorch イメージを代わりのベースにして依存のインストールまで)
 
 ## 未確認のこと
 
 - 実機の bag、実機での走行
-- Jetson 用イメージのビルド
+- Jetson 上でのイメージのビルド (推論サーバ・ROS 1 とも)
 - 7B の GPU での学習・推論
 
-これらはまだ試していません。7B は Jetson では遅い可能性が高いので、まず edge を推奨します。
+これらはまだ試していません。7B の Jetson での推論時間は未計測です。遅すぎる場合は edge に切り替えます (学習・走行の手順は同じ)。

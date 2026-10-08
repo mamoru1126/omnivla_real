@@ -14,12 +14,14 @@ from .topomap import TrackerConfig
 
 @dataclass
 class ModelConfig:
-    model: str = "edge"                 # edge | 7b
+    model: str = "edge"                 # edge | 7b | remote (推論サーバ tools/policy_server.py を呼ぶ)
     weights: str = ""                   # 7b: ベースモデル (/checkpoints/omnivla-original), edge: 公式重み
     finetuned_dir: str = ""             # 学習結果 (runs/<run>/checkpoints/step_XXXXXX)
     device: str = "cuda:0"
     half: bool = False                  # edge: fp16 で推論
     metric_waypoint_spacing: float = 0.0  # 0 = 学習結果の値
+    url: str = ""                       # remote: 推論サーバの URL (空なら http://127.0.0.1:8765)
+    timeout: float = 10.0               # remote: 1 回の推論の待ち時間の上限 [s]
 
 
 @dataclass
@@ -83,4 +85,5 @@ def load_nav_config(path: Optional[str], overrides: Optional[Dict[str, Any]] = N
 
 def make_policy(m: ModelConfig):
     from .policy_base import load_policy
-    return load_policy(m.model, m.weights, m.finetuned_dir, m.device, m.metric_waypoint_spacing or None, m.half)
+    return load_policy(m.model, m.weights, m.finetuned_dir, m.device, m.metric_waypoint_spacing or None, m.half,
+                       url=m.url, timeout=m.timeout)

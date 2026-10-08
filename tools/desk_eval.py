@@ -156,7 +156,8 @@ def main(argv=None):
     ap.add_argument("--nav", default="configs/navigator.yaml")
     ap.add_argument("--out", required=True)
     ap.add_argument("--policy", default="model", choices=["model", "oracle"])
-    ap.add_argument("--model", default="", help="edge | 7b (navigator.yaml を上書き)")
+    ap.add_argument("--model", default="", help="edge | 7b | remote (navigator.yaml を上書き)")
+    ap.add_argument("--url", default="", help="--model remote: 推論サーバ (tools/policy_server.py) の URL")
     ap.add_argument("--weights", default="")
     ap.add_argument("--finetuned_dir", default="")
     ap.add_argument("--device", default="")
@@ -173,7 +174,8 @@ def main(argv=None):
     robot = RobotConfig.load(args.robot)
     nav = load_nav_config(args.nav if os.path.exists(args.nav) else None,
                           {"model.model": args.model, "model.weights": args.weights,
-                           "model.finetuned_dir": args.finetuned_dir, "model.device": args.device})
+                           "model.finetuned_dir": args.finetuned_dir, "model.device": args.device,
+                           "model.url": args.url})
     goal_mode = args.goal_mode or ("topomap" if args.topomap else "hindsight")
     os.makedirs(args.out, exist_ok=True)
     policy = None

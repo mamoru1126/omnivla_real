@@ -67,16 +67,37 @@ def black_map(size: int = 96) -> torch.Tensor:
     return ((torch.zeros(3, size, size) - IMAGENET_MEAN) / IMAGENET_STD)
 
 
-class TextEncoder:
-    """CLIP のテキスト特徴 (キャッシュ付き). clip_type=None ならゼロベクトル (テスト・言語を使わない場合用)."""
+def load_clip(clip_type: str, device: str = "cpu"):
+    """clip.load. 公式の配布元 (openaipublic.azureedge.net) に届かない場合は同じファイルを blob から取る."""
+    import clip  # openai-clip
+    try:
+        return clip.load(clip_type, device=device)
+    except Exception as e:  # noqa: BLE001  (ダウンロード失敗)
+        url = getattr(clip.clip, "_MODELS", {}).get(clip_type)
+        if not url or "azureedge.net" not in url:
+            raise
+        alt = url.replace("openaipublic.azureedge.net", "openaipublic.blob.core.windows.net")
+        print(f"[clip] {e!r} -> retry from {alt}")
+        path = clip.clip._download(alt, os.path.expanduser("~/.cache/clip"))
+        return clip.load(path, device=device)
 
-    def __init__(self, clip_type: Optional[str] = CLIP_TYPE, device: str = "cpu"):
+
+class TextEncoder:
+    """CLIP のテキスト特徴 (キャッシュ付き). clip_type=None ならゼロベクトル (テスト・言語を使わない場合用).
+    preset: 計算済みの特徴 {テキスト: (512,)}. 学習結果には「言語なし」の特徴が入っているので、
+    言語を使わない走行では CLIP を読み込まない (CLIP は必要になった時に初めて読む)."""
+
+    def __init__(self, clip_type: Optional[str] = CLIP_TYPE, device: str = "cpu",
+                 preset: Optional[Dict[str, torch.Tensor]] = None):
         self.device = device
+        self.clip_type = clip_type
         self.model = None
-        self.cache: Dict[str, torch.Tensor] = {}
-        if clip_type:
+        self.cache: Dict[str, torch.Tensor] = dict(preset or {})
+
+    def _ensure_model(self) -> None:
+        if self.model is None:
             import clip  # openai-clip
-            self.model, _ = clip.load(clip_type, device=device)
+            self.model, _ = load_clip(self.clip_type, self.device)
             self.model = self.model.float().eval()
             self._tokenize = clip.tokenize
 
@@ -84,9 +105,10 @@ class TextEncoder:
     def __call__(self, text: Optional[str]) -> torch.Tensor:
         key = text or NO_LANGUAGE
         if key not in self.cache:
-            if self.model is None:
+            if not self.clip_type:
                 self.cache[key] = torch.zeros(TEXT_DIM)
             else:
+                self._ensure_model()
                 tok = self._tokenize(key, truncate=True).to(self.device)
                 self.cache[key] = self.model.encode_text(tok)[0].float().cpu()
         return self.cache[key]
@@ -176,7 +198,10 @@ class EdgePolicy:
         self.context_size = int(EDGE_PARAMS["context_size"])
         self.context_stride = int(cfg.context_stride or self.meta.get("context_stride") or 1)
         clip_type = self.meta.get("clip_type", cfg.clip_type) if self.meta else cfg.clip_type
-        self.text = TextEncoder(clip_type, str(self.device))
+        preset = None
+        if self.meta.get("text_feature_no_language") is not None:   # 学習時に計算した「言語なし」の特徴
+            preset = {NO_LANGUAGE: torch.tensor(self.meta["text_feature_no_language"], dtype=torch.float32)}
+        self.text = TextEncoder(clip_type, str(self.device), preset=preset)
         self.history: Deque[Image.Image] = deque(maxlen=self.context_size * self.context_stride + 1)
         self._emb_cache: Dict[str, np.ndarray] = {}
         print(f"[edge] ready (device={self.device}, metric_waypoint_spacing={self.metric_spacing}, "

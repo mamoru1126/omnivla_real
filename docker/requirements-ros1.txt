@@ -1,0 +1,5 @@
+# ROS 1 ナビゲーションノード (推論は推論サーバ). torch は不要. Python 3.8 (Noetic)
+numpy<1.25
+pillow<11
+pyyaml
+matplotlib<3.8      # tools/plot_nav_log.py

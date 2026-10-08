@@ -293,6 +293,95 @@ class _FakePolicy:
         return simple_embedding(image)
 
 
+class _HistPolicy:
+    """edge と同じ観測履歴の扱いをする偽のポリシー (出力は入力画像の明るさで決まる)."""
+    meta = {"sample_rate": 3.0, "metric_waypoint_spacing": 0.2}
+    context_size, context_stride, metric_spacing = 3, 2, 0.2
+
+    def __init__(self):
+        from collections import deque
+        self.history = deque(maxlen=self.context_size * self.context_stride + 1)
+
+    def push(self, image):
+        self.history.append(image)
+
+    def reset_history(self):
+        self.history.clear()
+
+    def observation_window(self, current):
+        hist = list(self.history)
+        if not hist or hist[-1] is not current:
+            hist.append(current)
+        s = self.context_stride
+        return [hist[max(0, len(hist) - 1 - s * k)] for k in range(self.context_size, -1, -1)]
+
+    def predict(self, current, goal_image=None, goal_pose=None, instruction=None, modality="image", observations=None):
+        from omnivla_real.policy_base import PolicyOutput
+        if instruction == "boom":
+            raise ValueError("boom")
+        obs = observations if observations is not None else self.observation_window(current)
+        f = [float(np.asarray(o, np.float64).mean()) for o in obs] + [float(np.asarray(goal_image).mean())]
+        wps = np.zeros((8, 4))
+        wps[:, 0] = (np.arange(8) + 1) * 0.1 + f[0] * 1e-3
+        wps[:, 1] = (f[-1] - f[-2]) * 1e-3 + np.arange(8) * f[1] * 1e-5
+        wps[:, 2] = 1.0
+        gp = np.zeros(4) if goal_pose is None else np.r_[np.asarray(goal_pose, float), 0.0]
+        return PolicyOutput(wps, wps * 2, 6, 0.0, gp, distance=sum(f))
+
+    def embed(self, image, cache_key=None):
+        return simple_embedding(image)
+
+
+def test_remote_policy_matches_local():
+    """推論サーバ経由 (ROS 1 コンテナ -> PyTorch コンテナ) でも、同じ入力なら同じ出力になる."""
+    from omnivla_real.policy_base import load_policy
+    from omnivla_real.remote import PolicyServer, RemotePolicy
+    server = PolicyServer(_HistPolicy(), "fake", "127.0.0.1", 0, log=lambda s: None)
+    server.start_background()
+    try:
+        url = f"http://127.0.0.1:{server.address[1]}"
+        remote = load_policy("remote", url=url)
+        assert isinstance(remote, RemotePolicy) and remote.history is not None and remote.meta["sample_rate"] == 3.0
+        local = _HistPolicy()
+        frames = [render(0.3 * k, 0.1 * k, 0.05 * k) for k in range(9)]
+        goal = render(3, 0, 0)
+        for k, img in enumerate(frames):
+            remote.push(img)
+            local.push(img)
+            if k % 2 == 0:
+                a = remote.predict(img, goal_image=goal, goal_pose=(1.0, 0.5, 0.2), modality="image_pose")
+                b = local.predict(img, goal_image=goal, goal_pose=(1.0, 0.5, 0.2), modality="image_pose")
+                assert np.array_equal(a.waypoints, b.waypoints) and np.array_equal(a.normalized, b.normalized)
+                assert a.distance == b.distance and np.allclose(a.goal_pose_input, b.goal_pose_input)
+        assert np.allclose(remote.embed(goal, cache_key="g"), simple_embedding(goal), atol=1e-6)
+        assert "g" in remote._emb_cache
+        try:
+            remote.predict(frames[0], goal_image=goal, instruction="boom")
+            raise AssertionError("server error should propagate")
+        except RuntimeError as e:
+            assert "boom" in str(e)
+        # NavEngine からも使える (画像の履歴は sample_rate ごとに push される)
+        tm = Topomap([GoalNode(render(0, 0, 0)), GoalNode(goal)], start=None)
+        nav = load_nav_config(os.path.join(CONFIGS, "navigator.yaml"))
+        eng = NavEngine(remote, tm, nav.engine, robot_cfg())
+        eng.start()
+        states = []
+        for k in range(4):
+            eng.on_image(10.0 + k / 3, np.asarray(frames[k]))
+            r = eng.step(10.0 + k / 3 + 0.05)
+            states.append(r.state)
+            assert r.state != "running" or r.waypoints.shape == (8, 4)
+        assert states[:2] == ["running", "running"] and len(remote.history) == 4
+        remote.close()
+    finally:
+        server.shutdown()
+    try:
+        RemotePolicy(url, wait=0.5, log=lambda s: None)      # サーバが無い
+        raise AssertionError("should fail")
+    except ConnectionError:
+        pass
+
+
 def test_engine_and_runner():
     from omnivla_real import ros_common
     tm = Topomap([GoalNode(render(0, 0, 0)), GoalNode(render(2, 0, 0))], start=None)

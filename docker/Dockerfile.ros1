@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+# =============================================================================
+# ROS 1 Noetic のナビゲーションノード (ros1/omnivla_real_ros1). 推論は推論サーバ (tools/policy_server.py) に任せるので
+# PyTorch も GPU も不要。Jetson (arm64) でも x86 PC でも同じ Dockerfile で作れる (公式 ros:noetic は両対応)。
+# rosbag play / rostopic / rviz 以外の ROS 1 の道具 (ros-base) も入っているので、bag の再生試験にも使う。
+# =============================================================================
+ARG BASE_IMAGE=ros:noetic-ros-base-focal
+FROM ${BASE_IMAGE}
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    OMNIVLA_REAL_ROOT=/workspace PYTHONPATH=/workspace
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN apt-get update && apt-get install -y --no-install-recommends python3-pip python3-yaml \
+        ros-noetic-image-transport-plugins ros-noetic-rqt-image-view \
+    && rm -rf /var/lib/apt/lists/*
+COPY docker/requirements-ros1.txt /tmp/
+RUN python3 -m pip install -r /tmp/requirements-ros1.txt
+
+COPY . /workspace
+WORKDIR /workspace
+# catkin ワークスペース (パッケージはソースへのリンクなので、/workspace をマウントすれば編集が即反映される)
+RUN mkdir -p /opt/catkin_ws/src && ln -s /workspace/ros1/omnivla_real_ros1 /opt/catkin_ws/src/omnivla_real_ros1 \
+    && source /opt/ros/noetic/setup.bash && cd /opt/catkin_ws && catkin_make -DCMAKE_BUILD_TYPE=Release > /dev/null \
+    && python3 -c "import omnivla_real.ros_common, omnivla_real.remote; print('ros1 node deps OK')"
+
+COPY docker/entrypoint-ros1.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

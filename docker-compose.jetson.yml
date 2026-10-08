@@ -1,47 +1,94 @@
-# 実機ナビゲーション用 (Jetson AGX Orin, JetPack 6)
+# 実機ナビゲーション用 (Jetson AGX Orin). 2 つのコンテナを localhost の HTTP でつなぐ:
+#   policy : 推論サーバ (PyTorch + GPU, ROS なし)            docker/Dockerfile.jetson
+#   nav    : ROS 1 Noetic のナビゲーションノード (torch なし)  docker/Dockerfile.ros1
+#
 #   docker compose -f docker-compose.jetson.yml build
-#   TOPOMAP=/data/topomaps/course_a docker compose -f docker-compose.jetson.yml run --rm nav
-x-omnivla: &omnivla
-  image: omnivla_real:jetson
-  build:
-    context: .
-    dockerfile: docker/Dockerfile.jetson
-  runtime: nvidia
+#   docker compose -f docker-compose.jetson.yml up            # policy と nav を起動 (ROS master は ROS_MASTER_URI)
+#   docker compose -f docker-compose.jetson.yml --profile standalone up   # roscore もここで起動する場合
+# 変数は .env (TOPOMAP, NAV_MODEL, FINETUNED_DIR, ROS_MASTER_URI など)
+x-common: &common
   network_mode: host
   ipc: host
-  environment:
-    NVIDIA_VISIBLE_DEVICES: all
-    NVIDIA_DRIVER_CAPABILITIES: all
-    ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
-    RMW_IMPLEMENTATION: ${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
-    TOPOMAP: ${TOPOMAP:-}
-    NAV_MODEL: ${NAV_MODEL:-}
-    NAV_WEIGHTS: ${NAV_WEIGHTS:-}
-    FINETUNED_DIR: ${FINETUNED_DIR:-}
   volumes:
     - ./:/workspace
     - ${CHECKPOINT_DIR:-./checkpoints}:/checkpoints
     - ${DATA_DIR:-./data}:/data
     - ${RUNS_DIR:-./runs}:/runs
-    - model-cache:/root/.cache
+    - ${BAG_DIR:-./bags}:/bags
   working_dir: /workspace
   stdin_open: true
   tty: true
+  restart: "no"
 
 services:
-  shell:
-    <<: *omnivla
-    command: bash
-  nav:
-    <<: *omnivla
-    # 空の引数 (name:=) は ros2 launch が受け付けないので bash で組み立てる
+  policy:
+    <<: *common
+    image: omnivla_real:jetson-policy
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.jetson
+      args:
+        BASE_IMAGE: ${JETSON_BASE_IMAGE:-dustynv/l4t-pytorch:r36.4.0}
+        WITH_7B: ${WITH_7B:-1}
+    runtime: nvidia
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
+      HF_HOME: /root/.cache/huggingface
+      NAV_MODEL: ${NAV_MODEL:-}
+      NAV_WEIGHTS: ${NAV_WEIGHTS:-}
+      FINETUNED_DIR: ${FINETUNED_DIR:-}
+      NAV_HALF: ${NAV_HALF:-}
+      POLICY_PORT: ${POLICY_PORT:-8765}
+    volumes:
+      - ./:/workspace
+      - ${CHECKPOINT_DIR:-./checkpoints}:/checkpoints
+      - ${RUNS_DIR:-./runs}:/runs
+      - model-cache:/root/.cache
+    # 空の値は渡さない (navigator.yaml の model: が既定)
     command:
       - bash
       - -c
       - >-
-        exec ros2 launch omnivla_real_ros navigator.launch.py
-        $${TOPOMAP:+topomap:=$$TOPOMAP} $${NAV_MODEL:+model:=$$NAV_MODEL}
-        $${NAV_WEIGHTS:+weights:=$$NAV_WEIGHTS} $${FINETUNED_DIR:+finetuned_dir:=$$FINETUNED_DIR}
+        exec python3 tools/policy_server.py --port $$POLICY_PORT
+        $${NAV_MODEL:+--model $$NAV_MODEL} $${NAV_WEIGHTS:+--weights $$NAV_WEIGHTS}
+        $${FINETUNED_DIR:+--finetuned_dir $$FINETUNED_DIR} $${NAV_HALF:+--half}
+
+  nav:
+    <<: *common
+    image: omnivla_real:ros1
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ros1
+    environment:
+      ROS_MASTER_URI: ${ROS_MASTER_URI:-http://localhost:11311}
+      ROS_IP: ${ROS_IP:-}
+      ROS_HOSTNAME: ${ROS_HOSTNAME:-}
+      TOPOMAP: ${TOPOMAP:-}
+      POLICY_PORT: ${POLICY_PORT:-8765}
+    command:
+      - bash
+      - -c
+      - >-
+        [ -z "$$ROS_IP" ] && unset ROS_IP; [ -z "$$ROS_HOSTNAME" ] && unset ROS_HOSTNAME;
+        exec roslaunch omnivla_real_ros1 navigator.launch policy_url:=http://127.0.0.1:$$POLICY_PORT
+        topomap:=$$TOPOMAP
+
+  roscore:
+    <<: *common
+    image: omnivla_real:ros1
+    profiles: [standalone]
+    environment:
+      ROS_MASTER_URI: ${ROS_MASTER_URI:-http://localhost:11311}
+    command: roscore
+
+  shell:
+    <<: *common
+    image: omnivla_real:ros1
+    profiles: [tools]
+    environment:
+      ROS_MASTER_URI: ${ROS_MASTER_URI:-http://localhost:11311}
+    command: bash
 
 volumes:
   model-cache:

@@ -1,5 +1,6 @@
 <!-- OmniVLA 実機ナビゲーション (ROS 1)
-  roslaunch omnivla_real_ros1 navigator.launch topomap:=/data/topomaps/course_a
+  roslaunch omnivla_real_ros1 navigator.launch topomap:=/data/topomaps/course_a policy_url:=http://127.0.0.1:8765
+  policy_url: 推論サーバ (tools/policy_server.py). 空にするとこのノードの中で推論する (torch が必要)
 -->
 <launch>
   <arg name="root" default="$(optenv OMNIVLA_REAL_ROOT /workspace)"/>
@@ -10,6 +11,7 @@
   <arg name="model" default=""/>
   <arg name="weights" default=""/>
   <arg name="finetuned_dir" default=""/>
+  <arg name="policy_url" default="http://127.0.0.1:8765"/>
   <arg name="device" default=""/>
   <arg name="log_dir" default=""/>
   <!-- bag 再生で試す: use_sim_time:=true にして rosbag play に clock オプションを付ける -->
@@ -23,6 +25,7 @@
     <param name="model" value="$(arg model)"/>
     <param name="weights" value="$(arg weights)"/>
     <param name="finetuned_dir" value="$(arg finetuned_dir)"/>
+    <param name="policy_url" value="$(arg policy_url)"/>
     <param name="device" value="$(arg device)"/>
     <param name="log_dir" value="$(arg log_dir)"/>
   </node>

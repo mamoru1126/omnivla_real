@@ -46,9 +46,12 @@ class NavigatorNode(Node):
         p("finetuned_dir", "")
         p("device", "")           # 例 cuda:0 / cpu
         p("log_dir", "")          # 走行ログの保存先 (navigator.yaml の io.log_dir)
+        p("policy_url", "")       # 推論サーバ (tools/policy_server.py) を使う場合の URL
         g = lambda n: self.get_parameter(n).value  # noqa: E731
         overrides = {"model.model": g("model"), "model.weights": g("weights"), "model.finetuned_dir": g("finetuned_dir"),
                      "model.device": g("device"), "io.log_dir": g("log_dir")}
+        if g("policy_url"):
+            overrides.update({"model.model": "remote", "model.url": g("policy_url")})
         self.runner = NavRunner(g("robot_config"), g("nav_config"), g("topomap"), overrides,
                                 clock=self._now, log=lambda s: self.get_logger().info(s))
         self.runner.on_result = self._on_result

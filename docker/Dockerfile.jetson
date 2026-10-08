@@ -1,13 +1,19 @@
 # syntax=docker/dockerfile:1
 # =============================================================================
-# 実機ナビゲーション用 (Jetson AGX Orin, JetPack 6 / L4T r36)
-#   ベース: dustynv/l4t-pytorch (Ubuntu 22.04, Python 3.10, CUDA 対応 PyTorch 同梱)
-#   + ROS 2 Humble (ros-base) + OmniVLA (最小限の依存) + OmniVLA-edge
-#   JetPack のバージョンが違う場合は BASE_IMAGE を合わせる (例 dustynv/l4t-pytorch:r36.2.0)
+# Jetson AGX Orin 用 推論サーバ (tools/policy_server.py): OmniVLA 7B / OmniVLA-edge を GPU で動かす. ROS は入れない.
+# ROS 1 のノードは別コンテナ (docker/Dockerfile.ros1) で動かし、localhost の HTTP でつなぐ
+# (ROS 1 Noetic は Ubuntu 20.04 用, Jetson の PyTorch は JetPack ごとに Ubuntu が決まるため分ける).
+#
+# BASE_IMAGE は JetPack に合わせる (CUDA 対応 PyTorch 入り, https://hub.docker.com/r/dustynv/l4t-pytorch/tags):
+#   JetPack 6.1 / 6.2 (L4T r36.4) : dustynv/l4t-pytorch:r36.4.0      Ubuntu 22.04, Python 3.10  (既定)
+#   JetPack 6.0       (L4T r36.2) : dustynv/l4t-pytorch:r36.2.0
+#   JetPack 5.1.2     (L4T r35.4) : dustynv/l4t-pytorch:2.2-r35.4.1  Ubuntu 20.04, Python 3.8
+# 7B の依存を入れない場合: --build-arg WITH_7B=0 (edge だけ)
 # =============================================================================
 ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
 FROM ${BASE_IMAGE}
 
+ARG WITH_7B=1
 ARG DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
     TOKENIZERS_PARALLELISM=false OMNIVLA_ROOT=/opt/OmniVLA OMNIVLA_REAL_ROOT=/workspace \
@@ -15,32 +21,22 @@ ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABL
     PIP_INDEX_URL=https://pypi.org/simple PIP_EXTRA_INDEX_URL= PIP_TRUSTED_HOST=
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# ---- ROS 2 Humble (ros-base) ----
-RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg lsb-release ca-certificates git \
-    && curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
-        > /etc/apt/sources.list.d/ros2.list \
-    && apt-get update && apt-get install -y --no-install-recommends \
-        ros-humble-ros-base python3-colcon-common-extensions ros-humble-rosbag2-storage-mcap \
+RUN apt-get update && apt-get install -y --no-install-recommends git git-lfs ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 
 # ---- Python 依存 (ベースの torch / torchvision / numpy は置き換えない) ----
-COPY docker/requirements.txt docker/install_omnivla.sh /tmp/
+COPY docker/requirements-edge.txt docker/requirements-7b.txt docker/install_omnivla.sh /tmp/
 RUN python3 -c "import torch, torchvision; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())" \
     && python3 -m pip freeze | grep -iE '^(torch|torchvision|torchaudio|numpy)==' > /tmp/keep.txt; cat /tmp/keep.txt \
-    && grep -v -E '^(pytest)' /tmp/requirements.txt > /tmp/req.txt \
-    && python3 -m pip install -c /tmp/keep.txt -r /tmp/req.txt \
-    && bash /tmp/install_omnivla.sh
+    && python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements-edge.txt \
+    && if [ "${WITH_7B}" = "1" ]; then \
+         python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements-7b.txt && bash /tmp/install_omnivla.sh; \
+       fi
 
 COPY . /workspace
 WORKDIR /workspace
-RUN source /opt/ros/humble/setup.bash && mkdir -p /opt/omnivla_ws \
-    && colcon --log-base /opt/omnivla_ws/log build --symlink-install --base-paths /workspace/ros2 \
-        --build-base /opt/omnivla_ws/build --install-base /opt/omnivla_ws/install
-RUN python3 -c "import torch, transformers, peft, clip, efficientnet_pytorch; import omnivla_real.edge, omnivla_real.policy; \
-print('torch', torch.__version__, 'transformers', transformers.__version__)"
+RUN python3 -c "import torch, clip, efficientnet_pytorch; import omnivla_real.edge, omnivla_real.remote; print('edge OK')" \
+    && if [ "${WITH_7B}" = "1" ]; then python3 -c "import transformers, peft; import omnivla_real.policy; print('7b OK')"; fi
 
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["bash"]
+EXPOSE 8765
+CMD ["python3", "tools/policy_server.py"]

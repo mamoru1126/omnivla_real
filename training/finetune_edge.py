@@ -231,6 +231,7 @@ def main(argv=None):
     say(f"params: {sum(p.numel() for p in model.parameters()) / 1e6:.1f}M")
     text = TextEncoder(cfg.clip_type or None, str(device))
     text_features = {"": text(None).cpu()}
+    data_meta["text_feature_no_language"] = [float(v) for v in text_features[""]]   # 走行時に CLIP を読まずに済む
     del text
 
     ds_cfg = NavDatasetConfig(

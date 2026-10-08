@@ -24,6 +24,7 @@ def generate_launch_description():
         "model": ("", str),
         "weights": ("", str),
         "finetuned_dir": ("", str),
+        "policy_url": ("", str),
         "device": ("", str),
         "log_dir": ("", str),
         "use_sim_time": ("false", bool),

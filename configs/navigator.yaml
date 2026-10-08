@@ -1,11 +1,13 @@
 # 実機ナビゲーションの設定 (ROS1 / ROS2 ノード, 机上評価で共通). トピック名と画像の前処理は robot.yaml
 model:
-  model: edge                  # edge (OmniVLA-edge, Jetson で速い) | 7b (OmniVLA 7B)
-  weights: /checkpoints/omnivla-edge         # 7b の場合は /checkpoints/omnivla-original
+  model: edge                  # edge (OmniVLA-edge, 軽い) | 7b (OmniVLA 7B) | remote (推論サーバを呼ぶ. 下の url)
+  weights: ""                  # 公式の重み. 空なら edge: /checkpoints/omnivla-edge, 7b: /checkpoints/omnivla-original
   finetuned_dir: ""            # 学習結果 runs/<run>/checkpoints/step_XXXXXX (空なら公式の重みのまま)
   device: cuda:0
   half: false                  # edge を fp16 で推論 (Jetson で速くしたい場合)
   metric_waypoint_spacing: 0.0 # 0 = 学習結果の値
+  url: ""                      # remote: 推論サーバ (tools/policy_server.py) の URL. 空なら http://127.0.0.1:8765
+  timeout: 10.0                # remote: 1 回の推論の待ち時間の上限 [s]
 
 engine:
   modality: image              # image (画像のみ) | image_pose (+ 相対ゴール位置. 自己位置がある場合)

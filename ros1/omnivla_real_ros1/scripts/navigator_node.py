@@ -7,7 +7,10 @@
 subscribe : robot.yaml の topics.image / topics.odom (任意) / topics.localization (任意),
             /omnivla/enable (std_msgs/Bool), /omnivla/topomap (std_msgs/String)
 publish   : /cmd_vel, /omnivla/path (nav_msgs/Path), /omnivla/debug_image, /omnivla/status
-注意: rospy と PyTorch (+ OmniVLA の依存) が同じ Python で import できる環境で動かすこと。
+推論は 2 通り:
+  * policy_url:=http://127.0.0.1:8765  推論サーバ (tools/policy_server.py, 別コンテナの PyTorch) を呼ぶ (推奨).
+                                       このノードは rospy + numpy + PIL + PyYAML だけで動く (docker/Dockerfile.ros1)
+  * policy_url 無し                    このノードの中で推論する (rospy と PyTorch が同じ Python に必要)
 """
 from __future__ import annotations
 
@@ -38,6 +41,8 @@ class NavigatorNode:
         overrides = {"model.model": g("model", ""), "model.weights": g("weights", ""),
                      "model.finetuned_dir": g("finetuned_dir", ""), "model.device": g("device", ""),
                      "io.log_dir": g("log_dir", "")}
+        if g("policy_url", ""):   # 推論サーバ (tools/policy_server.py) を使う. このノードは torch 不要
+            overrides.update({"model.model": "remote", "model.url": g("policy_url", "")})
         topomap = g("topomap", "")
         self.runner = NavRunner(g("robot_config", os.path.join(REPO, "configs/robot.yaml")),
                                 g("nav_config", os.path.join(REPO, "configs/navigator.yaml")), topomap, overrides,

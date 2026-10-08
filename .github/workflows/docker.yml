@@ -46,3 +46,49 @@ jobs:
           cd $D && git init -q && git add . \
             && git -c user.name=ci -c user.email=ci@example.com commit -qm "docker ${{ github.run_id }}" \
             && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-docker
+
+  policy-image:
+    # Jetson 用の推論サーバ (docker/Dockerfile.jetson) は arm64 + L4T なので、ここでは x86 の PyTorch イメージを
+    # 代わりのベースにして、依存のインストール (7B 込み) と import が通るかだけを見る。
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af
+      - uses: actions/checkout@v4
+      - name: Build (stand-in base image)
+        run: |
+          set -o pipefail
+          mkdir -p ci
+          DOCKER_BUILDKIT=1 docker build --progress=plain -f docker/Dockerfile.jetson \
+            --build-arg BASE_IMAGE=pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime -t omnivla_real:policy-ci . 2>&1 | tee ci/policy-build.log
+      - name: Server starts (edge, random weights, CPU)
+        run: |
+          set -o pipefail
+          docker run --rm --network host omnivla_real:policy-ci bash -c '
+            python3 -c "import os, torch; from omnivla_real.edge import build_edge_model, EDGE_WEIGHTS; os.makedirs(\"/tmp/w\"); torch.save(build_edge_model().state_dict(), \"/tmp/w/\" + EDGE_WEIGHTS)"
+            timeout 120 python3 tools/policy_server.py --model edge --weights /tmp/w --device cpu --port 8770 &
+            for i in $(seq 100); do python3 -c "import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8770/info\")" 2>/dev/null && break; sleep 1; done
+            python3 -c "
+          from omnivla_real.remote import RemotePolicy
+          from PIL import Image
+          p = RemotePolicy(\"http://127.0.0.1:8770\", wait=5)
+          img = Image.new(\"RGB\", (320, 240), (90, 120, 150))
+          p.push(img)
+          out = p.predict(img, goal_image=img)
+          print(\"waypoints\", out.waypoints.shape, \"latency\", round(out.latency, 3))
+          "
+          ' 2>&1 | tee ci/policy-run.log
+      - name: Publish log to ci-logs-policy branch
+        if: always()
+        run: |
+          D=/tmp/cilog; rm -rf $D; mkdir -p $D
+          tail -n 300 ci/policy-build.log > $D/tail.log 2>/dev/null || echo "no log" > $D/tail.log
+          grep -n -i -E "error|failed|conflict|cannot|not found" ci/policy-build.log | tail -200 > $D/errors.txt || true
+          cp ci/policy-run.log $D/ 2>/dev/null || true
+          echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
+          cd $D && git init -q && git add . \
+            && git -c user.name=ci -c user.email=ci@example.com commit -qm "policy ${{ github.run_id }}" \
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-policy
