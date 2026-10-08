@@ -408,7 +408,7 @@ def test_engine_and_runner():
     assert runner.command() is None                                  # 開始前は何も出さない
     runner.engine.on_image(clock[0], np.asarray(render(0.5, 0, 0)))
     assert runner.start()
-    for _ in range(100):
+    for _ in range(500):                                             # CI の遅いマシンでも待てるように長めに
         if runner.cmd_time > 0:
             break
         time.sleep(0.02)
@@ -418,7 +418,7 @@ def test_engine_and_runner():
     time.sleep(0.2)
     assert _FakePolicy.calls == n                                    # 新しい画像が来るまで推論しない
     runner.engine.on_image(clock[0] + 0.1, np.asarray(render(0.6, 0, 0)))
-    for _ in range(100):
+    for _ in range(500):
         if _FakePolicy.calls > n:
             break
         time.sleep(0.01)

@@ -45,7 +45,8 @@ jobs:
           echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
           cd $D && git init -q && git add . \
             && git -c user.name=ci -c user.email=ci@example.com commit -qm "docker ${{ github.run_id }}" \
-            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-docker
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-docker \
+            && { [ "${{ job.status }}" = success ] || git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-docker-failed; }
 
   policy-image:
     # Jetson 用の推論サーバ (docker/Dockerfile.jetson) は arm64 + L4T なので、ここでは x86 の PyTorch イメージを
@@ -91,4 +92,5 @@ jobs:
           echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
           cd $D && git init -q && git add . \
             && git -c user.name=ci -c user.email=ci@example.com commit -qm "policy ${{ github.run_id }}" \
-            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-policy
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-policy \
+            && { [ "${{ job.status }}" = success ] || git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-policy-failed; }

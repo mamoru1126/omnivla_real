@@ -63,7 +63,8 @@ jobs:
           echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
           cd $D && git init -q && git add . \
             && git -c user.name=ci -c user.email=ci@example.com commit -qm "core ${{ github.run_id }}" \
-            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-core
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-core \
+            && { [ "${{ job.status }}" = success ] || git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-core-failed; }
 
   ros2_node:
     needs: core
@@ -112,7 +113,8 @@ jobs:
           echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
           cd $D && git init -q && git add . \
             && git -c user.name=ci -c user.email=ci@example.com commit -qm "ros2 ${{ github.run_id }}" \
-            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-ros2
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-ros2 \
+            && { [ "${{ job.status }}" = success ] || git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-ros2-failed; }
 
   ros1_node:
     # 実機 (Jetson) と同じ構成: 推論サーバ (PyTorch, ここではホストの CPU) + ROS 1 コンテナ (docker/Dockerfile.ros1, torch なし)
@@ -175,4 +177,5 @@ jobs:
           echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
           cd $D && git init -q && git add . \
             && git -c user.name=ci -c user.email=ci@example.com commit -qm "ros1 ${{ github.run_id }}" \
-            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-ros1
+            && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-ros1 \
+            && { [ "${{ job.status }}" = success ] || git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-ros1-failed; }
