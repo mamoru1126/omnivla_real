@@ -46,7 +46,9 @@ fi
 
 for i in $(seq 180); do grep -q "ready:" "$OUT/node.log" && break; sleep 1; done
 if ! grep -q "ready:" "$OUT/node.log"; then
-    echo "node did not become ready"; cat "$OUT/node.log"; exit 1
+    echo "node did not become ready"; cat "$OUT/node.log"
+    echo "----- processes"; ps aux | grep -E "navigator|nav_config|policy" | grep -v grep | head
+    exit 1
 fi
 echo "node ready"
 

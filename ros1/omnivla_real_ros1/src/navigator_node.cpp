@@ -10,6 +10,7 @@
 // カメラ画像はデコードせずに (JPEG のまま) 推論サーバとブラウザに渡す.
 #include <atomic>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <random>
@@ -245,6 +246,8 @@ class NavigatorNode {
 };
 
 int main(int argc, char** argv) {
+  // ログをファイルに流しても溜め込まない (ROS_INFO は stdout)
+  std::setvbuf(stdout, nullptr, _IOLBF, 0);
   ros::init(argc, argv, "omnivla_navigator");
   try {
     NavigatorNode node;
