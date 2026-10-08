@@ -2,6 +2,7 @@
 
 ノード側は「メッセージを受けて NavRunner に渡す」「NavRunner の出力をメッセージにして出す」だけにする。
 推論 (遅い) は別スレッドで回し、指示値は control_rate で最新の結果を出し続ける (古くなったら 0)。
+推論は新しいカメラ画像が来たときだけ行う (カメラ 10Hz なら最大 10Hz. 推論に時間がかかればその分遅くなる)。
 """
 from __future__ import annotations
 
@@ -104,6 +105,9 @@ class NavRunner:
         while self._alive:
             if self.engine.state != "running":
                 time.sleep(0.05)
+                continue
+            if not self.engine.has_new_image():   # 新しい画像が来るまで待つ (同じ画像で推論し直さない)
+                time.sleep(0.005)
                 continue
             t0 = time.time()
             try:

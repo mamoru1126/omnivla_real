@@ -282,8 +282,11 @@ class _FakePolicy:
     """常に 0.4m/s で左へ緩く曲がる軌跡を返す."""
     meta = {"sample_rate": 3.0}
 
+    calls = 0
+
     def predict(self, current, goal_image=None, goal_pose=None, instruction=None, modality="image"):
         from omnivla_real.policy_base import PolicyOutput
+        _FakePolicy.calls += 1
         t = (np.arange(8) + 1) / 3
         yaw = 0.2 * t
         wps = np.stack([2 * np.sin(yaw), 2 * (1 - np.cos(yaw)), np.cos(yaw), np.sin(yaw)], 1)
@@ -411,6 +414,16 @@ def test_engine_and_runner():
         time.sleep(0.02)
     cmd = runner.command()
     assert cmd is not None and abs(cmd[0] - 0.4) < 0.02
+    n = _FakePolicy.calls
+    time.sleep(0.2)
+    assert _FakePolicy.calls == n                                    # 新しい画像が来るまで推論しない
+    runner.engine.on_image(clock[0] + 0.1, np.asarray(render(0.6, 0, 0)))
+    for _ in range(100):
+        if _FakePolicy.calls > n:
+            break
+        time.sleep(0.01)
+    time.sleep(0.1)
+    assert _FakePolicy.calls == n + 1                                # 1 枚につき 1 回
     clock[0] += 5.0                                                  # 推論結果が古くなったら 0
     runner.engine.on_image(clock[0] + 100, np.asarray(render(0.5, 0, 0)))
     assert json.loads(runner.status_json())["state"] == "running"

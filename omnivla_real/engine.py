@@ -85,17 +85,24 @@ class NavEngine:
         self._node_emb: Dict[int, np.ndarray] = {}
         self._emb_now: Dict[str, np.ndarray] = {}
         self.last: Optional[StepResult] = None
+        self._img_seq = 0          # 受け取った画像の通し番号
+        self._used_seq = -1        # 最後に推論に使った画像の番号 (同じ画像で何度も推論しない)
 
     # ------------------------------------------------------------------ 入力
     def on_image(self, t: float, image: ImageSource) -> None:
         """カメラ画像 (ndarray / PIL / デコードする関数). 観測履歴 (edge) は sample_rate ごとに積む."""
         self._img_t, self._img_src, self._img_cache = t, image, None
+        self._img_seq += 1
         if self._next_hist is None or t + 1e-6 >= self._next_hist:
             period = 1.0 / self.sample_rate
             self._next_hist = (self._next_hist + period) if (self._next_hist and t - self._next_hist < period) \
                 else t + period
             if hasattr(self.policy, "push") and getattr(self.policy, "history", None) is not None:
                 self.policy.push(self.current_image())
+
+    def has_new_image(self) -> bool:
+        """まだ推論に使っていない画像があるか (推論はカメラの周期より速くは回さない)."""
+        return self._img_t is not None and self._img_seq != self._used_seq
 
     def current_image(self) -> Optional[Image.Image]:
         if self._img_cache is None and self._img_src is not None:
@@ -157,6 +164,7 @@ class NavEngine:
             return self._result(0.0, 0.0, None, self.state, events=events)
         if self._img_t is None or t - self._img_t > self.cfg.max_image_age:
             return self._result(0.0, 0.0, None, "waiting_image", reason="no recent image", events=events)
+        self._used_seq = self._img_seq
         cur = self.current_image()
         pose = self.course_pose()
         # --- サブゴールの切り替え ---

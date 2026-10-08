@@ -37,7 +37,7 @@ class IOConfig:
     localization_type: str = "PoseWithCovarianceStamped"  # PoseStamped | PoseWithCovarianceStamped | Odometry
     control_rate: float = 10.0          # 指示値を出す周期 [Hz] (推論結果を保持して出し続ける)
     cmd_timeout: float = 1.0            # 推論結果がこれより古くなったら止める [s]
-    max_inference_rate: float = 0.0     # 推論の上限周期 [Hz] (0 = できるだけ速く)
+    max_inference_rate: float = 0.0     # 推論の上限 [Hz] (0 = 新しい画像が来るたび. カメラの周期が上限)
     log_dir: str = "/workspace/log/nav"
     log_images: bool = True
 
