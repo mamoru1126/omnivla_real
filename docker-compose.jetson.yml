@@ -7,6 +7,7 @@
 #   docker compose -f docker-compose.jetson.yml up            # policy と nav を起動 (ROS master は ROS_MASTER_URI)
 #   docker compose -f docker-compose.jetson.yml --profile standalone up   # roscore もここで起動する場合
 # 変数は .env (TOPOMAP, NAV_MODEL, FINETUNED_DIR, ROS_MASTER_URI など)
+# 学習 PC で bag をロボットの代わりにして、この nav をそのまま動かす: docker-compose.replay.yml
 x-common: &common
   network_mode: host
   ipc: host
@@ -67,13 +68,20 @@ services:
       ROS_HOSTNAME: ${ROS_HOSTNAME:-}
       TOPOMAP: ${TOPOMAP:-}
       POLICY_PORT: ${POLICY_PORT:-8765}
+      NAV_AUTOSTART: ${NAV_AUTOSTART:-true}
+      NAV_WEB_PORT: ${NAV_WEB_PORT:-}
+      NAV_LOG_DIR: ${NAV_LOG_DIR:-}
+      USE_SIM_TIME: "false"          # bag で試すとき (docker-compose.replay.yml) だけ true
+    stop_signal: SIGINT              # roslaunch を Ctrl-C と同じ止め方にする (走行ログを閉じる)
+    # 空の値は渡さない (navigator.yaml の値が既定)
     command:
       - bash
       - -c
       - >-
         [ -z "$$ROS_IP" ] && unset ROS_IP; [ -z "$$ROS_HOSTNAME" ] && unset ROS_HOSTNAME;
         exec roslaunch omnivla_real_ros1 navigator.launch policy_url:=http://127.0.0.1:$$POLICY_PORT
-        topomap:=$$TOPOMAP
+        topomap:=$$TOPOMAP autostart:=$$NAV_AUTOSTART use_sim_time:=$$USE_SIM_TIME
+        $${NAV_WEB_PORT:+web_port:=$$NAV_WEB_PORT} $${NAV_LOG_DIR:+log_dir:=$$NAV_LOG_DIR}
 
   roscore:
     <<: *common
@@ -81,6 +89,7 @@ services:
     profiles: [standalone]
     environment:
       ROS_MASTER_URI: ${ROS_MASTER_URI:-http://localhost:11311}
+    stop_signal: SIGINT
     command: roscore
 
   shell:

@@ -111,9 +111,9 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
   <text x="250" y="337" font-size="12" fill="var(--muted)">積算 → コースに沿うか</text>
 
   <rect x="36" y="376" width="380" height="88" rx="8" fill="none" stroke="var(--line)" stroke-dasharray="5 4"/>
-  <text x="50" y="400" font-size="13.5" fill="var(--text)">bag 再生で試す (Jetson と同じ 2 コンテナ構成)</text>
-  <text x="50" y="421" font-size="12" fill="var(--muted)">docker compose up policy  +  ros1 コンテナ</text>
-  <text x="50" y="440" font-size="12" fill="var(--muted)">scripts/replay_bag_ros1.sh → 出した /cmd_vel を記録</text>
+  <text x="50" y="400" font-size="13.5" fill="var(--text)">実機と同じ構成で試す (bag がロボットの代わり)</text>
+  <text x="50" y="421" font-size="12" fill="var(--muted)">docker-compose.replay.yml: policy + Jetson と同じ nav</text>
+  <text x="50" y="440" font-size="12" fill="var(--muted)">+ bag を --clock で流す → ブラウザ :8080 で確認</text>
 
   <line x1="126" y1="146" x2="126" y2="174" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
   <line x1="300" y1="146" x2="320" y2="174" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
@@ -306,8 +306,9 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line);
 <table>
   <tr><th>部分</th><th>Docker</th><th>compose</th><th>主なコード</th></tr>
   <tr><td>推論コンテナ (Jetson)</td><td><code class="nw">docker/Dockerfile.jetson</code></td><td><code>policy</code></td><td><code>tools/policy_server.py</code> · <code>omnivla_real/remote.py</code> · <code>edge.py</code> · <code>policy.py</code></td></tr>
-  <tr><td>ROS 1 コンテナ</td><td><code class="nw">docker/Dockerfile.ros1</code></td><td><code>nav</code> (Jetson) · <code>ros1</code> (PC)</td><td><code>ros1/omnivla_real_ros1</code>: <code>src/navigator_node.cpp</code> · <code>src/core/</code> (走行の中身) · <code>web/index.html</code> (デバッグ画面)</td></tr>
+  <tr><td>ROS 1 コンテナ</td><td><code class="nw">docker/Dockerfile.ros1</code></td><td><code>nav</code> (Jetson · replay) · <code>ros1</code> (PC)</td><td><code>ros1/omnivla_real_ros1</code>: <code>src/navigator_node.cpp</code> · <code>src/core/</code> (走行の中身) · <code>web/index.html</code> (デバッグ画面)</td></tr>
   <tr><td>学習 PC</td><td><code class="nw">docker/Dockerfile</code></td><td><code>shell</code> · <code>train_7b</code> · <code>train_edge</code> · <code>policy</code></td><td><code>tools/</code> (変換・topomap・机上評価) · <code>training/</code></td></tr>
+  <tr><td>学習 PC で実機と同じ構成</td><td>上の 2 つ</td><td><code class="nw">docker-compose.replay.yml</code>: <code>roscore</code> · <code>policy</code> · <code>nav</code> (Jetson の定義そのまま) · <code>robot</code> · <code>record</code></td><td><code>scripts/bag_robot.sh</code> (bag をロボットの代わりに流す)</td></tr>
   <tr><td>設定</td><td colspan="3"><code>configs/robot.yaml</code> (トピック名・画像の前処理) · <code>configs/navigator.yaml</code> (モデル・制御・サブゴール) · <code>.env</code> (JetPack・重み・ROS master)</td></tr>
 </table>
 </div>

@@ -162,14 +162,39 @@ jobs:
           set -o pipefail
           docker run --rm -v "$PWD":/workspace -v /tmp/e2e:/tmp/e2e omnivla_real:ros1 \
             python3 tools/plot_nav_log.py /tmp/e2e/ros1_node/nav/latest 2>&1 | tee ci/plot_nav_log.log
-      - name: scripts/replay_bag_ros1.sh (split ROS 1 bag, roslaunch, rosbag record)
+      - name: docker-compose.replay.yml (Jetson と同じ nav コンテナ + bag をロボット代わり + ブラウザ)
+        env:
+          BAG_DIR: /tmp/e2e/bags
+          DATA_DIR: /tmp/e2e
+          RUNS_DIR: /tmp/e2e/runs_replay
+          REPLAY_BAG: course_ros1_0.bag,course_ros1_1.bag
+          TOPOMAP: /data/topomap
         run: |
+          # policy はホストで動いているもの (Start policy server) を使う. GPU の policy コンテナは起動しない
           set -o pipefail
-          docker run --rm --network host -v "$PWD":/workspace -v /tmp/e2e:/tmp/e2e omnivla_real:ros1 bash -c '
-            bash scripts/replay_bag_ros1.sh /tmp/e2e/bags/course_ros1_0.bag,/tmp/e2e/bags/course_ros1_1.bag /tmp/e2e/topomap /tmp/e2e/replay
-            rosbag info /tmp/e2e/replay/out.bag
-            python3 -c "import rosbag; b = rosbag.Bag(\"/tmp/e2e/replay/out.bag\"); n = b.get_message_count(\"/cmd_vel\"); p = b.get_message_count(\"/omnivla/path\"); print(\"cmd_vel\", n, \"path\", p); assert n > 10 and p > 3"
-          ' 2>&1 | tee ci/replay.log
+          C="docker compose -f docker-compose.replay.yml"
+          $C config --services
+          $C up -d --no-build roscore nav record robot
+          ROBOT=$($C ps -a -q robot)
+          WEB=0; python3 tests/web_check.py http://127.0.0.1:8080 150 > ci/replay_web_check.log 2>&1 || WEB=$?
+          cat ci/replay_web_check.log
+          RC=$(timeout 300 docker wait "$ROBOT" || echo timeout)
+          $C stop
+          $C logs --no-color > ci/replay_compose.log 2>&1
+          $C down
+          grep -E "\[robot\]|ready:|subgoal|finished|reached|ERROR|FATAL" ci/replay_compose.log | tail -40
+          echo "web_check=$WEB robot=$RC"
+          docker run --rm -v /tmp/e2e/runs_replay:/runs omnivla_real:ros1 python3 -c "
+          import glob, rosbag
+          f = sorted(glob.glob('/runs/replay/out_*.bag'))[-1]
+          b = rosbag.Bag(f)
+          n, p, s = (b.get_message_count(t) for t in ('/cmd_vel', '/omnivla/path', '/omnivla/status'))
+          print(f, 'cmd_vel', n, 'path', p, 'status', s)
+          assert n > 10 and p > 3 and s > 3
+          " 2>&1 | tee ci/replay_bag.log
+          docker run --rm -v "$PWD":/workspace -v /tmp/e2e/runs_replay:/runs omnivla_real:ros1 \
+            python3 tools/plot_nav_log.py /runs/replay/nav/latest 2>&1 | tail -5
+          [ "$WEB" = 0 ] && [ "$RC" = 0 ]
       - name: Publish logs to ci-logs-ros1 branch
         if: always()
         run: |
@@ -177,8 +202,8 @@ jobs:
           cp ci/*.log $D/ 2>/dev/null || true
           sudo cp -r /tmp/e2e/ros1_node $D/ 2>/dev/null || true
           sudo cp -r /tmp/e2e/ros1_node_py $D/ 2>/dev/null || true
-          sudo mkdir -p $D/replay && sudo cp /tmp/e2e/replay/*.log $D/replay/ 2>/dev/null || true
-          sudo find /tmp/e2e/replay/nav -maxdepth 2 \( -name "*.png" -o -name "*.txt" -o -name "*.json" -o -name "*.csv" \) -exec cp {} $D/replay/ \; 2>/dev/null || true
+          sudo mkdir -p $D/replay
+          sudo find /tmp/e2e/runs_replay/replay/nav -maxdepth 2 \( -name "*.png" -o -name "*.txt" -o -name "*.json" -o -name "*.csv" \) -exec cp {} $D/replay/ \; 2>/dev/null || true
           sudo chown -R $(id -u) $D
           find $D -name "*.jpg" -size +200k -delete
           rm -rf $D/ros1_node/nav/*/raw $D/ros1_node_py/nav/*/raw

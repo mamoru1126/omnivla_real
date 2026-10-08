@@ -25,7 +25,7 @@
 4. 学習する (`finetune_edge.py` / `finetune_omnivla.py`)
 5. サブゴール画像列 (topomap) を作る (`make_topomap.py`)
 6. 机上評価する (`desk_eval.py`)
-7. bag を再生して ROS 1 ノードを試す (PC)
+7. bag をロボットの代わりにして、実機と同じ構成で動かす (学習 PC, ブラウザで確認)
 8. Jetson で走らせる (ROS 1)
 
 ## 準備 (学習 PC: x86_64 + NVIDIA GPU)
@@ -168,21 +168,42 @@ python3 tools/desk_eval.py --bag /bags/run2.bag --topomap /data/topomaps/course_
 
 画像の類似度のしきい値 (`image_threshold`) は、机上評価の `report.json` の `similarity_threshold` を見て決めます。
 
-## 7. bag を再生して ROS 1 ノードを試す (PC)
+## 7. bag をロボットの代わりにして、実機と同じ構成で動かす (学習 PC)
 
-実機と同じ構成 (推論サーバ + ROS 1 ノード) で、別の走行の bag を流して動きを確認します。
+机上評価 (6) とは別に、走行時の構成そのものを学習 PC で動かして確かめます。Jetson で使う `nav` コンテナ (`docker-compose.jetson.yml` の定義そのまま) と推論サーバを立て、別の走行の bag をロボットの代わりに流します。様子はブラウザのデバッグ画面で見ます。
+
+| コンテナ | 実機では | 中身 |
+|---|---|---|
+| `roscore` | ロボットのメイン PC など | ROS master |
+| `policy` | Jetson の `policy` | 推論サーバ (同じ `tools/policy_server.py`。ここでは x86 の GPU) |
+| `nav` | Jetson の `nav` | ROS 1 ナビゲーションノード (C++) とデバッグ画面。**定義もイメージも Jetson と同じ** |
+| `robot` | ロボット (カメラ・オドメトリ) | bag の画像・オドメトリ (・自己位置) をシミュレーション時刻で流す (`scripts/bag_robot.sh`) |
+| `record` | | ノードが出した `/cmd_vel`, `/omnivla/path`, `/omnivla/status` を記録 |
 
 ```bash
-# .env に NAV_MODEL / FINETUNED_DIR を書いておく
-docker compose up -d policy                       # 推論サーバ (GPU)
-docker compose run --rm ros1 bash scripts/replay_bag_ros1.sh /bags/run2.bag /data/topomaps/course_a
+# .env に NAV_MODEL / FINETUNED_DIR (Jetson と同じ値) を書いておく
+docker compose -f docker-compose.replay.yml build
+REPLAY_BAG=run2.bag TOPOMAP=/data/topomaps/course_a docker compose -f docker-compose.replay.yml up
+# → ブラウザで http://localhost:8080 (別の PC からは http://<学習 PC の IP>:8080)
 ```
 
+- `robot` は、`nav` が準備できる (推論サーバのモデルを読み終わる) のを待ってから bag を流し始めます。7B は数分かかります。
 - bag からは `robot.yaml` の画像・オドメトリ (・自己位置) だけを流します。記録された `/cmd_vel` は流しません。
-- 出力は `/runs/replay/<時刻>/` に出ます。
-  - `out.bag`: ノードが出した `/cmd_vel` と `/omnivla/path`
-  - `nav/`: 走行ログと `overview.png`
-- 再生中はブラウザで http://localhost:8080 を開くと、デバッグ画面 (下の「デバッグ画面」) で様子を見られます。
+- ROS master はこの PC の中だけです (`.env` の `ROS_MASTER_URI` がロボットを指していても使いません)。
+
+| 変数 | 意味 |
+|---|---|
+| `REPLAY_BAG` | `BAG_DIR` の中の bag。カンマ区切りで複数、ディレクトリなら中の `*.bag` 全部 |
+| `REPLAY_RATE` | 再生速度 (既定 1.0) |
+| `REPLAY_START` | 先頭から何秒飛ばすか |
+| `REPLAY_ARGS` | `rosbag play` にそのまま渡す (例 `-u 60` で 60 秒だけ) |
+| `NAV_AUTOSTART` | `false` にすると、ブラウザの「開始」を押してから走り出す (実機と同じ確認ができる) |
+
+- 出力は `RUNS_DIR/replay/` に出ます。
+  - `out_<時刻>.bag`: ノードが出した指示値・予測軌跡・状態
+  - `nav/<時刻>/`: 走行ログ。`python3 tools/plot_nav_log.py runs/replay/nav/latest` で図とレポート
+- bag が終わっても画面はそのまま見られます。もう一度流すときは `docker compose -f docker-compose.replay.yml restart nav && docker compose -f docker-compose.replay.yml restart robot`。終わりは Ctrl-C です。
+- bag の画像は指示値に反応しません (開ループ)。モデルが曲がり損ねても、画像は記録どおりに進みます。ロボットが指示どおりに動いたらどう見えるか、までは分かりません。
 
 ## 8. Jetson AGX Orin で走らせる (ROS 1)
 
@@ -214,7 +235,7 @@ docker compose -f docker-compose.jetson.yml --profile standalone up   # roscore 
 ```
 
 - `nav` は推論サーバの準備ができるのを待ってから始まります。7B の読み込みには数分かかります。
-- カメラ画像とオドメトリ (自己位置があればそれも) が届くと走り出します (`autostart`)。
+- カメラ画像とオドメトリ (自己位置があればそれも) が届くと走り出します (`autostart`)。`.env` の `NAV_AUTOSTART=false` にすると、ブラウザの「開始」か `/omnivla/enable` で走り出します。
 
 | | トピック | 型 |
 |---|---|---|
@@ -286,7 +307,8 @@ CI (GitHub Actions) では合成したコース走行の bag を使い、次を�
 - 変換 → edge の学習 (CPU で数 step) → topomap → 机上評価
 - 推論サーバ経由の推論が、プロセス内の推論と同じ結果になる
 - C++ のノードの中身 (制御・サブゴールの切り替え・走行全体) が Python の実装と同じ結果になる (`tests/test_cpp.py`)
-- ROS 1: 推論サーバ + ROS 1 コンテナ (`docker/Dockerfile.ros1`) で bag を再生し、`/cmd_vel` と `/omnivla/path` が出る。デバッグ画面に結果と画像が届く (C++ / Python 両方のノード、`scripts/replay_bag_ros1.sh` も)
+- ROS 1: 推論サーバ + ROS 1 コンテナ (`docker/Dockerfile.ros1`) で bag を再生し、`/cmd_vel` と `/omnivla/path` が出る。デバッグ画面に結果と画像が届く (C++ / Python 両方のノード)
+- `docker-compose.replay.yml`: Jetson と同じ `nav` コンテナ + bag をロボット代わりにして、デバッグ画面と記録した出力を確認 (推論サーバは CPU)
 - ROS 2 ノードも同様
 - 学習用イメージのビルド、Jetson 用推論サーバの Dockerfile (x86 の PyTorch イメージを代わりのベースにして依存のインストールまで)
 

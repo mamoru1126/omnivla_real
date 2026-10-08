@@ -3,9 +3,9 @@
 #   docker compose run --rm shell bash scripts/download_checkpoints.sh
 #   docker compose run --rm shell python3 tools/bag_to_dataset.py --out /data/dataset /bags/run1
 #   docker compose run --rm train_edge          # or train_7b
-# ROS 1 で bag を再生して試す (実機と同じ 2 コンテナ構成):
-#   docker compose up -d policy                 # 推論サーバ (NAV_MODEL / FINETUNED_DIR は .env)
-#   docker compose run --rm ros1 bash scripts/replay_bag_ros1.sh /bags/run2.bag /data/topomaps/course_a
+# bag をロボットの代わりにして、実機と同じ構成 (推論サーバ + ROS 1 ノード + ブラウザ) を動かす:
+#   docker-compose.replay.yml (policy はここの定義、nav は docker-compose.jetson.yml の定義をそのまま使う)
+# ros1: ROS 1 の道具 (rostopic, rqt_image_view など) を使う端末. docker compose run --rm ros1 bash
 # 変数は .env (cp .env.example .env)
 x-omnivla: &omnivla
   image: omnivla_real:latest
@@ -59,14 +59,16 @@ services:
       NAV_MODEL: ${NAV_MODEL:-}
       NAV_WEIGHTS: ${NAV_WEIGHTS:-}
       FINETUNED_DIR: ${FINETUNED_DIR:-}
+      NAV_HALF: ${NAV_HALF:-}
       POLICY_PORT: ${POLICY_PORT:-8765}
+    # Jetson (docker-compose.jetson.yml の policy) と同じ起動のしかた
     command:
       - bash
       - -c
       - >-
         exec python3 tools/policy_server.py --port $$POLICY_PORT
         $${NAV_MODEL:+--model $$NAV_MODEL} $${NAV_WEIGHTS:+--weights $$NAV_WEIGHTS}
-        $${FINETUNED_DIR:+--finetuned_dir $$FINETUNED_DIR}
+        $${FINETUNED_DIR:+--finetuned_dir $$FINETUNED_DIR} $${NAV_HALF:+--half}
   ros1:
     image: omnivla_real:ros1
     build:

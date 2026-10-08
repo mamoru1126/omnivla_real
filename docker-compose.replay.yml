@@ -1,0 +1,82 @@
+# 学習 PC で、rosbag をロボットの代わりにして「実機と同じ構成」を動かす (机上評価ではなく、走行時の構成の確認).
+#
+#   roscore : ROS master                    (実機ではロボットのメイン PC など)
+#   policy  : 推論サーバ                     docker-compose.yml の policy (x86 + GPU. Jetson では jetson 用の policy)
+#   nav     : ROS 1 ナビゲーションノード      docker-compose.jetson.yml の nav をそのまま使う (C++ + デバッグ画面)
+#   robot   : 実機の代わり. bag のカメラ画像・オドメトリ (・自己位置) をシミュレーション時刻で流す (scripts/bag_robot.sh)
+#   record  : ノードの出力 (/cmd_vel, /omnivla/path, /omnivla/status) を /runs/replay/out_<時刻>.bag に記録
+#
+#   docker compose -f docker-compose.replay.yml build
+#   REPLAY_BAG=run2.bag TOPOMAP=/data/topomaps/course_a docker compose -f docker-compose.replay.yml up
+#   → ブラウザで http://localhost:8080  (別の PC からは http://<この PC の IP>:8080)
+#   もう一度流す: docker compose -f docker-compose.replay.yml restart nav && docker compose -f docker-compose.replay.yml restart robot
+#   終わり: Ctrl-C  (後片付けは docker compose -f docker-compose.replay.yml down)
+#
+# 変数は .env (REPLAY_BAG, REPLAY_RATE, REPLAY_START, TOPOMAP, NAV_MODEL, FINETUNED_DIR, ...). 実機と同じ .env でよい.
+# ROS master はこの PC の中だけ (.env の ROS_MASTER_URI がロボットを指していても使わない).
+# bag の画像は指示値に反応しない (開ループ). 指示どおりに動いたらどう見えるか、までは分からない.
+x-ros1: &ros1
+  image: omnivla_real:ros1
+  network_mode: host
+  ipc: host
+  volumes:
+    - ./:/workspace
+    - ${DATA_DIR:-./data}:/data
+    - ${BAG_DIR:-./bags}:/bags
+    - ${RUNS_DIR:-./runs}:/runs
+  working_dir: /workspace
+  stop_signal: SIGINT
+  restart: "no"
+
+services:
+  roscore:
+    <<: *ros1
+    environment:
+      ROS_MASTER_URI: http://localhost:11311
+    command: roscore
+
+  policy:
+    extends:
+      file: docker-compose.yml
+      service: policy
+
+  nav:
+    extends:
+      file: docker-compose.jetson.yml
+      service: nav
+    depends_on: [roscore]
+    environment:
+      ROS_MASTER_URI: http://localhost:11311
+      ROS_IP: ""
+      ROS_HOSTNAME: ""
+      USE_SIM_TIME: "true"
+      NAV_LOG_DIR: /runs/replay/nav
+
+  robot:
+    <<: *ros1
+    depends_on: [roscore, nav, record]
+    environment:
+      ROS_MASTER_URI: http://localhost:11311
+      REPLAY_BAG: ${REPLAY_BAG:-}
+      REPLAY_RATE: ${REPLAY_RATE:-1.0}
+      REPLAY_START: ${REPLAY_START:-0}
+      REPLAY_ARGS: ${REPLAY_ARGS:-}
+      REPLAY_WAIT: /omnivla_record
+      NAV_WEB_PORT: ${NAV_WEB_PORT:-}
+    command: bash scripts/bag_robot.sh
+
+  record:
+    <<: *ros1
+    depends_on: [roscore]
+    environment:
+      ROS_MASTER_URI: http://localhost:11311
+    # rosrun で記録本体を直接動かす (Ctrl-C / docker compose stop で bag を閉じる)
+    command:
+      - bash
+      - -c
+      - >-
+        until rostopic list > /dev/null 2>&1; do sleep 1; done; rosparam set /use_sim_time true; mkdir -p /runs/replay;
+        exec rosrun rosbag record -o /runs/replay/out /cmd_vel /omnivla/path /omnivla/status __name:=omnivla_record
+
+volumes:
+  model-cache:
