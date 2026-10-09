@@ -1,0 +1,29 @@
+[INFO] [1791512763.525791, 0.000000]: loading model (remote) ...
+[remote] edge at 127.0.0.1:8765 (history=True)
+[INFO] [1791512763.562271, 0.000000]: ready: model=remote, sample_rate=3.0 Hz, topomap=/tmp/e2e/topomap (24 subgoals)
+[INFO] [1791512763.569977, 0.000000]: waiting for /camera/image_raw/compressed and /odom
+[INFO] [1791512767.758340, 1000.012843]: start: 24 subgoals, reach_check=image_odom, log=/tmp/e2e/ros1_node/nav/20261009_022607
+[INFO] [1791512770.861244, 1003.119938]: subgoal 0 -> 1/23 [image similarity 1.000 (node 0)]
+[INFO] [1791512771.361546, 1003.624222]: subgoal 1 -> 2/23 [image similarity 1.000 (node 1)]
+[INFO] [1791512771.862589, 1004.118721]: subgoal 2 -> 3/23 [image similarity 1.000 (node 2)]
+[INFO] [1791512772.368634, 1004.623371]: subgoal 3 -> 4/23 [image similarity 1.000 (node 3)]
+[INFO] [1791512773.345432, 1005.601852]: subgoal 4 -> 5/23 [image similarity 1.000 (node 4)]
+[INFO] [1791512775.131111, 1007.387802]: subgoal 5 -> 6/23 [image similarity 1.000 (node 5)]
+[INFO] [1791512776.892960, 1009.153742]: subgoal 6 -> 7/23 [image similarity 1.000 (node 6)]
+[INFO] [1791512778.530679, 1010.788734]: subgoal 7 -> 8/23 [image similarity 1.000 (node 7)]
+[INFO] [1791512780.025950, 1012.282347]: subgoal 8 -> 9/23 [image similarity 1.000 (node 8)]
+[INFO] [1791512781.344305, 1013.603943]: subgoal 9 -> 10/23 [image similarity 1.000 (node 9)]
+[INFO] [1791512784.252936, 1016.509719]: subgoal 10 -> 11/23 [image similarity 1.000 (node 10)]
+[INFO] [1791512786.413305, 1018.669636]: subgoal 11 -> 12/23 [image similarity 1.000 (node 11)]
+[INFO] [1791512788.077263, 1020.334084]: subgoal 12 -> 13/23 [image similarity 1.000 (node 12)]
+[INFO] [1791512795.322497, 1027.579673]: subgoal 13 -> 14/23 [image similarity 1.000 (node 13)]
+[INFO] [1791512797.464918, 1029.727811]: subgoal 14 -> 15/23 [image similarity 1.000 (node 14)]
+[INFO] [1791512800.268881, 1032.526803]: subgoal 15 -> 16/23 [image similarity 1.000 (node 15)]
+[INFO] [1791512802.077349, 1034.334546]: subgoal 16 -> 17/23 [image similarity 1.000 (node 16)]
+[INFO] [1791512803.889746, 1036.149593]: subgoal 17 -> 18/23 [image similarity 1.000 (node 17)]
+[INFO] [1791512805.699195, 1037.955918]: subgoal 18 -> 19/23 [image similarity 1.000 (node 18)]
+[INFO] [1791512807.360944, 1039.622757]: subgoal 19 -> 20/23 [image similarity 1.000 (node 19)]
+[INFO] [1791512808.689978, 1040.944570]: subgoal 20 -> 21/23 [image similarity 1.000 (node 20)]
+[INFO] [1791512810.198224, 1042.457621]: subgoal 21 -> 22/23 [image similarity 1.000 (node 21)]
+[INFO] [1791512813.250958, 1045.514698]: subgoal 22 -> 23/23 [image similarity 1.000 (node 22)]
+[INFO] [1791512815.414827, 1047.575075]: stop: shutdown

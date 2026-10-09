@@ -1,0 +1,7 @@
+GET / 200 text/html; charset=utf-8 25721 bytes
+GET /api/config 200 camera {'height': 0.5, 'hfov_deg': 90.0, 'pitch_deg': 0.0, 'x_offset': 0.2} nodes 24
+SSE: 15 step messages, 12 status messages
+   last step: {'state': 'running', 'subgoal': 0, 'num_nodes': 24, 'v': 0.04107727325460623, 'w': 1.0, 'latency': 0.13181727, 'preview': True}
+GET /img/current.jpg 200 image/jpeg 4556
+GET /img/goal 200 image/jpeg 9057
+OK

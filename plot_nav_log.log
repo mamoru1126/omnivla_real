@@ -1,0 +1,40 @@
+run: /tmp/e2e/ros1_node/nav/20261009_022512
+topomap: /tmp/e2e/topomap (24 subgoals)  modality: image  controller: trajectory  reach_check: auto
+model: {'device': 'cuda:0', 'finetuned_dir': '', 'half': False, 'metric_waypoint_spacing': 0.0, 'model': 'edge', 'server_model': 'edge', 'timeout': 10.0, 'url': 'http://127.0.0.1:8765', 'weights': ''}
+
+== サブゴールごとの区間 ==
+subgoal  0: steps 1-18 (18 steps)  goal_bearing +0 -> +180 deg  dist 0.00 -> 0.31 m
+subgoal  1: steps 19-22 (4 steps)  goal_bearing +0 -> +0 deg  dist 0.40 -> 0.36 m
+subgoal  2: steps 23-24 (2 steps)  goal_bearing +0 -> +0 deg  dist 0.26 -> 1.26 m
+subgoal  4: steps 25-34 (10 steps)  goal_bearing +0 -> +0 deg  dist 1.15 -> 2.47 m
+subgoal  5: steps 35-46 (12 steps)  goal_bearing +0 -> +0 deg  dist 2.38 -> 2.45 m
+subgoal  6: steps 47-57 (11 steps)  goal_bearing +0 -> +0 deg  dist 2.36 -> 2.48 m
+subgoal  7: steps 58-68 (11 steps)  goal_bearing +2 -> +3 deg  dist 2.39 -> 2.45 m
+subgoal  8: steps 69-77 (9 steps)  goal_bearing +15 -> +19 deg  dist 2.36 -> 2.42 m
+subgoal  9: steps 78-85 (8 steps)  goal_bearing +39 -> +48 deg  dist 2.33 -> 2.45 m
+subgoal 10: steps 86-103 (18 steps)  goal_bearing +62 -> +34 deg  dist 2.39 -> 2.47 m
+subgoal 11: steps 104-117 (14 steps)  goal_bearing +34 -> +2 deg  dist 2.41 -> 2.50 m
+subgoal 12: steps 118-128 (11 steps)  goal_bearing +9 -> +11 deg  dist 2.42 -> 2.47 m
+subgoal 13: steps 129-175 (47 steps)  goal_bearing +28 -> +36 deg  dist 2.38 -> 2.44 m
+subgoal 14: steps 176-189 (14 steps)  goal_bearing +53 -> +51 deg  dist 2.36 -> 2.47 m
+subgoal 15: steps 190-207 (18 steps)  goal_bearing +54 -> +10 deg  dist 2.42 -> 2.46 m
+subgoal 16: steps 208-219 (12 steps)  goal_bearing +7 -> -1 deg  dist 2.37 -> 2.48 m
+subgoal 17: steps 220-231 (12 steps)  goal_bearing -1 -> +0 deg  dist 2.38 -> 2.45 m
+subgoal 18: steps 232-242 (11 steps)  goal_bearing +0 -> +0 deg  dist 2.35 -> 2.49 m
+subgoal 19: steps 243-253 (11 steps)  goal_bearing +5 -> +6 deg  dist 2.37 -> 2.41 m
+subgoal 20: steps 254-261 (8 steps)  goal_bearing +22 -> +28 deg  dist 2.31 -> 2.43 m
+subgoal 21: steps 262-271 (10 steps)  goal_bearing +47 -> +55 deg  dist 2.35 -> 2.48 m
+subgoal 22: steps 272-291 (20 steps)  goal_bearing +64 -> +20 deg  dist 2.44 -> 2.46 m
+subgoal 23: steps 292-304 (13 steps)  goal_bearing +18 -> -1 deg  dist 2.39 -> 1.95 m
+
+== 予測軌跡がサブゴールと逆側を向いたステップ (0/304) ==
+   (サブゴールが |bearing|>15deg の横にあるのに, 予測の 5 点目が反対側) -> モデル側の問題
+
+== 旋回指令が予測軌跡と逆のステップ (0/304) ==
+   -> 制御 (軌跡 -> v, w の変換) 側の問題。0 であるべき
+
+== 予測した旋回を実行できていない区間 (0/304 steps) ==
+   (予測 8 点が |w|>=0.15rad/s の旋回を表すのに, 指令 w がその 50% 未満) -> 制御側の問題。0 に近いべき
+
+-> /tmp/e2e/ros1_node/nav/20261009_022512/overview.png
+-> /tmp/e2e/ros1_node/nav/20261009_022512/timeline.png

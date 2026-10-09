@@ -1,0 +1,29 @@
+[0m[INFO] [1791512708.173117258]: note: the C++ node always uses the policy server (model: edge runs in the server)[0m
+[0m[INFO] [1791512708.175364690]: connecting to the policy server http://127.0.0.1:8765[0m
+[0m[INFO] [1791512708.176332345]: policy server: edge at 127.0.0.1:8765 (history=yes)[0m
+[0m[INFO] [1791512708.176410211]: ready: model=edge, sample_rate=3.000000 Hz, topomap=/tmp/e2e/topomap (24 subgoals)[0m
+[0m[INFO] [1791512708.176544130]: debug page: http://<this machine>:8090[0m
+[0m[INFO] [1791512708.183997574]: waiting for /camera/image_raw/compressed and /odom[0m
+[0m[INFO] [1791512712.394258557, 1000.073222313]: start: 24 subgoals, reach_check=image_odom, log=/tmp/e2e/ros1_node/nav/20261009_022512[0m
+[0m[INFO] [1791512715.347112028, 1003.028223031]: subgoal 0 -> 1/23 [image similarity 1.000 (node 0)][0m
+[0m[INFO] [1791512715.967888274, 1003.653404984]: subgoal 1 -> 2/23 [image similarity 1.000 (node 1)][0m
+[0m[INFO] [1791512716.289802516, 1003.975970573]: subgoal 2 -> 4/23 [image similarity 1.000 (node 3)][0m
+[0m[INFO] [1791512717.847607948, 1005.528878767]: subgoal 4 -> 5/23 [image similarity 1.000 (node 4)][0m
+[0m[INFO] [1791512719.683777999, 1007.364510293]: subgoal 5 -> 6/23 [image similarity 1.000 (node 5)][0m
+[0m[INFO] [1791512721.441790764, 1009.119410121]: subgoal 6 -> 7/23 [image similarity 1.000 (node 6)][0m
+[0m[INFO] [1791512723.164201958, 1010.843988870]: subgoal 7 -> 8/23 [image similarity 1.000 (node 7)][0m
+[0m[INFO] [1791512724.586158373, 1012.266378874]: subgoal 8 -> 9/23 [image similarity 1.000 (node 8)][0m
+[0m[INFO] [1791512725.878305372, 1013.556977977]: subgoal 9 -> 10/23 [image similarity 1.000 (node 9)][0m
+[0m[INFO] [1791512728.758532604, 1016.442194785]: subgoal 10 -> 11/23 [image similarity 1.000 (node 10)][0m
+[0m[INFO] [1791512730.921455920, 1018.600156605]: subgoal 11 -> 12/23 [image similarity 1.000 (node 11)][0m
+[0m[INFO] [1791512732.620271628, 1020.305038692]: subgoal 12 -> 13/23 [image similarity 1.000 (node 12)][0m
+[0m[INFO] [1791512739.849699715, 1027.536370849]: subgoal 13 -> 14/23 [image similarity 1.000 (node 13)][0m
+[0m[INFO] [1791512742.030861915, 1029.714397991]: subgoal 14 -> 15/23 [image similarity 1.000 (node 14)][0m
+[0m[INFO] [1791512744.770714625, 1032.457037170]: subgoal 15 -> 16/23 [image similarity 1.000 (node 15)][0m
+[0m[INFO] [1791512746.634854882, 1034.313058420]: subgoal 16 -> 17/23 [image similarity 1.000 (node 16)][0m
+[0m[INFO] [1791512748.490761885, 1036.168288782]: subgoal 17 -> 18/23 [image similarity 1.000 (node 17)][0m
+[0m[INFO] [1791512750.256946730, 1037.943534989]: subgoal 18 -> 19/23 [image similarity 1.000 (node 18)][0m
+[0m[INFO] [1791512751.978252944, 1039.658300812]: subgoal 19 -> 20/23 [image similarity 1.000 (node 19)][0m
+[0m[INFO] [1791512753.225339700, 1040.908310702]: subgoal 20 -> 21/23 [image similarity 1.000 (node 20)][0m
+[0m[INFO] [1791512754.782647807, 1042.461033705]: subgoal 21 -> 22/23 [image similarity 1.000 (node 21)][0m
+[0m[INFO] [1791512757.837671284, 1045.516123576]: subgoal 22 -> 23/23 [image similarity 1.000 (node 22)][0m

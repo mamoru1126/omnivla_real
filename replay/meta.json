@@ -1,0 +1,127 @@
+{
+  "engine": {
+    "controller": {
+      "dt": 0.3333333333333333,
+      "max_v": 0.3,
+      "max_w": 0.3,
+      "mode": "trajectory",
+      "respect_predicted_speed": true,
+      "track_horizon": 4,
+      "track_max_v": 0.6,
+      "track_max_w": 1.0,
+      "track_phi_scale": 0.15,
+      "waypoint_index": 4
+    },
+    "modality": "image",
+    "sample_rate": 3.0,
+    "tracker": {
+      "confirm": 2,
+      "goal_image_threshold": 0.85,
+      "goal_odom_gate_m": 1.5,
+      "goal_radius": 0.5,
+      "image_threshold": 0.8,
+      "min_travel_m": 0.2,
+      "odom_gate_m": 2.5,
+      "odom_pass_m": 1.0,
+      "pass_angle_deg": 90.0,
+      "pass_radius": 1.5,
+      "reach_angle_deg": 30.0,
+      "reach_check": "auto",
+      "search_window": 2,
+      "subgoal_radius": 0.5
+    }
+  },
+  "final_goal_pose": [
+    0.12418279660757073,
+    0.9934491357772063,
+    -1.4864867634828771
+  ],
+  "model": {
+    "device": "cuda:0",
+    "finetuned_dir": "",
+    "half": false,
+    "metric_waypoint_spacing": 0.0,
+    "model": "edge",
+    "server_model": "edge",
+    "timeout": 10.0,
+    "url": "http://127.0.0.1:8765",
+    "weights": ""
+  },
+  "node": "cpp",
+  "num_nodes": 24,
+  "robot": {
+    "camera": {
+      "height": 0.5,
+      "hfov_deg": 90.0,
+      "pitch_deg": 0.0,
+      "x_offset": 0.2
+    },
+    "image": {
+      "crop": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "jpeg_quality": 95,
+      "rotate180": false,
+      "width": 320
+    },
+    "name": "my_robot",
+    "time_source": "auto",
+    "topics": {
+      "cmd": "/cmd_vel",
+      "cmd_v_field": "",
+      "cmd_w_field": "",
+      "image": "/camera/image_raw/compressed",
+      "localization": "",
+      "localization_child_frame": "base_link",
+      "localization_frame": "map",
+      "odom": "/odom"
+    }
+  },
+  "started_at": "2026-10-09 02:27:05",
+  "topomap": "/data/topomap",
+  "topomap_meta": {
+    "bag": "/home/runner/work/_temp/e2e/bags/course_mcap",
+    "course_length_m": 23.806228597474632,
+    "created_at": "2026-10-09 02:21:24",
+    "frame": "odom",
+    "num_nodes": 24,
+    "pose_source": "odom",
+    "robot": {
+      "camera": {
+        "height": 0.5,
+        "hfov_deg": 90.0,
+        "pitch_deg": 0.0,
+        "x_offset": 0.2
+      },
+      "image": {
+        "crop": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "jpeg_quality": 95,
+        "rotate180": false,
+        "width": 320
+      },
+      "name": "my_robot",
+      "time_source": "auto",
+      "topics": {
+        "cmd": "/cmd_vel",
+        "cmd_v_field": "",
+        "cmd_w_field": "",
+        "image": "/camera/image_raw/compressed",
+        "localization": "",
+        "localization_child_frame": "base_link",
+        "localization_frame": "map",
+        "odom": "/odom"
+      }
+    },
+    "spacing_m": 1.0,
+    "t_end": 50.999999999999886,
+    "t_start": 2.199999999999932
+  }
+}

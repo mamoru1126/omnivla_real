@@ -1,0 +1,116 @@
+robot-1  | [robot] bag: /bags/course_ros1_0.bag /bags/course_ros1_1.bag (53.8 s, 速度 x1.0, 0 s から)
+robot-1  | [robot] 流すトピック: /camera/image_raw/compressed /odom
+robot-1  | [robot] ブラウザ: http://localhost:8080  (別の PC からは http://<この PC の IP>:8080)
+robot-1  | [0m[INFO] [1791512823.618678349]: Opening /bags/course_ros1_0.bag[0m
+robot-1  | [0m[INFO] [1791512823.632857360]: Opening /bags/course_ros1_1.bag[0m
+robot-1  | Waiting 2 seconds after advertising topics... done.
+robot-1  | 
+robot-1  | Hit space to toggle paused, or 's' to step.
+robot-1  | 
+robot-1  | Done.
+robot-1  | [robot] bag の再生が終わりました (rc=0). 画面はそのまま見られます: http://localhost:8080
+robot-1  | [robot] 記録: /runs/replay (ホストの RUNS_DIR/replay). out_<時刻>.bag と nav/<時刻>/ (図にする: bin/plot_nav_log.sh)
+robot-1  | [robot] もう一度流す: bin/replay.sh again  (または docker compose -f docker-compose.replay.yml restart nav && ... restart robot)
+roscore-1  | ... logging to /root/.ros/log/e7c290d0-c388-11f1-b854-3833c5ea427c/roslaunch-runnervmwvtoz-1.log
+nav-1      | roscore/master is not yet running, will wait for it to start
+nav-1      | master has started, initiating launch
+nav-1      | ... logging to /root/.ros/log/e7c290d0-c388-11f1-b854-3833c5ea427c/roslaunch-runnervmwvtoz-1.log
+nav-1      | Checking log directory for disk usage. This may take a while.
+nav-1      | Press Ctrl-C to interrupt
+nav-1      | Done checking log file disk usage. Usage is <1GB.
+nav-1      | ]2;/workspace/ros1/omnivla_real_ros1/launch/navigator.launch
+nav-1      | [1mstarted roslaunch server http://runnervmwvtoz:39537/[0m
+nav-1      | 
+nav-1      | SUMMARY
+nav-1      | ========
+nav-1      | 
+nav-1      | PARAMETERS
+nav-1      |  * /omnivla_navigator/autostart: True
+nav-1      |  * /omnivla_navigator/log_dir: /runs/replay/nav
+nav-1      |  * /omnivla_navigator/nav_config: /workspace/config...
+nav-1      |  * /omnivla_navigator/overrides: 
+nav-1      |  * /omnivla_navigator/policy_url: http://127.0.0.1:...
+nav-1      |  * /omnivla_navigator/repo_root: /workspace
+nav-1      |  * /omnivla_navigator/robot_config: /workspace/config...
+nav-1      |  * /omnivla_navigator/topomap: /data/topomap
+nav-1      |  * /omnivla_navigator/web_port: 
+nav-1      |  * /rosdistro: noetic
+nav-1      |  * /rosversion: 1.17.4
+nav-1      |  * /use_sim_time: True
+nav-1      | 
+roscore-1  | Checking log directory for disk usage. This may take a while.
+roscore-1  | Press Ctrl-C to interrupt
+roscore-1  | Done checking log file disk usage. Usage is <1GB.
+roscore-1  | ]2;roscore
+roscore-1  | [1mstarted roslaunch server http://runnervmwvtoz:42157/[0m
+roscore-1  | ros_comm version 1.17.4
+roscore-1  | 
+roscore-1  | 
+roscore-1  | SUMMARY
+roscore-1  | ========
+roscore-1  | 
+roscore-1  | PARAMETERS
+roscore-1  |  * /rosdistro: noetic
+roscore-1  |  * /rosversion: 1.17.4
+roscore-1  | 
+roscore-1  | NODES
+roscore-1  | 
+roscore-1  | auto-starting new master
+roscore-1  | [1mprocess[master]: started with pid [63][0m
+roscore-1  | [1mROS_MASTER_URI=http://runnervmwvtoz:11311/[0m
+roscore-1  | ]2;roscore http://runnervmwvtoz:11311/
+roscore-1  | [1msetting /run_id to e7c290d0-c388-11f1-b854-3833c5ea427c[0m
+roscore-1  | [1mprocess[rosout-1]: started with pid [78][0m
+record-1   | [0m[INFO] [1791512821.817834999]: Subscribing to /cmd_vel[0m
+record-1   | [0m[INFO] [1791512821.820912842]: Subscribing to /omnivla/path[0m
+record-1   | [0m[INFO] [1791512821.822645488]: Subscribing to /omnivla/status[0m
+roscore-1  | started core service [/rosout]
+roscore-1  | [rosout-1] killing on exit
+roscore-1  | [master] killing on exit
+roscore-1  | shutting down processing monitor...
+nav-1      | NODES
+nav-1      |   /
+roscore-1  | ... shutting down processing monitor complete
+roscore-1  | [1mdone[0m
+record-1   | [33m[WARN] [1791512823.828690788]: /use_sim_time set to true and no clock published.  Still waiting for valid time...[0m
+record-1   | [0m[INFO] [1791512825.643016865, 1000.002743487]: Recording to '/runs/replay/out_2026-10-09-02-27-05.bag'.[0m
+nav-1      |     omnivla_navigator (omnivla_real_ros1/navigator)
+nav-1      | 
+nav-1      | [1mROS_MASTER_URI=http://localhost:11311[0m
+nav-1      | ]2;/workspace/ros1/omnivla_real_ros1/launch/navigator.launch http://localhost:11311
+nav-1      | [1mprocess[omnivla_navigator-1]: started with pid [63][0m
+nav-1      | [0m[INFO] [1791512820.663514880]: note: the C++ node always uses the policy server (model: edge runs in the server)[0m
+nav-1      | [0m[INFO] [1791512820.665734506]: connecting to the policy server http://127.0.0.1:8765[0m
+nav-1      | [0m[INFO] [1791512820.666872965]: policy server: edge at 127.0.0.1:8765 (history=yes)[0m
+nav-1      | [0m[INFO] [1791512820.666940792]: ready: model=edge, sample_rate=3.000000 Hz, topomap=/data/topomap (24 subgoals)[0m
+nav-1      | [0m[INFO] [1791512820.667110369]: debug page: http://<this machine>:8080[0m
+nav-1      | [0m[INFO] [1791512820.674767850]: waiting for /camera/image_raw/compressed and /odom[0m
+nav-1      | [0m[INFO] [1791512825.644429610, 1000.002743487]: start: 24 subgoals, reach_check=image_odom, log=/runs/replay/nav/20261009_022705[0m
+nav-1      | [0m[INFO] [1791512828.674806876, 1003.038265297]: subgoal 0 -> 1/23 [image similarity 1.000 (node 0)][0m
+nav-1      | [0m[INFO] [1791512829.186681250, 1003.552702244]: subgoal 1 -> 2/23 [image similarity 1.000 (node 1)][0m
+nav-1      | [0m[INFO] [1791512829.528003795, 1003.885296335]: subgoal 2 -> 4/23 [image similarity 1.000 (node 3)][0m
+nav-1      | [0m[INFO] [1791512831.215020084, 1005.578939418]: subgoal 4 -> 5/23 [image similarity 1.000 (node 4)][0m
+nav-1      | [0m[INFO] [1791512832.963504187, 1007.323114641]: subgoal 5 -> 6/23 [image similarity 1.000 (node 5)][0m
+nav-1      | [0m[INFO] [1791512834.827062781, 1009.189671421]: subgoal 6 -> 7/23 [image similarity 1.000 (node 6)][0m
+nav-1      | [0m[INFO] [1791512836.427993026, 1010.793608764]: subgoal 7 -> 8/23 [image similarity 1.000 (node 7)][0m
+nav-1      | [0m[INFO] [1791512837.835600060, 1012.195106564]: subgoal 8 -> 9/23 [image similarity 1.000 (node 8)][0m
+nav-1      | [0m[INFO] [1791512839.106981798, 1013.465411572]: subgoal 9 -> 10/23 [image similarity 1.000 (node 9)][0m
+nav-1      | [0m[INFO] [1791512842.141744557, 1016.500547529]: subgoal 10 -> 11/23 [image similarity 1.000 (node 10)][0m
+nav-1      | [0m[INFO] [1791512844.291172409, 1018.658141800]: subgoal 11 -> 12/23 [image similarity 1.000 (node 11)][0m
+nav-1      | [0m[INFO] [1791512846.021146254, 1020.382243803]: subgoal 12 -> 13/23 [image similarity 1.000 (node 12)][0m
+nav-1      | [0m[INFO] [1791512853.150642117, 1027.512218719]: subgoal 13 -> 14/23 [image similarity 1.000 (node 13)][0m
+nav-1      | [0m[INFO] [1791512855.347441523, 1029.711228499]: subgoal 14 -> 15/23 [image similarity 1.000 (node 14)][0m
+nav-1      | [0m[INFO] [1791512858.079449553, 1032.445305478]: subgoal 15 -> 16/23 [image similarity 1.000 (node 15)][0m
+nav-1      | [0m[INFO] [1791512859.970675175, 1034.331405578]: subgoal 16 -> 17/23 [image similarity 1.000 (node 16)][0m
+nav-1      | [0m[INFO] [1791512861.845955862, 1036.207436753]: subgoal 17 -> 18/23 [image similarity 1.000 (node 17)][0m
+nav-1      | [0m[INFO] [1791512863.582426139, 1037.942101326]: subgoal 18 -> 19/23 [image similarity 1.000 (node 18)][0m
+nav-1      | [0m[INFO] [1791512865.174300299, 1039.535505270]: subgoal 19 -> 20/23 [image similarity 1.000 (node 19)][0m
+nav-1      | [0m[INFO] [1791512866.432019370, 1040.796263005]: subgoal 20 -> 21/23 [image similarity 1.000 (node 20)][0m
+nav-1      | [0m[INFO] [1791512868.148804183, 1042.510388990]: subgoal 21 -> 22/23 [image similarity 1.000 (node 21)][0m
+nav-1      | [0m[INFO] [1791512871.136964190, 1045.494141513]: subgoal 22 -> 23/23 [image similarity 1.000 (node 22)][0m
+nav-1      | [0m[INFO] [1791512873.823946005, 1048.187048194]: final goal reached [image similarity 1.000 (node 23)][0m
+nav-1      | [0m[INFO] [1791512873.823991330, 1048.187048194]: finished: reached image similarity 1.000 (node 23)[0m
+nav-1      | [omnivla_navigator-1] killing on exit
+nav-1      | shutting down processing monitor...
+nav-1      | ... shutting down processing monitor complete
+nav-1      | [1mdone[0m
