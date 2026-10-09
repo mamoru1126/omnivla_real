@@ -1,0 +1,9 @@
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1791512600.418372473] [rosbag2_storage]: Opened database '/tmp/e2e/bags/course_sqlite3/course_sqlite3.db3' for READ_ONLY.
+[INFO] [1791512600.418432580] [rosbag2_player]: Set rate to 1
+[INFO] [1791512600.426091461] [rosbag2_player]: Adding keyboard callbacks.
+[INFO] [1791512600.426134989] [rosbag2_player]: Press SPACE for Pause/Resume
+[INFO] [1791512600.426144973] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[INFO] [1791512600.426154017] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[INFO] [1791512600.426161994] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[INFO] [1791512600.426594032] [rosbag2_storage]: Opened database '/tmp/e2e/bags/course_sqlite3/course_sqlite3.db3' for READ_ONLY.
+[INFO] [1791512647.607902343] [rclcpp]: signal_handler(SIGINT/SIGTERM)

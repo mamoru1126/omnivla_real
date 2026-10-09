@@ -1,0 +1,48 @@
+node ready
+----- check
+/cmd_vel: 470 msgs (468 non-zero)
+   v in [0.000, 0.041]  w in [0.000, 1.000]
+/omnivla/path: 359 msgs, poses per path [9]
+/omnivla/status: 47 msgs, states ['idle', 'running']
+   last: {"state": "running", "subgoal": 23, "num_nodes": 24, "reach_check": "image_odom", "similarity": 1.0000001778139447, "distance": 2.6818298300100754, "travel_m": 21.165045855876713, "v": 0.041077270944705334, "w": 0.9999999999999999, "latency": 0.10901093482971191, "time": 1791512646.4450018, "topomap": "/tmp/e2e/topomap"}
+OK
+----- node.log (tail)
+[INFO] [1791512595.702624987] [omnivla_navigator]: loading model (edge) ...
+/usr/local/lib/python3.10/dist-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[edge] ready (device=cpu, metric_waypoint_spacing=0.1803149800959821, context_stride=1)
+[INFO] [1791512597.124328468] [omnivla_navigator]: ready: model=edge, sample_rate=3.0 Hz, topomap=/tmp/e2e/topomap (24 subgoals)
+[INFO] [1791512597.130813612] [omnivla_navigator]: waiting for /camera/image_raw/compressed and /odom
+[INFO] [1791512600.543266077] [omnivla_navigator]: start: 24 subgoals, reach_check=image_odom, log=/tmp/e2e/ros2_node/nav/20261009_022320
+[INFO] [1791512603.346451408] [omnivla_navigator]: subgoal 0 -> 1/23 [image similarity 1.000 (node 0)]
+[INFO] [1791512603.901887872] [omnivla_navigator]: subgoal 1 -> 2/23 [image similarity 1.000 (node 1)]
+[INFO] [1791512604.447632392] [omnivla_navigator]: subgoal 2 -> 3/23 [image similarity 1.000 (node 2)]
+[INFO] [1791512604.975674320] [omnivla_navigator]: subgoal 3 -> 4/23 [image similarity 1.000 (node 3)]
+[INFO] [1791512605.908237833] [omnivla_navigator]: subgoal 4 -> 5/23 [image similarity 1.000 (node 4)]
+[INFO] [1791512607.759986189] [omnivla_navigator]: subgoal 5 -> 6/23 [image similarity 1.000 (node 5)]
+[INFO] [1791512609.493785253] [omnivla_navigator]: subgoal 6 -> 7/23 [image similarity 1.000 (node 6)]
+[INFO] [1791512611.217249147] [omnivla_navigator]: subgoal 7 -> 8/23 [image similarity 1.000 (node 7)]
+[INFO] [1791512612.525821355] [omnivla_navigator]: subgoal 8 -> 9/23 [image similarity 1.000 (node 8)]
+[INFO] [1791512613.879828994] [omnivla_navigator]: subgoal 9 -> 10/23 [image similarity 1.000 (node 9)]
+[INFO] [1791512616.786964319] [omnivla_navigator]: subgoal 10 -> 11/23 [image similarity 1.000 (node 10)]
+[INFO] [1791512619.113821731] [omnivla_navigator]: subgoal 11 -> 12/23 [image similarity 1.000 (node 11)]
+[INFO] [1791512620.670483059] [omnivla_navigator]: subgoal 12 -> 13/23 [image similarity 1.000 (node 12)]
+[INFO] [1791512627.842396600] [omnivla_navigator]: subgoal 13 -> 14/23 [image similarity 1.000 (node 13)]
+[INFO] [1791512630.050366661] [omnivla_navigator]: subgoal 14 -> 15/23 [image similarity 1.000 (node 14)]
+[INFO] [1791512632.751467269] [omnivla_navigator]: subgoal 15 -> 16/23 [image similarity 1.000 (node 15)]
+[INFO] [1791512634.684660135] [omnivla_navigator]: subgoal 16 -> 17/23 [image similarity 1.000 (node 16)]
+[INFO] [1791512636.486587244] [omnivla_navigator]: subgoal 17 -> 18/23 [image similarity 1.000 (node 17)]
+[INFO] [1791512638.303500927] [omnivla_navigator]: subgoal 18 -> 19/23 [image similarity 1.000 (node 18)]
+[INFO] [1791512639.984582256] [omnivla_navigator]: subgoal 19 -> 20/23 [image similarity 1.000 (node 19)]
+[INFO] [1791512641.268393902] [omnivla_navigator]: subgoal 20 -> 21/23 [image similarity 1.000 (node 20)]
+[INFO] [1791512642.906605555] [omnivla_navigator]: subgoal 21 -> 22/23 [image similarity 1.000 (node 21)]
+[INFO] [1791512645.833266401] [omnivla_navigator]: subgoal 22 -> 23/23 [image similarity 1.000 (node 22)]
+----- play.log (tail)
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1791512600.418372473] [rosbag2_storage]: Opened database '/tmp/e2e/bags/course_sqlite3/course_sqlite3.db3' for READ_ONLY.
+[INFO] [1791512600.418432580] [rosbag2_player]: Set rate to 1
+[INFO] [1791512600.426091461] [rosbag2_player]: Adding keyboard callbacks.
+[INFO] [1791512600.426134989] [rosbag2_player]: Press SPACE for Pause/Resume
+[INFO] [1791512600.426144973] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[INFO] [1791512600.426154017] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[INFO] [1791512600.426161994] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[INFO] [1791512600.426594032] [rosbag2_storage]: Opened database '/tmp/e2e/bags/course_sqlite3/course_sqlite3.db3' for READ_ONLY.
