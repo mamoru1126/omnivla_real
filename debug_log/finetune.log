@@ -1,0 +1,15 @@
+netune] step 4880 loss=0.0317 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4890 loss=0.0425 lr=1.00e-05 4.61s/step mem=20.0GB
+[finetune] step 4900 loss=0.0389 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4910 loss=0.0348 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4920 loss=0.0582 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4930 loss=0.0806 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4940 loss=0.0379 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4950 loss=0.0341 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4960 loss=0.0382 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4970 loss=0.0311 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4980 loss=0.0854 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 4990 loss=0.1043 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] step 5000 loss=0.0305 lr=1.00e-05 4.60s/step mem=20.0GB
+[finetune] [val step 5000] ADE=0.109m FDE=0.200m turn: ADE=nanm FDE=nanm heading_err=nandeg | straight/ade=0.109 image/ade=0.109
+[finetune] saved /runs/omnivla7b_20261009_064058/checkpoints/step_005000
