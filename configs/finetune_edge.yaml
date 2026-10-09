@@ -5,7 +5,7 @@ clip_type: ViT-B/32                    # 公式と同じ (言語を使わない�
 data_dirs:
   - /data/dataset
 val_ratio: 0.1
-val_bags: []
+val_bags: []                       # 例 [run3]. 数字の名前は引用符で ["20260919_150554"]
 metric_waypoint_spacing: 0.0           # 0 = dataset_info.json の値
 image_goal_offset: [2, 30]
 pose_goal_offset: [2, 300]

@@ -7,7 +7,7 @@ resume_from: ""
 data_dirs:
   - /data/dataset
 val_ratio: 0.1
-val_bags: [20260919_150554]                      # 例 [run3] : この bag の走行を検証に使う (同じコースの別の走行で評価したい場合)
+val_bags: ["20260919_150554"]    # 例 [run3] : この bag の走行を検証に使う. 数字の名前は引用符で ["20260919_150554"] (同じコースの別の走行で評価したい場合)
 metric_waypoint_spacing: 0.0      # 0 = dataset_info.json の値 (1 フレームあたりの移動量) を使う
 waypoint_spacing: 1
 max_goal_dist: 30.0

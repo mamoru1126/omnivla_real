@@ -207,10 +207,19 @@ def split_trajectories(traj_dirs: Sequence[str], val_ratio: float, seed: int, va
     指定が無ければ軌跡 (= 最大 chunk_sec 秒の塊) 単位でランダムに分ける."""
     dirs = sorted(traj_dirs)
     if val_bags:
-        vb = set(val_bags)
-        val = [d for d in dirs if load_meta(d).get("bag") in vb]
+        # YAML では引用符なしの 20260919_150554 が数値 20260919150554 になる (_ は桁区切り扱い). 数値で来たら _ を除いた名前と比べる
+        vb = {str(v) for v in val_bags}
+        loose = {str(v) for v in val_bags if isinstance(v, int)}
+
+        def hit(name) -> bool:
+            name = str(name)
+            return name in vb or name.replace("_", "") in loose
+
+        val = [d for d in dirs if hit(load_meta(d).get("bag"))]
         if not val:
-            raise ValueError(f"no trajectories from val_bags {sorted(vb)}")
+            names = sorted({str(load_meta(d).get("bag")) for d in dirs})
+            raise ValueError(f"no trajectories from val_bags {sorted(vb)}. bag names in the dataset: {names} "
+                             "(数字だけの名前は引用符で囲む: val_bags: [\"20260919_150554\"])")
         return [d for d in dirs if d not in val], val
     rng = random.Random(seed)
     rng.shuffle(dirs)
