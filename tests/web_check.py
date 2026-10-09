@@ -11,8 +11,12 @@ import time
 import urllib.request
 
 
+# http_proxy などの環境変数を無視する (社内プロキシがあっても localhost に直接つなぐ)
+OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
 def get(url: str, timeout: float = 5.0):
-    with urllib.request.urlopen(url, timeout=timeout) as r:
+    with OPENER.open(url, timeout=timeout) as r:
         return r.status, r.headers.get("Content-Type", ""), r.read()
 
 
@@ -42,7 +46,7 @@ def main(base: str, duration: float) -> int:
     steps = statuses = 0
     last = None
     req = urllib.request.Request(base + "/api/events")
-    with urllib.request.urlopen(req, timeout=10) as r:
+    with OPENER.open(req, timeout=10) as r:
         while time.time() < t_end and steps < 15:
             line = r.readline()
             if not line:

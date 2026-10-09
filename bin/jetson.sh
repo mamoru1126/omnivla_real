@@ -53,7 +53,7 @@ case $CMD in
         PORT=$(env_get POLICY_PORT 8765)
         if command -v curl > /dev/null; then
             echo "policy server (:$PORT/info):"
-            curl -sf "http://127.0.0.1:$PORT/info" && echo || echo "  応答なし (起動中か止まっている)"
+            curl -sf --noproxy '*' "http://127.0.0.1:$PORT/info" && echo || echo "  応答なし (起動中か止まっている)"
         fi
         ;;
     logs)

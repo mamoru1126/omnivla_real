@@ -178,15 +178,21 @@ def _free_port() -> int:
 def _start_fake_server(port: int):
     proc = subprocess.Popen([sys.executable, os.path.join(HERE, "fake_policy.py"), "--port", str(port)],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    import urllib.request
-    for _ in range(100):
+    import http.client   # urllib は http_proxy を見るので、社内プロキシがあると localhost に届かない
+    for _ in range(300):
+        if proc.poll() is not None:
+            break
         try:
-            urllib.request.urlopen(f"http://127.0.0.1:{port}/info", timeout=1)
-            return proc
-        except OSError:
-            time.sleep(0.1)
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=1)
+            conn.request("GET", "/info")
+            if conn.getresponse().status == 200:
+                return proc
+        except (OSError, http.client.HTTPException):
+            pass
+        time.sleep(0.1)
     proc.kill()
-    raise RuntimeError("fake policy server did not start")
+    out = proc.communicate()[0]
+    raise RuntimeError("fake policy server did not start:\n" + (out or "")[-2000:])
 
 
 def make_replay_case(out_dir: str, laps: int = 1):

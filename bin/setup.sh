@@ -13,6 +13,10 @@ ensure_env
 for k in bags data runs checkpoints; do mkdir -p "$(host_dir "$k")"; done
 say "イメージをビルドします (初回は 30 分ほどかかります)"
 pc build
+say "単体テスト (1 分ほど)"
+if ! in_shell python3 -m pytest -q tests; then
+    say "注意: 単体テストに失敗しました (イメージはできています). 上のログを確認してください"
+fi
 if [ "$WHAT" != none ]; then
     in_shell bash scripts/download_checkpoints.sh "$WHAT"
 fi

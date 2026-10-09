@@ -1,6 +1,6 @@
 name: docker
 
-# 学習用イメージ (x86_64, docker/Dockerfile) が作れるか (中で import と単体テストも走る).
+# 学習用イメージ (x86_64, docker/Dockerfile) が作れるか (ビルドの後に、イメージの中で単体テスト).
 # Jetson 用 (docker/Dockerfile.jetson) は arm64 + L4T なのでここでは作らない.
 on:
   push:
@@ -30,6 +30,11 @@ jobs:
           set -o pipefail
           mkdir -p ci
           DOCKER_BUILDKIT=1 docker build --progress=plain -f docker/Dockerfile -t omnivla_real:ci . 2>&1 | tee ci/docker-build.log
+      - name: Unit tests in the image (bin/setup.sh と同じ. 届かないプロキシを設定して社内ネットワークを真似る)
+        run: |
+          set -o pipefail
+          docker run --rm -e http_proxy=http://10.255.255.1:3128 -e HTTP_PROXY=http://10.255.255.1:3128 \
+            omnivla_real:ci python3 -m pytest -q tests 2>&1 | tee ci/pytest-image.log
       - name: Navigator launch file in the image
         run: |
           docker run --rm omnivla_real:ci bash -c \

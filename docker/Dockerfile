@@ -33,11 +33,10 @@ RUN source /opt/ros/humble/setup.bash && mkdir -p /opt/omnivla_ws \
     && colcon --log-base /opt/omnivla_ws/log build --symlink-install --base-paths /workspace/ros2 \
         --build-base /opt/omnivla_ws/build --install-base /opt/omnivla_ws/install
 
-# 動作確認: import と単体テスト
+# 動作確認: import だけ (単体テストは bin/setup.sh がビルドの後に流す. ビルドを環境 (プロキシなど) で失敗させない)
 RUN python3 -c "import torch, transformers, peft, rosbags, clip, efficientnet_pytorch; \
 import omnivla_real.policy, omnivla_real.edge; \
-print('torch', torch.__version__, 'transformers', transformers.__version__, 'peft', peft.__version__)" \
-    && python3 -m pytest -q tests
+print('torch', torch.__version__, 'transformers', transformers.__version__, 'peft', peft.__version__)"
 
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
