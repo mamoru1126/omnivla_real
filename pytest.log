@@ -1,0 +1,212 @@
+....FF..F.F.....F...F                                                    [100%]
+=================================== FAILURES ===================================
+_____________________ test_extract_and_convert_course_run ______________________
+
+    def test_extract_and_convert_course_run():
+        msgs = course()
+        tmp = tempfile.mkdtemp()
+        try:
+>           s = read_streams(ListSource(msgs), robot_cfg(), os.path.join(tmp, "_frames", "r"), 3.0, name="r")
+
+tests/test_core.py:140: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = <omnivla_real.bag.reader.ListSource object at 0x7f5d66e179a0>
+robot = RobotConfig(name='my_robot', topics=TopicConfig(image='/camera/compressed', odom='/odom', cmd='/cmd_vel', localization...lse, jpeg_quality=95), camera=CameraConfig(hfov_deg=90.0, height=0.5, x_offset=0.2, pitch_deg=0.0), time_source='auto')
+frame_dir = '/tmp/tmp1tijzbhx/_frames/r', sample_rate = 3.0, start_sec = None
+end_sec = None, name = 'r', progress = None, decode_images = True
+
+    def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_rate: float,
+                     start_sec: Optional[float] = None, end_sec: Optional[float] = None, name: str = "",
+                     progress: Optional[Callable[[str], None]] = None, decode_images: bool = True) -> Streams:
+        """source: BagReader (open 済み) か ListSource. start_sec/end_sec は bag 先頭からの秒数."""
+        tp = robot.topics
+        topics = source.topics()
+        wanted = [t for t in (tp.image, tp.odom, tp.cmd, tp.localization) if t]
+        for t in wanted:
+            if t not in topics:
+>               raise KeyError(f"topic '{t}' is not in the bag. available topics:\n  "
+                               + "\n  ".join(f"{k}  [{v[0]}]" for k, v in sorted(topics.items())))
+E               KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+
+omnivla_real/extract.py:84: KeyError
+______________________ test_pose_sources_agree_short_term ______________________
+
+    def test_pose_sources_agree_short_term():
+        msgs = course()
+>       s = read_streams(ListSource(msgs), robot_cfg(localization=True), None, 3.0, decode_images=False)
+
+tests/test_core.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = <omnivla_real.bag.reader.ListSource object at 0x7f5d56984460>
+robot = RobotConfig(name='my_robot', topics=TopicConfig(image='/camera/compressed', odom='/odom', cmd='/cmd_vel', localization...lse, jpeg_quality=95), camera=CameraConfig(hfov_deg=90.0, height=0.5, x_offset=0.2, pitch_deg=0.0), time_source='auto')
+frame_dir = None, sample_rate = 3.0, start_sec = None, end_sec = None, name = ''
+progress = None, decode_images = False
+
+    def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_rate: float,
+                     start_sec: Optional[float] = None, end_sec: Optional[float] = None, name: str = "",
+                     progress: Optional[Callable[[str], None]] = None, decode_images: bool = True) -> Streams:
+        """source: BagReader (open 済み) か ListSource. start_sec/end_sec は bag 先頭からの秒数."""
+        tp = robot.topics
+        topics = source.topics()
+        wanted = [t for t in (tp.image, tp.odom, tp.cmd, tp.localization) if t]
+        for t in wanted:
+            if t not in topics:
+>               raise KeyError(f"topic '{t}' is not in the bag. available topics:\n  "
+                               + "\n  ".join(f"{k}  [{v[0]}]" for k, v in sorted(topics.items())))
+E               KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+
+omnivla_real/extract.py:84: KeyError
+___________________ test_topomap_from_run_and_tracker_modes ____________________
+
+    def test_topomap_from_run_and_tracker_modes():
+        tmp = tempfile.mkdtemp()
+        try:
+>           s = read_streams(ListSource(course(stop_at=None)), robot_cfg(localization=True), os.path.join(tmp, "f"), 10.0)
+
+tests/test_core.py:206: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = <omnivla_real.bag.reader.ListSource object at 0x7f5d56ac6740>
+robot = RobotConfig(name='my_robot', topics=TopicConfig(image='/camera/compressed', odom='/odom', cmd='/cmd_vel', localization...lse, jpeg_quality=95), camera=CameraConfig(hfov_deg=90.0, height=0.5, x_offset=0.2, pitch_deg=0.0), time_source='auto')
+frame_dir = '/tmp/tmp2bb692nc/f', sample_rate = 10.0, start_sec = None
+end_sec = None, name = '', progress = None, decode_images = True
+
+    def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_rate: float,
+                     start_sec: Optional[float] = None, end_sec: Optional[float] = None, name: str = "",
+                     progress: Optional[Callable[[str], None]] = None, decode_images: bool = True) -> Streams:
+        """source: BagReader (open 済み) か ListSource. start_sec/end_sec は bag 先頭からの秒数."""
+        tp = robot.topics
+        topics = source.topics()
+        wanted = [t for t in (tp.image, tp.odom, tp.cmd, tp.localization) if t]
+        for t in wanted:
+            if t not in topics:
+>               raise KeyError(f"topic '{t}' is not in the bag. available topics:\n  "
+                               + "\n  ".join(f"{k}  [{v[0]}]" for k, v in sorted(topics.items())))
+E               KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+
+omnivla_real/extract.py:84: KeyError
+_____________________ test_desk_eval_oracle_follows_course _____________________
+
+    def test_desk_eval_oracle_follows_course():
+        tmp = tempfile.mkdtemp()
+        try:
+            robot = robot_cfg()
+>           sa = read_streams(ListSource(course(stop_at=None)), robot, os.path.join(tmp, "a"), 10.0)
+
+tests/test_core.py:258: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = <omnivla_real.bag.reader.ListSource object at 0x7f5d54fbd1e0>
+robot = RobotConfig(name='my_robot', topics=TopicConfig(image='/camera/compressed', odom='/odom', cmd='/cmd_vel', localization...lse, jpeg_quality=95), camera=CameraConfig(hfov_deg=90.0, height=0.5, x_offset=0.2, pitch_deg=0.0), time_source='auto')
+frame_dir = '/tmp/tmp8qw27_d5/a', sample_rate = 10.0, start_sec = None
+end_sec = None, name = '', progress = None, decode_images = True
+
+    def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_rate: float,
+                     start_sec: Optional[float] = None, end_sec: Optional[float] = None, name: str = "",
+                     progress: Optional[Callable[[str], None]] = None, decode_images: bool = True) -> Streams:
+        """source: BagReader (open 済み) か ListSource. start_sec/end_sec は bag 先頭からの秒数."""
+        tp = robot.topics
+        topics = source.topics()
+        wanted = [t for t in (tp.image, tp.odom, tp.cmd, tp.localization) if t]
+        for t in wanted:
+            if t not in topics:
+>               raise KeyError(f"topic '{t}' is not in the bag. available topics:\n  "
+                               + "\n  ".join(f"{k}  [{v[0]}]" for k, v in sorted(topics.items())))
+E               KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+
+omnivla_real/extract.py:84: KeyError
+__________________________ test_roundtrip_all_formats __________________________
+
+    def test_roundtrip_all_formats():
+        if _skip():
+            return
+        from bagfiles import write_bag
+    
+        msgs = _msgs(image_size=(96, 72))
+        out = tempfile.mkdtemp()
+        for fmt in ("ros1", "sqlite3", "mcap"):
+            path = write_bag(msgs, os.path.join(out, f"c_{fmt}"), fmt)
+>           _compare_with_listsource(path, msgs, _robot(localization="/localization"))
+
+tests/test_bags.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_bags.py:62: in _compare_with_listsource
+    ref = read_streams(ListSource(msgs), robot, tempfile.mkdtemp(), 3.0)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = <omnivla_real.bag.reader.ListSource object at 0x7f5d488a0100>
+robot = RobotConfig(name='my_robot', topics=TopicConfig(image='/camera/compressed', odom='/odom', cmd='/cmd_vel', localization...lse, jpeg_quality=95), camera=CameraConfig(hfov_deg=90.0, height=0.5, x_offset=0.2, pitch_deg=0.0), time_source='auto')
+frame_dir = '/tmp/tmpgdhm_ib_', sample_rate = 3.0, start_sec = None
+end_sec = None, name = '', progress = None, decode_images = True
+
+    def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_rate: float,
+                     start_sec: Optional[float] = None, end_sec: Optional[float] = None, name: str = "",
+                     progress: Optional[Callable[[str], None]] = None, decode_images: bool = True) -> Streams:
+        """source: BagReader (open 済み) か ListSource. start_sec/end_sec は bag 先頭からの秒数."""
+        tp = robot.topics
+        topics = source.topics()
+        wanted = [t for t in (tp.image, tp.odom, tp.cmd, tp.localization) if t]
+        for t in wanted:
+            if t not in topics:
+>               raise KeyError(f"topic '{t}' is not in the bag. available topics:\n  "
+                               + "\n  ".join(f"{k}  [{v[0]}]" for k, v in sorted(topics.items())))
+E               KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+
+omnivla_real/extract.py:84: KeyError
+______________________ test_engine_replay_matches_python _______________________
+
+    def test_engine_replay_matches_python():
+        """同じ推論サーバ (偽物) に対して、C++ の NavEngine と Python の NavEngine が同じ結果を出す."""
+        if not core_check():
+            return _skip("cmake / g++ not available")
+        from PIL import Image
+        from omnivla_real.engine import NavEngine
+        from omnivla_real.nav_config import load_nav_config
+        from omnivla_real.remote import RemotePolicy
+        from omnivla_real.robot_config import RobotConfig
+        from omnivla_real.topomap import load_topomap
+    
+        tmp = tempfile.mkdtemp()
+>       topomap, frames = make_replay_case(tmp)
+
+tests/test_cpp.py:232: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_cpp.py:209: in make_replay_case
+    s = read_streams(ListSource(msgs), robot, os.path.join(out_dir, "frames"), 3.0)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = <omnivla_real.bag.reader.ListSource object at 0x7f5d0cccaaa0>
+robot = RobotConfig(name='my_robot', topics=TopicConfig(image='/camera/compressed', odom='/odom', cmd='/cmd_vel', localization...lse, jpeg_quality=95), camera=CameraConfig(hfov_deg=90.0, height=0.5, x_offset=0.2, pitch_deg=0.0), time_source='auto')
+frame_dir = '/tmp/tmpbm6vdn4w/frames', sample_rate = 3.0, start_sec = None
+end_sec = None, name = '', progress = None, decode_images = True
+
+    def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_rate: float,
+                     start_sec: Optional[float] = None, end_sec: Optional[float] = None, name: str = "",
+                     progress: Optional[Callable[[str], None]] = None, decode_images: bool = True) -> Streams:
+        """source: BagReader (open 済み) か ListSource. start_sec/end_sec は bag 先頭からの秒数."""
+        tp = robot.topics
+        topics = source.topics()
+        wanted = [t for t in (tp.image, tp.odom, tp.cmd, tp.localization) if t]
+        for t in wanted:
+            if t not in topics:
+>               raise KeyError(f"topic '{t}' is not in the bag. available topics:\n  "
+                               + "\n  ".join(f"{k}  [{v[0]}]" for k, v in sorted(topics.items())))
+E               KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+
+omnivla_real/extract.py:84: KeyError
+=============================== warnings summary ===============================
+tests/test_core.py::test_edge_model_cpu
+  /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+    warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_core.py::test_extract_and_convert_course_run - KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+FAILED tests/test_core.py::test_pose_sources_agree_short_term - KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+FAILED tests/test_core.py::test_topomap_from_run_and_tracker_modes - KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+FAILED tests/test_core.py::test_desk_eval_oracle_follows_course - KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+FAILED tests/test_bags.py::test_roundtrip_all_formats - KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+FAILED tests/test_cpp.py::test_engine_replay_matches_python - KeyError: "topic '/camera/compressed' is not in the bag. available topics:\n  /camera/image_raw/compressed  [sensor_msgs/msg/CompressedImage]\n  /cmd_vel  [geometry_msgs/msg/Twist]\n  /localization  [geometry_msgs/msg/PoseStamped]\n  /odom  [nav_msgs/msg/Odometry]"
+6 failed, 15 passed, 1 warning in 44.11s
