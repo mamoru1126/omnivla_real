@@ -1,0 +1,300 @@
+#10 8.505 Get:8 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libexpat1 amd64 2.4.7-1ubuntu0.9 [96.9 kB]
+#10 8.509 Get:9 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libnghttp2-14 amd64 1.43.0-1ubuntu0.4 [76.9 kB]
+#10 8.513 Get:10 http://archive.ubuntu.com/ubuntu jammy/main amd64 libpsl5 amd64 0.21.0-1.2build2 [58.4 kB]
+#10 8.515 Get:11 http://archive.ubuntu.com/ubuntu jammy/main amd64 libbrotli1 amd64 1.0.9-2build6 [315 kB]
+#10 8.529 Get:12 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libsasl2-modules-db amd64 2.1.27+dfsg2-3ubuntu1.2 [20.5 kB]
+#10 8.600 Get:13 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libsasl2-2 amd64 2.1.27+dfsg2-3ubuntu1.2 [53.8 kB]
+#10 8.601 Get:14 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libldap-2.5-0 amd64 2.5.20+dfsg-0ubuntu0.22.04.1 [184 kB]
+#10 8.733 Get:15 http://archive.ubuntu.com/ubuntu jammy/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2build4 [58.2 kB]
+#10 8.734 Get:16 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libssh-4 amd64 0.9.6-2ubuntu0.22.04.8 [189 kB]
+#10 8.735 Get:17 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libcurl4 amd64 7.81.0-1ubuntu1.29 [292 kB]
+#10 8.738 Get:18 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 curl amd64 7.81.0-1ubuntu1.29 [194 kB]
+#10 8.740 Get:19 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libcurl3-gnutls amd64 7.81.0-1ubuntu1.29 [286 kB]
+#10 8.744 Get:20 http://archive.ubuntu.com/ubuntu jammy/main amd64 liberror-perl all 0.17029-1 [26.5 kB]
+#10 8.744 Get:21 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 git-man all 1:2.34.1-1ubuntu1.17 [954 kB]
+#10 8.754 Get:22 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 git amd64 1:2.34.1-1ubuntu1.17 [3174 kB]
+#10 8.876 Get:23 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 git-lfs amd64 3.0.2-1ubuntu0.3 [3544 kB]
+#10 9.105 debconf: delaying package configuration, since apt-utils is not installed
+#10 9.134 Fetched 19.5 MB in 2s (8639 kB/s)
+#10 9.149 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6643 files and directories currently installed.)
+#10 9.157 Preparing to unpack .../perl-base_5.34.0-3ubuntu1.9_amd64.deb ...
+#10 9.169 Unpacking perl-base (5.34.0-3ubuntu1.9) over (5.34.0-3ubuntu1.3) ...
+#10 9.700 Setting up perl-base (5.34.0-3ubuntu1.9) ...
+#10 9.724 Selecting previously unselected package perl-modules-5.34.
+#10 9.724 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6643 files and directories currently installed.)
+#10 9.731 Preparing to unpack .../00-perl-modules-5.34_5.34.0-3ubuntu1.9_all.deb ...
+#10 9.732 Unpacking perl-modules-5.34 (5.34.0-3ubuntu1.9) ...
+#10 10.02 Selecting previously unselected package libgdbm6:amd64.
+#10 10.02 Preparing to unpack .../01-libgdbm6_1.23-1_amd64.deb ...
+#10 10.02 Unpacking libgdbm6:amd64 (1.23-1) ...
+#10 10.03 Selecting previously unselected package libgdbm-compat4:amd64.
+#10 10.03 Preparing to unpack .../02-libgdbm-compat4_1.23-1_amd64.deb ...
+#10 10.04 Unpacking libgdbm-compat4:amd64 (1.23-1) ...
+#10 10.05 Selecting previously unselected package libperl5.34:amd64.
+#10 10.05 Preparing to unpack .../03-libperl5.34_5.34.0-3ubuntu1.9_amd64.deb ...
+#10 10.05 Unpacking libperl5.34:amd64 (5.34.0-3ubuntu1.9) ...
+#10 10.23 Selecting previously unselected package perl.
+#10 10.24 Preparing to unpack .../04-perl_5.34.0-3ubuntu1.9_amd64.deb ...
+#10 10.24 Unpacking perl (5.34.0-3ubuntu1.9) ...
+#10 10.27 Preparing to unpack .../05-ca-certificates_20260601~22.04.1_all.deb ...
+#10 10.27 Unpacking ca-certificates (20260601~22.04.1) over (20230311ubuntu0.22.04.1) ...
+#10 10.37 Selecting previously unselected package libexpat1:amd64.
+#10 10.37 Preparing to unpack .../06-libexpat1_2.4.7-1ubuntu0.9_amd64.deb ...
+#10 10.37 Unpacking libexpat1:amd64 (2.4.7-1ubuntu0.9) ...
+#10 10.39 Selecting previously unselected package libnghttp2-14:amd64.
+#10 10.39 Preparing to unpack .../07-libnghttp2-14_1.43.0-1ubuntu0.4_amd64.deb ...
+#10 10.39 Unpacking libnghttp2-14:amd64 (1.43.0-1ubuntu0.4) ...
+#10 10.41 Selecting previously unselected package libpsl5:amd64.
+#10 10.41 Preparing to unpack .../08-libpsl5_0.21.0-1.2build2_amd64.deb ...
+#10 10.41 Unpacking libpsl5:amd64 (0.21.0-1.2build2) ...
+#10 10.43 Selecting previously unselected package libbrotli1:amd64.
+#10 10.43 Preparing to unpack .../09-libbrotli1_1.0.9-2build6_amd64.deb ...
+#10 10.43 Unpacking libbrotli1:amd64 (1.0.9-2build6) ...
+#10 10.45 Selecting previously unselected package libsasl2-modules-db:amd64.
+#10 10.45 Preparing to unpack .../10-libsasl2-modules-db_2.1.27+dfsg2-3ubuntu1.2_amd64.deb ...
+#10 10.45 Unpacking libsasl2-modules-db:amd64 (2.1.27+dfsg2-3ubuntu1.2) ...
+#10 10.46 Selecting previously unselected package libsasl2-2:amd64.
+#10 10.47 Preparing to unpack .../11-libsasl2-2_2.1.27+dfsg2-3ubuntu1.2_amd64.deb ...
+#10 10.47 Unpacking libsasl2-2:amd64 (2.1.27+dfsg2-3ubuntu1.2) ...
+#10 10.48 Selecting previously unselected package libldap-2.5-0:amd64.
+#10 10.48 Preparing to unpack .../12-libldap-2.5-0_2.5.20+dfsg-0ubuntu0.22.04.1_amd64.deb ...
+#10 10.49 Unpacking libldap-2.5-0:amd64 (2.5.20+dfsg-0ubuntu0.22.04.1) ...
+#10 10.50 Selecting previously unselected package librtmp1:amd64.
+#10 10.50 Preparing to unpack .../13-librtmp1_2.4+20151223.gitfa8646d.1-2build4_amd64.deb ...
+#10 10.50 Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build4) ...
+#10 10.52 Selecting previously unselected package libssh-4:amd64.
+#10 10.52 Preparing to unpack .../14-libssh-4_0.9.6-2ubuntu0.22.04.8_amd64.deb ...
+#10 10.52 Unpacking libssh-4:amd64 (0.9.6-2ubuntu0.22.04.8) ...
+#10 10.54 Selecting previously unselected package libcurl4:amd64.
+#10 10.54 Preparing to unpack .../15-libcurl4_7.81.0-1ubuntu1.29_amd64.deb ...
+#10 10.54 Unpacking libcurl4:amd64 (7.81.0-1ubuntu1.29) ...
+#10 10.56 Selecting previously unselected package curl.
+#10 10.56 Preparing to unpack .../16-curl_7.81.0-1ubuntu1.29_amd64.deb ...
+#10 10.56 Unpacking curl (7.81.0-1ubuntu1.29) ...
+#10 10.58 Selecting previously unselected package libcurl3-gnutls:amd64.
+#10 10.58 Preparing to unpack .../17-libcurl3-gnutls_7.81.0-1ubuntu1.29_amd64.deb ...
+#10 10.58 Unpacking libcurl3-gnutls:amd64 (7.81.0-1ubuntu1.29) ...
+#10 10.60 Selecting previously unselected package liberror-perl.
+#10 10.60 Preparing to unpack .../18-liberror-perl_0.17029-1_all.deb ...
+#10 10.60 Unpacking liberror-perl (0.17029-1) ...
+#10 10.62 Selecting previously unselected package git-man.
+#10 10.62 Preparing to unpack .../19-git-man_1%3a2.34.1-1ubuntu1.17_all.deb ...
+#10 10.62 Unpacking git-man (1:2.34.1-1ubuntu1.17) ...
+#10 10.65 Selecting previously unselected package git.
+#10 10.65 Preparing to unpack .../20-git_1%3a2.34.1-1ubuntu1.17_amd64.deb ...
+#10 10.65 Unpacking git (1:2.34.1-1ubuntu1.17) ...
+#10 10.78 Selecting previously unselected package git-lfs.
+#10 10.79 Preparing to unpack .../21-git-lfs_3.0.2-1ubuntu0.3_amd64.deb ...
+#10 10.79 Unpacking git-lfs (3.0.2-1ubuntu0.3) ...
+#10 10.85 Setting up libexpat1:amd64 (2.4.7-1ubuntu0.9) ...
+#10 10.85 Setting up libpsl5:amd64 (0.21.0-1.2build2) ...
+#10 10.86 Setting up libbrotli1:amd64 (1.0.9-2build6) ...
+#10 10.86 Setting up libnghttp2-14:amd64 (1.43.0-1ubuntu0.4) ...
+#10 10.86 Setting up perl-modules-5.34 (5.34.0-3ubuntu1.9) ...
+#10 10.86 Setting up libsasl2-modules-db:amd64 (2.1.27+dfsg2-3ubuntu1.2) ...
+#10 10.86 Setting up ca-certificates (20260601~22.04.1) ...
+#10 12.58 Updating certificates in /etc/ssl/certs...
+#10 13.55 rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+#10 13.57 24 added, 40 removed; done.
+#10 13.58 Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build4) ...
+#10 13.59 Setting up libsasl2-2:amd64 (2.1.27+dfsg2-3ubuntu1.2) ...
+#10 13.59 Setting up libssh-4:amd64 (0.9.6-2ubuntu0.22.04.8) ...
+#10 13.59 Setting up git-man (1:2.34.1-1ubuntu1.17) ...
+#10 13.59 Setting up libgdbm6:amd64 (1.23-1) ...
+#10 13.60 Setting up libldap-2.5-0:amd64 (2.5.20+dfsg-0ubuntu0.22.04.1) ...
+#10 13.60 Setting up libgdbm-compat4:amd64 (1.23-1) ...
+#10 13.60 Setting up libcurl4:amd64 (7.81.0-1ubuntu1.29) ...
+#10 13.60 Setting up curl (7.81.0-1ubuntu1.29) ...
+#10 13.60 Setting up libperl5.34:amd64 (5.34.0-3ubuntu1.9) ...
+#10 13.61 Setting up libcurl3-gnutls:amd64 (7.81.0-1ubuntu1.29) ...
+#10 13.61 Setting up perl (5.34.0-3ubuntu1.9) ...
+#10 13.62 Setting up liberror-perl (0.17029-1) ...
+#10 13.62 Setting up git (1:2.34.1-1ubuntu1.17) ...
+#10 13.63 Setting up git-lfs (3.0.2-1ubuntu0.3) ...
+#10 13.65 Processing triggers for libc-bin (2.35-0ubuntu3.6) ...
+#10 13.66 Processing triggers for ca-certificates (20260601~22.04.1) ...
+#10 13.67 Updating certificates in /etc/ssl/certs...
+#10 14.27 0 added, 0 removed; done.
+#10 14.27 Running hooks in /etc/ca-certificates/update.d...
+#10 14.27 done.
+#10 DONE 14.4s
+
+#11 [3/7] COPY docker/requirements-edge.txt docker/requirements-7b.txt docker/install_omnivla.sh /tmp/
+#11 DONE 0.0s
+
+#12 [4/7] RUN python3 -c "import torch, torchvision; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())"     && python3 -m pip freeze | grep -iE '^(torch|torchvision|torchaudio|numpy)==' > /tmp/keep.txt; cat /tmp/keep.txt     && python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements-edge.txt     && if [ "1" = "1" ]; then          python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements-7b.txt && bash /tmp/install_omnivla.sh;        fi
+#12 1.748 torch 2.2.2 cuda False
+#12 2.392 torch==2.2.2
+#12 2.392 torchaudio==2.2.2
+#12 2.392 torchvision==0.17.2
+#12 2.718 Collecting clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6 (from -r /tmp/requirements-edge.txt (line 5))
+#12 2.718   Cloning https://github.com/openai/CLIP.git (to revision d05afc436d78f1c48dc0dbf8e5980a9d471f35f6) to /tmp/pip-install-ulb0uxgx/clip_f2c976bfebf14aada9ad63bf8e8aab40
+#12 2.720   Running command git clone --filter=blob:none --quiet https://github.com/openai/CLIP.git /tmp/pip-install-ulb0uxgx/clip_f2c976bfebf14aada9ad63bf8e8aab40
+#12 3.742   Running command git rev-parse -q --verify 'sha^d05afc436d78f1c48dc0dbf8e5980a9d471f35f6'
+#12 3.744   Running command git fetch -q https://github.com/openai/CLIP.git d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
+#12 3.982   Resolved https://github.com/openai/CLIP.git to commit d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
+#12 3.985   Preparing metadata (setup.py): started
+#12 4.147   Preparing metadata (setup.py): finished with status 'done'
+#12 4.210 Collecting efficientnet_pytorch==0.7.1 (from -r /tmp/requirements-edge.txt (line 2))
+#12 4.264   Downloading efficientnet_pytorch-0.7.1.tar.gz (21 kB)
+#12 4.272   Preparing metadata (setup.py): started
+#12 4.437   Preparing metadata (setup.py): finished with status 'done'
+#12 4.459 Collecting ftfy (from -r /tmp/requirements-edge.txt (line 3))
+#12 4.470   Downloading ftfy-6.3.1-py3-none-any.whl.metadata (7.3 kB)
+#12 5.033 Collecting regex (from -r /tmp/requirements-edge.txt (line 4))
+#12 5.043   Downloading regex-2026.9.29-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+#12 5.047      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 40.6/40.6 kB 27.4 MB/s eta 0:00:00
+#12 5.049 Requirement already satisfied: numpy<2 in /opt/conda/lib/python3.10/site-packages (from -r /tmp/requirements-edge.txt (line 6)) (1.26.4)
+#12 5.049 Requirement already satisfied: pillow in /opt/conda/lib/python3.10/site-packages (from -r /tmp/requirements-edge.txt (line 7)) (10.2.0)
+#12 5.050 Requirement already satisfied: pyyaml in /opt/conda/lib/python3.10/site-packages (from -r /tmp/requirements-edge.txt (line 8)) (6.0.1)
+#12 5.052 Requirement already satisfied: torch in /opt/conda/lib/python3.10/site-packages (from efficientnet_pytorch==0.7.1->-r /tmp/requirements-edge.txt (line 2)) (2.2.2)
+#12 5.053 Requirement already satisfied: wcwidth in /opt/conda/lib/python3.10/site-packages (from ftfy->-r /tmp/requirements-edge.txt (line 3)) (0.2.5)
+#12 5.059 Requirement already satisfied: packaging in /opt/conda/lib/python3.10/site-packages (from clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (23.2)
+#12 5.059 Requirement already satisfied: tqdm in /opt/conda/lib/python3.10/site-packages (from clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (4.65.0)
+#12 5.060 Requirement already satisfied: torchvision in /opt/conda/lib/python3.10/site-packages (from clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (0.17.2)
+#12 5.079 Requirement already satisfied: filelock in /opt/conda/lib/python3.10/site-packages (from torch->efficientnet_pytorch==0.7.1->-r /tmp/requirements-edge.txt (line 2)) (3.13.1)
+#12 5.080 Requirement already satisfied: typing-extensions>=4.8.0 in /opt/conda/lib/python3.10/site-packages (from torch->efficientnet_pytorch==0.7.1->-r /tmp/requirements-edge.txt (line 2)) (4.10.0)
+#12 5.081 Requirement already satisfied: sympy in /opt/conda/lib/python3.10/site-packages (from torch->efficientnet_pytorch==0.7.1->-r /tmp/requirements-edge.txt (line 2)) (1.12)
+#12 5.081 Requirement already satisfied: networkx in /opt/conda/lib/python3.10/site-packages (from torch->efficientnet_pytorch==0.7.1->-r /tmp/requirements-edge.txt (line 2)) (3.1)
+#12 5.081 Requirement already satisfied: jinja2 in /opt/conda/lib/python3.10/site-packages (from torch->efficientnet_pytorch==0.7.1->-r /tmp/requirements-edge.txt (line 2)) (3.1.3)
+#12 5.082 Requirement already satisfied: fsspec in /opt/conda/lib/python3.10/site-packages (from torch->efficientnet_pytorch==0.7.1->-r /tmp/requirements-edge.txt (line 2)) (2024.3.1)
+#12 5.133 Requirement already satisfied: MarkupSafe>=2.0 in /opt/conda/lib/python3.10/site-packages (from jinja2->torch->efficientnet_pytorch==0.7.1->-r /tmp/requirements-edge.txt (line 2)) (2.1.3)
+#12 5.151 Requirement already satisfied: mpmath>=0.19 in /opt/conda/lib/python3.10/site-packages (from sympy->torch->efficientnet_pytorch==0.7.1->-r /tmp/requirements-edge.txt (line 2)) (1.3.0)
+#12 5.167 Downloading ftfy-6.3.1-py3-none-any.whl (44 kB)
+#12 5.169    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 44.8/44.8 kB 229.5 MB/s eta 0:00:00
+#12 5.176 Downloading regex-2026.9.29-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (797 kB)
+#12 5.191    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 797.6/797.6 kB 60.7 MB/s eta 0:00:00
+#12 5.195 Building wheels for collected packages: efficientnet_pytorch, clip
+#12 5.195   Building wheel for efficientnet_pytorch (setup.py): started
+#12 5.435   Building wheel for efficientnet_pytorch (setup.py): finished with status 'done'
+#12 5.435   Created wheel for efficientnet_pytorch: filename=efficientnet_pytorch-0.7.1-py3-none-any.whl size=16428 sha256=671729f700a5be5bbad5c7a2d454f33eec3e5598d77f30c9c9f292fed1391620
+#12 5.436   Stored in directory: /tmp/pip-ephem-wheel-cache-t31prtw1/wheels/03/3f/e9/911b1bc46869644912bda90a56bcf7b960f20b5187feea3baf
+#12 5.438   Building wheel for clip (setup.py): started
+#12 5.717   Building wheel for clip (setup.py): finished with status 'done'
+#12 5.720   Created wheel for clip: filename=clip-1.0-py3-none-any.whl size=1369490 sha256=d7b88a97e6adad003e18c6ad47df131304a6606fd923dabf255334aed08e2858
+#12 5.720   Stored in directory: /tmp/pip-ephem-wheel-cache-t31prtw1/wheels/65/88/3e/e08f1b8056760798afbfd69db48b1bc6a5ae6400c46abae36e
+#12 5.722 Successfully built efficientnet_pytorch clip
+#12 6.025 Installing collected packages: regex, ftfy, efficientnet_pytorch, clip
+#12 6.156 Successfully installed clip-1.0 efficientnet_pytorch-0.7.1 ftfy-6.3.1 regex-2026.9.29
+#12 6.156 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+#12 6.622 Collecting transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab (from -r /tmp/requirements-7b.txt (line 4))
+#12 6.623   Cloning https://github.com/moojink/transformers-openvla-oft.git (to revision bc339d9ad707454c0c115970db43c260067c61ab) to /tmp/pip-install-zwi3awkl/transformers_f80f590d2cb749acb09ed8b1da561367
+#12 6.625   Running command git clone --filter=blob:none --quiet https://github.com/moojink/transformers-openvla-oft.git /tmp/pip-install-zwi3awkl/transformers_f80f590d2cb749acb09ed8b1da561367
+#12 12.57   Running command git rev-parse -q --verify 'sha^bc339d9ad707454c0c115970db43c260067c61ab'
+#12 12.57   Running command git fetch -q https://github.com/moojink/transformers-openvla-oft.git bc339d9ad707454c0c115970db43c260067c61ab
+#12 12.98   Resolved https://github.com/moojink/transformers-openvla-oft.git to commit bc339d9ad707454c0c115970db43c260067c61ab
+#12 12.99   Installing build dependencies: started
+#12 14.86   Installing build dependencies: finished with status 'done'
+#12 14.86   Getting requirements to build wheel: started
+#12 15.40   Getting requirements to build wheel: finished with status 'done'
+#12 15.41   Preparing metadata (pyproject.toml): started
+#12 15.95   Preparing metadata (pyproject.toml): finished with status 'done'
+#12 16.19 Collecting tokenizers==0.19.1 (from -r /tmp/requirements-7b.txt (line 5))
+#12 16.26   Downloading tokenizers-0.19.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.7 kB)
+#12 16.29 Collecting timm==0.9.10 (from -r /tmp/requirements-7b.txt (line 6))
+#12 16.30   Downloading timm-0.9.10-py3-none-any.whl.metadata (59 kB)
+#12 16.32      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 59.8/59.8 kB 7.5 MB/s eta 0:00:00
+#12 16.34 Collecting peft==0.11.1 (from -r /tmp/requirements-7b.txt (line 7))
+#12 16.36   Downloading peft-0.11.1-py3-none-any.whl.metadata (13 kB)
+#12 16.39 Collecting accelerate==0.34.2 (from -r /tmp/requirements-7b.txt (line 8))
+#12 16.40   Downloading accelerate-0.34.2-py3-none-any.whl.metadata (19 kB)
+#12 16.50 Collecting huggingface_hub==0.29.1 (from -r /tmp/requirements-7b.txt (line 9))
+#12 16.52   Downloading huggingface_hub-0.29.1-py3-none-any.whl.metadata (13 kB)
+#12 16.58 Collecting sentencepiece<0.3 (from -r /tmp/requirements-7b.txt (line 10))
+#12 16.59   Downloading sentencepiece-0.2.2-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (33 kB)
+#12 16.83 Collecting protobuf<5 (from -r /tmp/requirements-7b.txt (line 11))
+#12 16.84   Downloading protobuf-4.25.9-cp37-abi3-manylinux2014_x86_64.whl.metadata (541 bytes)
+#12 16.86 Collecting einops (from -r /tmp/requirements-7b.txt (line 12))
+#12 16.87   Downloading einops-0.8.2-py3-none-any.whl.metadata (13 kB)
+#12 16.97 Collecting json-numpy (from -r /tmp/requirements-7b.txt (line 13))
+#12 16.97   Downloading json_numpy-2.1.1-py3-none-any.whl.metadata (5.6 kB)
+#12 17.05 Collecting rich (from -r /tmp/requirements-7b.txt (line 14))
+#12 17.06   Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+#12 17.09 Requirement already satisfied: torch>=1.7 in /opt/conda/lib/python3.10/site-packages (from timm==0.9.10->-r /tmp/requirements-7b.txt (line 6)) (2.2.2)
+#12 17.09 Requirement already satisfied: torchvision in /opt/conda/lib/python3.10/site-packages (from timm==0.9.10->-r /tmp/requirements-7b.txt (line 6)) (0.17.2)
+#12 17.09 Requirement already satisfied: pyyaml in /opt/conda/lib/python3.10/site-packages (from timm==0.9.10->-r /tmp/requirements-7b.txt (line 6)) (6.0.1)
+#12 17.24 Collecting safetensors (from timm==0.9.10->-r /tmp/requirements-7b.txt (line 6))
+#12 17.25   Downloading safetensors-0.8.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.2 kB)
+#12 17.27 Requirement already satisfied: numpy>=1.17 in /opt/conda/lib/python3.10/site-packages (from peft==0.11.1->-r /tmp/requirements-7b.txt (line 7)) (1.26.4)
+#12 17.27 Requirement already satisfied: packaging>=20.0 in /opt/conda/lib/python3.10/site-packages (from peft==0.11.1->-r /tmp/requirements-7b.txt (line 7)) (23.2)
+#12 17.27 Requirement already satisfied: psutil in /opt/conda/lib/python3.10/site-packages (from peft==0.11.1->-r /tmp/requirements-7b.txt (line 7)) (5.9.0)
+#12 17.27 Requirement already satisfied: tqdm in /opt/conda/lib/python3.10/site-packages (from peft==0.11.1->-r /tmp/requirements-7b.txt (line 7)) (4.65.0)
+#12 17.47 Requirement already satisfied: filelock in /opt/conda/lib/python3.10/site-packages (from huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (3.13.1)
+#12 17.47 Requirement already satisfied: fsspec>=2023.5.0 in /opt/conda/lib/python3.10/site-packages (from huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (2024.3.1)
+#12 17.47 Requirement already satisfied: requests in /opt/conda/lib/python3.10/site-packages (from huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (2.31.0)
+#12 17.47 Requirement already satisfied: typing-extensions>=3.7.4.3 in /opt/conda/lib/python3.10/site-packages (from huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (4.10.0)
+#12 17.86 Requirement already satisfied: regex!=2019.12.17 in /opt/conda/lib/python3.10/site-packages (from transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4)) (2026.9.29)
+#12 17.91 Collecting markdown-it-py>=2.2.0 (from rich->-r /tmp/requirements-7b.txt (line 14))
+#12 17.92   Downloading markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+#12 17.92 Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /opt/conda/lib/python3.10/site-packages (from rich->-r /tmp/requirements-7b.txt (line 14)) (2.15.1)
+#12 17.99 Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich->-r /tmp/requirements-7b.txt (line 14))
+#12 18.00   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+#12 18.04 Requirement already satisfied: sympy in /opt/conda/lib/python3.10/site-packages (from torch>=1.7->timm==0.9.10->-r /tmp/requirements-7b.txt (line 6)) (1.12)
+#12 18.04 Requirement already satisfied: networkx in /opt/conda/lib/python3.10/site-packages (from torch>=1.7->timm==0.9.10->-r /tmp/requirements-7b.txt (line 6)) (3.1)
+#12 18.04 Requirement already satisfied: jinja2 in /opt/conda/lib/python3.10/site-packages (from torch>=1.7->timm==0.9.10->-r /tmp/requirements-7b.txt (line 6)) (3.1.3)
+#12 18.08 Requirement already satisfied: charset-normalizer<4,>=2 in /opt/conda/lib/python3.10/site-packages (from requests->huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (2.0.4)
+#12 18.08 Requirement already satisfied: idna<4,>=2.5 in /opt/conda/lib/python3.10/site-packages (from requests->huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (3.4)
+#12 18.08 Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/conda/lib/python3.10/site-packages (from requests->huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (2.1.0)
+#12 18.08 Requirement already satisfied: certifi>=2017.4.17 in /opt/conda/lib/python3.10/site-packages (from requests->huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (2024.2.2)
+#12 18.08 Requirement already satisfied: pillow!=8.3.*,>=5.3.0 in /opt/conda/lib/python3.10/site-packages (from torchvision->timm==0.9.10->-r /tmp/requirements-7b.txt (line 6)) (10.2.0)
+#12 18.12 Requirement already satisfied: MarkupSafe>=2.0 in /opt/conda/lib/python3.10/site-packages (from jinja2->torch>=1.7->timm==0.9.10->-r /tmp/requirements-7b.txt (line 6)) (2.1.3)
+#12 18.14 Requirement already satisfied: mpmath>=0.19 in /opt/conda/lib/python3.10/site-packages (from sympy->torch>=1.7->timm==0.9.10->-r /tmp/requirements-7b.txt (line 6)) (1.3.0)
+#12 18.18 Downloading tokenizers-0.19.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.6 MB)
+#12 18.30    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.6/3.6 MB 30.8 MB/s eta 0:00:00
+#12 18.31 Downloading timm-0.9.10-py3-none-any.whl (2.2 MB)
+#12 18.34    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 62.7 MB/s eta 0:00:00
+#12 18.36 Downloading peft-0.11.1-py3-none-any.whl (251 kB)
+#12 18.36    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 251.6/251.6 kB 267.2 MB/s eta 0:00:00
+#12 18.37 Downloading accelerate-0.34.2-py3-none-any.whl (324 kB)
+#12 18.37    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 324.4/324.4 kB 155.3 MB/s eta 0:00:00
+#12 18.38 Downloading huggingface_hub-0.29.1-py3-none-any.whl (468 kB)
+#12 18.39    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 468.0/468.0 kB 92.2 MB/s eta 0:00:00
+#12 18.40 Downloading sentencepiece-0.2.2-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (1.4 MB)
+#12 18.41    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 90.4 MB/s eta 0:00:00
+#12 18.42 Downloading protobuf-4.25.9-cp37-abi3-manylinux2014_x86_64.whl (295 kB)
+#12 18.43    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 295.2/295.2 kB 300.0 MB/s eta 0:00:00
+#12 18.43 Downloading einops-0.8.2-py3-none-any.whl (65 kB)
+#12 18.44    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 65.6/65.6 kB 208.5 MB/s eta 0:00:00
+#12 18.44 Downloading json_numpy-2.1.1-py3-none-any.whl (5.5 kB)
+#12 18.45 Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+#12 18.45    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 310.7/310.7 kB 232.6 MB/s eta 0:00:00
+#12 18.46 Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+#12 18.46    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 91.7/91.7 kB 297.5 MB/s eta 0:00:00
+#12 18.47 Downloading safetensors-0.8.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (516 kB)
+#12 18.48    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 516.0/516.0 kB 100.6 MB/s eta 0:00:00
+#12 18.48 Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+#12 18.51 Building wheels for collected packages: transformers
+#12 18.51   Building wheel for transformers (pyproject.toml): started
+#12 21.61   Building wheel for transformers (pyproject.toml): finished with status 'done'
+#12 21.62   Created wheel for transformers: filename=transformers-4.40.1-py3-none-any.whl size=8999460 sha256=676fd529ff1d44ecc74cf40085498c107ec8838cf2321cee25dbb326d2f233ae
+#12 21.62   Stored in directory: /tmp/pip-ephem-wheel-cache-a6n2dbd1/wheels/72/23/76/e8852434eed2b25940e83204354ec25794d643938c92c24b01
+#12 21.63 Successfully built transformers
+#12 22.49 Installing collected packages: sentencepiece, safetensors, protobuf, mdurl, json-numpy, einops, markdown-it-py, huggingface_hub, tokenizers, rich, accelerate, transformers, timm, peft
+#12 27.93 Successfully installed accelerate-0.34.2 einops-0.8.2 huggingface_hub-0.29.1 json-numpy-2.1.1 markdown-it-py-4.2.0 mdurl-0.1.2 peft-0.11.1 protobuf-4.25.9 rich-15.0.0 safetensors-0.8.0 sentencepiece-0.2.2 timm-0.9.10 tokenizers-0.19.1 transformers-4.40.1
+#12 27.93 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+#12 28.83 OmniVLA 5182600cb4a9ee07684e17cdd2a6cbafc56b8a68 -> /opt/OmniVLA (slim prismatic)
+#12 DONE 29.0s
+
+#13 [5/7] COPY . /workspace
+#13 DONE 0.0s
+
+#14 [6/7] WORKDIR /workspace
+#14 DONE 0.0s
+
+#15 [7/7] RUN python3 -c "import torch, clip, efficientnet_pytorch; import omnivla_real.edge, omnivla_real.remote; print('edge OK')"     && if [ "1" = "1" ]; then python3 -c "import transformers, peft; import omnivla_real.policy; print('7b OK')"; fi
+#15 2.157 edge OK
+#15 5.154 Using OmniVLA constants:
+#15 5.154   NUM_ACTIONS_CHUNK = 8
+#15 5.154   ACTION_DIM = 4
+#15 5.154   POSE_DIM = 4
+#15 5.154   ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
+#15 5.154 If needed, manually set the correct constants in `prismatic/vla/constants.py`!
+#15 5.339 7b OK
+#15 DONE 5.9s
+
+#16 exporting to image
+#16 exporting layers
+#16 exporting layers 10.4s done
+#16 writing image sha256:e6f14d3a62b49eda019337297864cf9e71f1e65f9e5bea69a9ec6ac4b6b70038 done
+#16 naming to docker.io/library/omnivla_real:policy-ci done
+#16 DONE 10.4s
