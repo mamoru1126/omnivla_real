@@ -16,7 +16,7 @@ pose_goal_offset: [2, 300]
 modality_weights:                 # 画像ゴールのみで学習 (自己位置があれば image_pose / pose を足してもよい)
   image: 1.0
 turn_sample_ratio: 0.5            # 曲がる場面を学習の 5 割で引く (コース走行は直進が多いため)
-turn_threshold_deg: 45.0
+turn_threshold_deg: 45.0          # 曲がる場面の判定. データに合わせる: python3 tools/turn_stats.py /data/dataset
 turn_horizon: 10
 val_turn_ratio: 0.5
 augment: true
