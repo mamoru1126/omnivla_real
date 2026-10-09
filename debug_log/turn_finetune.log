@@ -1,16 +1,19 @@
+[fine-20211221A020:~/omnivla_real$ bin/train.sh 7b
 [train] training/finetune_omnivla.py --config configs/finetune_7b.yaml
 Using OmniVLA constants:
   NUM_ACTIONS_CHUNK = 8
-  ACTION_DIM = 4
-  POSE_DIM = 4
-  ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
-If needed, manually set the correct constants in `prismatic/vla/constants.py`!
-[finetune] metric_waypoint_spacing = 0.2267 m/frame, data: {'sample_rate': 3.0, 'pose_source': 'odom', 'dataset_bags': ['20260919_112151', '20260919_144933', '20260919_150554']}
-[finetune] trajectories: train=33 val=16
-[finetune] loading base model /checkpoints/omnivla-original (heads from /checkpoints/omnivla-original @ 120000)
-Loading checkpoint shards: 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:00<00:00, 18.96it/s]
-trainable params: 110,721,024 || all params: 7,651,958,208 || trainable%: 1.4470
-[finetune] trainable params: 228.3M
-[finetune] samples: train=5091 (5131 frames), val=100 (turn 0%)
-[finetune] turning samples in train data: 0.5% (> 45deg within 10 frames) -> sampled at 50%
-[finetune] [val step 0] ADE=0.286m FDE=0.537m turn: ADE=nanm FDE=nanm heading_err=nandeg | straight/ade=0.286 image/ade=0.286
+    ACTION_DIM = 4
+      POSE_DIM = 4
+        ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
+        If needed, manually set the correct constants in `prismatic/vla/constants.py`!
+        [finetune] metric_waypoint_spacing = 0.2267 m/frame, data: {'sample_rate': 3.0, 'pose_source': 'odom', 'dataset_bags': ['20260919_112151', '20260919_144933', '20260919_150554']}
+        [finetune] trajectories: train=33 val=16
+        [finetune] loading base model /checkpoints/omnivla-original (heads from /checkpoints/omnivla-original @ 120000)
+        Loading checkpoint shards: 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:00<00:00, 19.24it/s]
+        trainable params: 110,721,024 || all params: 7,651,958,208 || trainable%: 1.4470
+        [finetune] trainable params: 228.3M
+        [finetune] samples: train=5091 (5131 frames), val=100 (turn 48%)
+        [finetune] turning samples in train data: 7.8% (> 15deg within 10 frames) -> sampled at 30%
+        [finetune] [val step 0] ADE=0.281m FDE=0.489m turn: ADE=0.257m FDE=0.376m heading_err=14.4deg | straight/ade=0.304 turn/ade=0.257 image/ade=0.281
+        [finetune] step 1 loss=0.3127 lr=1.09e-05 4.65s/step mem=19.0GB
+[finetune] turning samples in train data: 0.5% (> 45deg within 10 frames
