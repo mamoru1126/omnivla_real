@@ -1,0 +1,129 @@
+ubuntu@PC-20211221A020:~/omnivla_real$ ./bin/setup.sh
+[setup] イメージをビルドします (初回は 30 分ほどかかります)
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 61.4s (42/68)                                                                                                                                                           docker-container:multi-arch
+ => [train_7b internal] load build definition from Dockerfile                                                                                                                                               0.1s
+ => => transferring dockerfile: 2.38kB                                                                                                                                                                      0.0s
+ => [train_edge internal] load build definition from Dockerfile                                                                                                                                             0.1s
+ => => transferring dockerfile: 2.38kB                                                                                                                                                                      0.0s
+ => [ros1 internal] load build definition from Dockerfile.ros1                                                                                                                                              0.1s
+ => => transferring dockerfile: 2.27kB                                                                                                                                                                      0.0s
+ => [shell internal] load build definition from Dockerfile                                                                                                                                                  0.2s
+ => => transferring dockerfile: 2.38kB                                                                                                                                                                      0.0s
+ => [policy internal] load build definition from Dockerfile                                                                                                                                                 0.1s
+ => => transferring dockerfile: 2.38kB                                                                                                                                                                      0.0s
+ => [shell] resolve image config for docker-image://docker.io/docker/dockerfile:1                                                                                                                           1.7s
+ => [train_7b auth] docker/dockerfile:pull token for registry-1.docker.io                                                                                                                                   0.0s
+ => CACHED [train_7b] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e                                                                  0.1s
+ => => resolve docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e                                                                                        0.0s
+ => [shell internal] load metadata for docker.io/library/ros:humble-ros-base-jammy                                                                                                                          0.7s
+ => [ros1 internal] load metadata for docker.io/library/ros:noetic-ros-base-focal                                                                                                                           0.8s
+ => [shell auth] library/ros:pull token for registry-1.docker.io                                                                                                                                            0.0s
+ => [policy internal] load .dockerignore                                                                                                                                                                    0.2s
+ => => transferring context: 2B                                                                                                                                                                             0.0s
+ => [train_7b internal] load .dockerignore                                                                                                                                                                  0.1s
+ => => transferring context: 2B                                                                                                                                                                             0.0s
+ => [shell internal] load .dockerignore                                                                                                                                                                     0.1s
+ => => transferring context: 2B                                                                                                                                                                             0.0s
+ => [train_edge internal] load .dockerignore                                                                                                                                                                0.1s
+ => => transferring context: 2B                                                                                                                                                                             0.0s
+ => [ros1 internal] load .dockerignore                                                                                                                                                                      0.1s
+ => => transferring context: 2B                                                                                                                                                                             0.0s
+ => [policy  1/11] FROM docker.io/library/ros:humble-ros-base-jammy@sha256:860e53793ccf575e5369b5e9a19939de2bfcfb46a299954d06f54f2af54fed19                                                                 0.1s
+ => => resolve docker.io/library/ros:humble-ros-base-jammy@sha256:860e53793ccf575e5369b5e9a19939de2bfcfb46a299954d06f54f2af54fed19                                                                          0.1s
+ => [train_7b internal] load build context                                                                                                                                                                  0.2s
+ => => transferring context: 9.64kB                                                                                                                                                                         0.0s
+ => [shell internal] load build context                                                                                                                                                                     0.1s
+ => => transferring context: 9.64kB                                                                                                                                                                         0.0s
+ => [train_edge internal] load build context                                                                                                                                                                0.2s
+ => => transferring context: 9.64kB                                                                                                                                                                         0.0s
+ => [policy internal] load build context                                                                                                                                                                    0.1s
+ => => transferring context: 9.64kB                                                                                                                                                                         0.0s
+ => [ros1 1/9] FROM docker.io/library/ros:noetic-ros-base-focal@sha256:72b8bc59035dc0a5b8e07aae28c16caa84192971d72d207c72ed734fb1d5e97d                                                                     0.1s
+ => => resolve docker.io/library/ros:noetic-ros-base-focal@sha256:72b8bc59035dc0a5b8e07aae28c16caa84192971d72d207c72ed734fb1d5e97d                                                                          0.1s
+ => [ros1 internal] load build context                                                                                                                                                                      0.0s
+ => => transferring context: 9.64kB                                                                                                                                                                         0.0s
+ => CACHED [shell  8/11] RUN source /opt/ros/humble/setup.bash && mkdir -p /opt/omnivla_ws     && colcon --log-base /opt/omnivla_ws/log build --symlink-install --base-paths /workspace/ros2         --bui  0.0s
+ => CACHED [shell  2/11] RUN apt-get update && apt-get install -y --no-install-recommends         git git-lfs curl ca-certificates build-essential python3-pip python3-dev         python3-colcon-common-e  0.0s
+ => CACHED [shell  3/11] RUN python3 -m pip install -U "pip>=24,<26" "setuptools>=68,<70" wheel     && python3 -m pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/wh  0.0s
+ => CACHED [shell  4/11] COPY docker/requirements*.txt docker/install_omnivla.sh /tmp/                                                                                                                      0.0s
+ => CACHED [shell  5/11] RUN echo -e "torch==2.2.0\ntorchvision==0.17.0" > /tmp/keep.txt     && python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements.txt     && bash /tmp/install_omnivla.sh        0.0s
+ => CACHED [shell  6/11] COPY . /workspace                                                                                                                                                                  0.0s
+ => CACHED [shell  7/11] WORKDIR /workspace                                                                                                                                                                 0.0s
+ => ERROR [train_7b  9/11] RUN python3 -c "import torch, transformers, peft, rosbags, clip, efficientnet_pytorch; import omnivla_real.policy, omnivla_real.edge; print('torch', torch.__version__, 'trans  57.5s
+ => CACHED [ros1 2/9] RUN apt-get update && apt-get install -y --no-install-recommends python3-pip python3-yaml         ros-noetic-image-transport-plugins ros-noetic-rqt-image-view     && rm -rf /var/li  0.0s
+ => CACHED [ros1 3/9] COPY docker/requirements-ros1.txt /tmp/                                                                                                                                               0.0s
+ => CACHED [ros1 4/9] RUN python3 -m pip install -r /tmp/requirements-ros1.txt                                                                                                                              0.0s
+ => CACHED [ros1 5/9] COPY . /workspace                                                                                                                                                                     0.0s
+ => CACHED [ros1 6/9] WORKDIR /workspace                                                                                                                                                                    0.0s
+ => CACHED [ros1 7/9] RUN mkdir -p /opt/catkin_ws/src && ln -s /workspace/ros1/omnivla_real_ros1 /opt/catkin_ws/src/omnivla_real_ros1     && source /opt/ros/noetic/setup.bash && cd /opt/catkin_ws && cat  0.0s
+ => CACHED [ros1 8/9] COPY docker/entrypoint-ros1.sh /entrypoint.sh                                                                                                                                         0.0s
+ => CACHED [ros1 9/9] RUN chmod +x /entrypoint.sh                                                                                                                                                           0.0s
+ => [ros1] exporting to docker image format                                                                                                                                                                 5.1s
+ => => exporting layers                                                                                                                                                                                     0.0s
+ => => exporting manifest sha256:ccbe5c8868e3f3697104c1e305297451f81ab7fe1ffa9423ca7e91548d1c8470                                                                                                           0.0s
+ => => exporting config sha256:4513a6e07da211007791e6338ead1fcf9686bb5c7a19754f34a27013e4a88380                                                                                                             0.0s
+ => => sending tarball                                                                                                                                                                                      5.1s
+ => [ros1] importing to docker                                                                                                                                                                              0.1s
+ => [ros1] resolving provenance for metadata file                                                                                                                                                           0.0s
+------
+ > [train_7b  9/11] RUN python3 -c "import torch, transformers, peft, rosbags, clip, efficientnet_pytorch; import omnivla_real.policy, omnivla_real.edge; print('torch', torch.__version__, 'transformers', transformers.__version__, 'peft', peft.__version__)"     && python3 -m pytest -q tests:
+4.484 Using OmniVLA constants:
+4.484   NUM_ACTIONS_CHUNK = 8
+4.484   ACTION_DIM = 4
+4.484   POSE_DIM = 4
+4.484   ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
+4.484 If needed, manually set the correct constants in `prismatic/vla/constants.py`!
+4.726 torch 2.2.0+cu121 transformers 4.40.1 peft 0.11.1
+8.453 ....................F                                                    [100%]
+56.79 =================================== FAILURES ===================================
+56.79 ______________________ test_engine_replay_matches_python _______________________
+56.80
+56.80     def test_engine_replay_matches_python():
+56.80         """同じ推論サーバ (偽物) に対して、C++ の NavEngine と Python の NavEngine が同じ結果を出す."""
+56.80         if not core_check():
+56.80             return _skip("cmake / g++ not available")
+56.80         from PIL import Image
+56.80         from omnivla_real.engine import NavEngine
+56.80         from omnivla_real.nav_config import load_nav_config
+56.80         from omnivla_real.remote import RemotePolicy
+56.80         from omnivla_real.robot_config import RobotConfig
+56.80         from omnivla_real.topomap import load_topomap
+56.80
+56.80         tmp = tempfile.mkdtemp()
+56.80         topomap, frames = make_replay_case(tmp)
+56.80         port = _free_port()
+56.80 >       server = _start_fake_server(port)
+56.80
+56.80 tests/test_cpp.py:228:
+56.80 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+56.80
+56.80 port = 33285
+56.80
+56.80     def _start_fake_server(port: int):
+56.80         proc = subprocess.Popen([sys.executable, os.path.join(HERE, "fake_policy.py"), "--port", str(port)],
+56.80                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+56.80         import urllib.request
+56.80         for _ in range(100):
+56.80             try:
+56.80                 urllib.request.urlopen(f"http://127.0.0.1:{port}/info", timeout=1)
+56.80                 return proc
+56.80             except OSError:
+56.80                 time.sleep(0.1)
+56.80         proc.kill()
+56.80 >       raise RuntimeError("fake policy server did not start")
+56.80 E       RuntimeError: fake policy server did not start
+56.80
+56.80 tests/test_cpp.py:189: RuntimeError
+56.80 =============================== warnings summary ===============================
+56.80 tests/test_core.py::test_edge_model_cpu
+56.80   /usr/local/lib/python3.10/dist-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+56.80     warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+56.80
+56.80 -- Docs: https://docs.pytest.org/en/stable/warnings.html
+56.80 =========================== short test summary info ============================
+56.80 FAILED tests/test_cpp.py::test_engine_replay_matches_python - RuntimeError: f...
+56.80 1 failed, 20 passed, 1 warning in 51.18s
+------
+failed to solve: process "/bin/bash -o pipefail -c python3 -c \"import torch, transformers, peft, rosbags, clip, efficientnet_pytorch; import omnivla_real.policy, omnivla_real.edge; print('torch', torch.__version__, 'transformers', transformers.__version__, 'peft', peft.__version__)\"     && python3 -m pytest -q tests" did not complete successfully: exit code: 1
