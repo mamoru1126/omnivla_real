@@ -31,7 +31,10 @@ case $CMD in
     up)
         ensure_env
         PROFILE=()
-        [ "${1:-}" = --standalone ] && PROFILE=(--profile standalone)
+        if [ "${1:-}" = --standalone ]; then
+            PROFILE=(--profile standalone)
+            export ROSLAUNCH_ARGS=--wait   # roscore コンテナの master を待つ
+        fi
         T=$(env_get TOPOMAP "")
         [ -n "$T" ] || say "注意: .env の TOPOMAP が空です (ブラウザや /omnivla/topomap で指定するまで走りません)"
         [ -z "$T" ] || [ -e "$(hpath "$T")" ] || die "TOPOMAP が見つかりません: $T (ホストでは $(hpath "$T"))"

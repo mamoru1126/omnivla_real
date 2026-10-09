@@ -52,6 +52,7 @@ services:
       ROS_IP: ""
       ROS_HOSTNAME: ""
       USE_SIM_TIME: "true"
+      ROSLAUNCH_ARGS: --wait          # roscore コンテナの master を待つ (自分で立てると取り合いになる)
       NAV_LOG_DIR: /runs/replay/nav
 
   robot:

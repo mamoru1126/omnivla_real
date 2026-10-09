@@ -73,6 +73,8 @@ services:
       NAV_WEB_PORT: ${NAV_WEB_PORT:-}
       NAV_LOG_DIR: ${NAV_LOG_DIR:-}
       USE_SIM_TIME: "false"          # bag で試すとき (docker-compose.replay.yml) だけ true
+      # --wait: ROS master が立つのを待つ (roscore を別のコンテナで同時に起動するとき. 付けないと master がなければ自分で立てる)
+      ROSLAUNCH_ARGS: ${ROSLAUNCH_ARGS:-}
     stop_signal: SIGINT              # roslaunch を Ctrl-C と同じ止め方にする (走行ログを閉じる)
     # 空の値は渡さない (navigator.yaml の値が既定)
     command:
@@ -80,7 +82,7 @@ services:
       - -c
       - >-
         [ -z "$$ROS_IP" ] && unset ROS_IP; [ -z "$$ROS_HOSTNAME" ] && unset ROS_HOSTNAME;
-        exec roslaunch omnivla_real_ros1 navigator.launch policy_url:=http://127.0.0.1:$$POLICY_PORT
+        exec roslaunch $$ROSLAUNCH_ARGS omnivla_real_ros1 navigator.launch policy_url:=http://127.0.0.1:$$POLICY_PORT
         topomap:=$$TOPOMAP autostart:=$$NAV_AUTOSTART use_sim_time:=$$USE_SIM_TIME
         $${NAV_WEB_PORT:+web_port:=$$NAV_WEB_PORT} $${NAV_LOG_DIR:+log_dir:=$$NAV_LOG_DIR}
 
