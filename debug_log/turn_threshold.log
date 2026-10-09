@@ -1,0 +1,13 @@
+./bin/shell.sh python3 tools/turn_stats.py /data/dataset
+trajectories: 49, horizon: 10 frames
+曲がる場面の割合 [%]  (しきい値 [deg] ごと)
+bag                           10      15      20      25      30      45
+20260919_112151             13.4     8.1     5.3     3.6     2.6     1.0
+20260919_144933             10.8     7.4     4.0     2.4     1.3     0.0
+20260919_150554              6.7     3.8     2.9     1.9     1.1     0.0
+(all)                       10.3     6.5     4.0     2.7     1.7     0.3
+
+10 フレーム以内の向きの変化 [deg]: 中央値 2, 90% 10, 95% 18, 99% 36, 最大 66
+
+目安: (all) が 5〜20% になるしきい値を configs/finetune_*.yaml の turn_threshold_deg にする
+ubuntu@PC-20211221A020:~/omnivla_real$
