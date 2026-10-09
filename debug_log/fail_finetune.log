@@ -1,0 +1,15 @@
+[train] training/finetune_omnivla.py --config configs/finetune_7b.yaml
+Using OmniVLA constants:
+  NUM_ACTIONS_CHUNK = 8
+  ACTION_DIM = 4
+  POSE_DIM = 4
+  ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
+If needed, manually set the correct constants in `prismatic/vla/constants.py`!
+Traceback (most recent call last):
+  File "/workspace/training/finetune_omnivla.py", line 465, in <module>
+    main()
+  File "/workspace/training/finetune_omnivla.py", line 268, in main
+    train_dirs, val_dirs = split_trajectories(trajs, cfg.val_ratio, cfg.seed, cfg.val_bags)
+  File "/workspace/training/nav_dataset.py", line 213, in split_trajectories
+    raise ValueError(f"no trajectories from val_bags {sorted(vb)}")
+ValueError: no trajectories from val_bags [20260919150554]
