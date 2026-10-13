@@ -64,6 +64,7 @@ def main(argv=None):
     robot = RobotConfig.load(args.robot)
     server = PolicyServer(policy, nav.model.model.lower(), args.host, args.port,
                           log=lambda s: print(s, flush=True), image_cfg=robot.image)
+    server.info["checkpoint"] = nav.model.finetuned_dir or nav.model.weights or ""  # 表示用 (desk_eval のレポートなど)
     print(f"[policy_server] image preprocess (robot.yaml): crop={robot.image.crop} width={robot.image.width} "
           f"rotate180={robot.image.rotate180}", flush=True)
     try:

@@ -184,7 +184,35 @@ ensure_image() {
 }
 TTY=()
 if ! { [ -t 0 ] && [ -t 1 ]; }; then TTY=(-T); fi
+
+# Jetson の上か (OMNIVLA_JETSON=1 / 0 で決め打ちもできる). Jetson では学習用イメージの代わりに推論サーバのイメージを使う
+on_jetson() {
+    case ${OMNIVLA_JETSON:-} in
+        1 | true) return 0 ;;
+        0 | false) return 1 ;;
+    esac
+    [ -f /etc/nv_tegra_release ]
+}
+if on_jetson; then export REPLAY_POLICY_COMPOSE=docker-compose.jetson.yml; fi  # docker-compose.replay.yml の推論サーバ
 pc() { docker compose "$@"; }                                 # 学習 PC (docker-compose.yml)
-in_shell() { pc run --rm "${TTY[@]}" shell "$@"; }            # 学習用コンテナで 1 コマンド
-replay() { docker compose -f docker-compose.replay.yml "$@"; }  # 学習 PC で実機と同じ構成
 jetson() { docker compose -f docker-compose.jetson.yml "$@"; }  # Jetson
+replay() { docker compose -f docker-compose.replay.yml "$@"; }  # bag をロボットの代わりにして実機と同じ構成
+# 1 コマンド動かす: 学習 PC は学習用コンテナ、Jetson は推論サーバのイメージ (torch + bag の読み込み)
+in_shell() {
+    if on_jetson; then
+        ensure_image omnivla_real:jetson-policy jetson build policy
+        jetson run --rm --no-deps "${TTY[@]}" policy "$@"
+    else
+        pc run --rm "${TTY[@]}" shell "$@"
+    fi
+}
+# Jetson で bag を流す前の注意 (nav・推論サーバのコンテナは実機の走行と同じものを使う)
+jetson_replay_note() {
+    on_jetson || return 0
+    say "Jetson で bag を流します. 実機の走行用の nav は bag 用に置き換わります (終わったら bin/replay.sh down → bin/jetson.sh up)"
+    say "ROS master はこの Jetson の中だけ. 念のためロボットのモーターは切っておいてください"
+}
+# 学習 PC でしかできないもの
+not_on_jetson() {
+    if on_jetson; then die "$* は学習 PC で実行してください (Jetson では机上評価・bag での確認・動画・図だけ)"; fi
+}

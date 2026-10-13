@@ -86,6 +86,9 @@ jobs:
           out = p.predict(img, goal_image=img)
           print(\"waypoints\", out.waypoints.shape, \"latency\", round(out.latency, 3))
           "
+            # Jetson でも机上評価・図 (bin/desk_eval.sh, plot_nav_log.sh) をこのイメージで動かす
+            python3 tools/desk_eval.py -h > /dev/null && python3 tools/plot_nav_log.py -h > /dev/null &&
+            python3 -c "import rosbags, matplotlib; print(\"desk_eval deps OK\")"
           ' 2>&1 | tee ci/policy-run.log
       - name: Publish log to ci-logs-policy branch
         if: always()

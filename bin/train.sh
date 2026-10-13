@@ -6,6 +6,7 @@
 #   bin/train.sh 7b --config configs/my.yaml --max_steps 3000   # 設定ファイルの値は後ろのオプションで上書きできる
 #   bin/train.sh 7b -d                   # 裏で動かす (端末を閉じても続く). ログは docker logs -f omnivla_train_7b
 source "$(dirname "$0")/_lib.sh"
+not_on_jetson "学習"
 MODEL=${1:-}
 shift || true
 case $MODEL in

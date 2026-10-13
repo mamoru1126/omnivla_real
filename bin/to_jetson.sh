@@ -5,7 +5,9 @@
 #
 #   bin/to_jetson.sh user@jetson                       # Jetson の ~/omnivla_real に送る
 #   bin/to_jetson.sh user@jetson --dest /opt/omnivla_real --configs
+#   bin/to_jetson.sh user@jetson --bag run2.bag        # Jetson で机上評価・bag での確認をする bag も送る
 #        --dest DIR   Jetson 側のリポジトリ   --configs  configs/robot.yaml と navigator.yaml も送る
+#        --bag BAG    bag も送る (何回でも. 分割 bag はカンマ区切り)
 #        --dry-run    送るものを表示するだけ
 # Jetson 側の .env の BAG_DIR / DATA_DIR / RUNS_DIR / CHECKPOINT_DIR は既定 (./bags など) のままとする.
 source "$(dirname "$0")/_lib.sh"
@@ -14,11 +16,17 @@ HOST=$1
 shift
 DEST=omnivla_real
 CONFIGS=0
+BAGS=()
 RSYNC=(rsync -aR --info=progress2)
 while [ $# -gt 0 ]; do
     case $1 in
         --dest) DEST=$2; shift ;;
         --configs) CONFIGS=1 ;;
+        --bag)
+            IFS=',' read -r -a _b <<< "$(cbags "$2")"
+            BAGS+=("${_b[@]}")
+            shift
+            ;;
         --dry-run | -n) RSYNC+=(-n -v) ;;
         *) die "知らないオプション: $1" ;;
     esac
@@ -55,6 +63,7 @@ for p in "$F" "$T"; do
     need "$p"
     SEND+=("$p")
 done
+SEND+=("${BAGS[@]}")
 [ ${#SEND[@]} -gt 0 ] || die ".env に送るもの (FINETUNED_DIR / NAV_WEIGHTS / TOPOMAP) がありません"
 
 say "送り先: $HOST:$DEST  (モデル: $MODEL)"
@@ -65,8 +74,8 @@ fi
 ssh "$HOST" "mkdir -p $DEST/bags $DEST/data $DEST/runs $DEST/checkpoints"
 for p in "${SEND[@]}"; do
     case $p in
-        /runs/* | /data/* | /checkpoints/*) ;;
-        *) die "$p は /runs /data /checkpoints の外にあるので送れません" ;;
+        /runs/* | /data/* | /checkpoints/* | /bags/*) ;;
+        *) die "$p は /runs /data /checkpoints /bags の外にあるので送れません" ;;
     esac
     k=${p#/}
     k=${k%%/*}

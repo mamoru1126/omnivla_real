@@ -62,7 +62,7 @@ bin/setup.sh          # .env を作る + イメージのビルド + 公式の重
 | 7 | `bin/replay.sh BAG [topomap]` / `again` / `down` | `docker-compose.replay.yml` |
 | 7 | `bin/replay_video.sh BAG [topomap]` / `--log ログ` | 同じ構成で bag を流し、デバッグ画面と同じ内容を動画に (`tools/nav_video.py`) |
 | | `bin/plot_nav_log.sh [ログ]` | `tools/plot_nav_log.py` |
-| 8 | `bin/to_jetson.sh user@jetson` (学習 PC で) | 重みと topomap を rsync で送る |
+| 8 | `bin/to_jetson.sh user@jetson [--bag BAG]` (学習 PC で) | 重みと topomap (と評価用の bag) を rsync で送る |
 | 8 | `bin/jetson.sh build\|up\|status\|logs\|plot\|down` (Jetson で) | `docker-compose.jetson.yml` |
 | | `bin/shell.sh [コマンド]` | 学習用コンテナに入る / 1 コマンド実行 |
 
@@ -70,6 +70,7 @@ bin/setup.sh          # .env を作る + イメージのビルド + 公式の重
 - 後ろに付けたオプション (`--start_sec 10` など) は、そのまま中のツールに渡します。
 - モデルと topomap は `.env` の `NAV_MODEL` / `FINETUNED_DIR` / `NAV_WEIGHTS` / `TOPOMAP` を使います (机上評価・bag での確認・Jetson で同じ)。
 - 使い方は `-h` で表示します。`OMNIVLA_DRY_RUN=1` を付けると、実行せずに中のコマンドを表示します。
+- Jetson の上では、学習 (3, 4) 以外は同じコマンドで動きます (Jetson 用のイメージを自動で使います)。[8 の「Jetson で机上評価・bag での確認」](#jetson-で机上評価bag-での確認)。
 
 ## 1. bag の中身を見る
 
@@ -299,6 +300,33 @@ bin/jetson.sh down                    # 止める
 
 ROS 2 で使う場合は `ros2 launch omnivla_real_ros navigator.launch.py` で起動します (ROS 2 ノードも同梱)。
 
+### Jetson で机上評価・bag での確認
+
+学習 PC で行った確認 (6, 7) は、Jetson の上でも同じコマンドで動きます。モデルは実機の走行と同じ推論サーバ (`docker-compose.jetson.yml` の `policy`) を使うので、**Jetson での推論時間**も含めて確かめられます。
+
+```bash
+# 学習 PC で: 評価に使う bag も送る
+bin/to_jetson.sh user@jetson --bag 20260919_150554.bag
+
+# Jetson で
+bin/desk_eval.sh 20260919_150554.bag course_a      # 机上評価. report.txt の「推論時間」が Jetson での値
+bin/replay.sh 20260919_150554.bag course_a         # bag をロボットの代わりにして、ブラウザで確認
+bin/replay_video.sh 20260919_150554.bag course_a   # 同じ構成で動画に
+bin/replay.sh down && bin/jetson.sh up             # 実機の走行に戻す
+```
+
+| コマンド | 学習 PC | Jetson |
+|---|---|---|
+| `bin/desk_eval.sh` | 学習用コンテナでモデルを直接読み込む | 推論サーバを起動して使う (`--model remote`)。動いていればそのまま |
+| `bin/replay.sh` / `replay_video.sh` | 推論サーバは `docker-compose.yml` の `policy` | 推論サーバは `docker-compose.jetson.yml` の `policy` (`REPLAY_POLICY_COMPOSE`) |
+| `bin/bag_info.sh` / `check_odometry.sh` / `make_topomap.sh` / `plot_nav_log.sh` / `shell.sh` | 学習用コンテナ | 推論サーバのイメージ (bag は rosbags で読む) |
+| `bin/train.sh` / `make_dataset.sh` | ○ | 学習 PC で |
+
+- Jetson かどうかは `/etc/nv_tegra_release` で見分けます。`OMNIVLA_JETSON=1` / `0` で決め打ちもできます。
+- bag を流している間、実機の走行用の `nav` は bag 用に置き換わります。ROS master は Jetson の中だけですが、念のためロボットのモーターは切っておきます。
+- bag を読むもの (rosbags) は Python 3.10 以上が要るので JetPack 6 だけです。JetPack 5 では学習 PC で行います。
+- 机上評価と bag での確認を推論サーバ経由にしているのは、モデルを 2 つ読み込まない (7B は GPU のメモリを多く使う) ためと、走行と同じ通信込みの時間を測るためです。
+
 ### デバッグ画面
 
 走行中にブラウザで http://&lt;Jetson の IP&gt;:8080 を開きます (ロボットと同じネットワークの PC やタブレットから)。
@@ -359,4 +387,4 @@ CI (GitHub Actions) では合成したコース走行の bag を使い、次を�
 - Jetson 上でのイメージのビルド (推論サーバ・ROS 1 とも)
 - 7B の GPU での学習・推論
 
-これらはまだ試していません。7B の Jetson での推論時間は未計測です。遅すぎる場合は edge に切り替えます (学習・走行の手順は同じ)。
+これらはまだ試していません。7B の Jetson での推論時間は未計測です (Jetson で `bin/desk_eval.sh` を実行すると report.txt の「推論時間」に出ます)。遅すぎる場合は edge に切り替えます (学習・走行の手順は同じ)。

@@ -296,6 +296,10 @@ def summarize(rec: List[dict], ft: FrameTable, cfg: DeskEvalConfig, engine: NavE
             "similarity_median": float(np.median([r["similarity"] for r in rec if r.get("similarity") is not None]))
             if any(r.get("similarity") is not None for r in rec) else None,
         }
+    lat = np.array([r["latency"] for r in rec if r.get("latency") is not None], dtype=float)
+    if lat.size:   # 1 回の推論にかかった時間 (推論サーバ経由なら通信込み)
+        out["latency"] = {"median_s": float(np.median(lat)), "p90_s": float(np.percentile(lat, 90)),
+                          "max_s": float(lat.max()), "n": int(lat.size)}
     out["paths"] = {"model": pm.tolist(), "recorded_cmd": pc.tolist()}
     return out
 

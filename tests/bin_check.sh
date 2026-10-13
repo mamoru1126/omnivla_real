@@ -8,7 +8,7 @@ trap 'rm -rf "$T"' EXIT
 mkdir -p "$T/bags/split" "$T/bags/ros2run" "$T/data/topomaps/course_a" "$T/runs/r1/checkpoints/step_000010" \
     "$T/runs/replay/nav" "$T/checkpoints/omnivla-edge" "$T/elsewhere"
 touch "$T/bags/run1.bag" "$T/bags/split/a_0.bag" "$T/bags/split/a_1.bag" "$T/elsewhere/x.bag"
-export OMNIVLA_DRY_RUN=1 BAG_DIR=$T/bags DATA_DIR=$T/data RUNS_DIR=$T/runs CHECKPOINT_DIR=$T/checkpoints
+export OMNIVLA_DRY_RUN=1 OMNIVLA_JETSON=0 BAG_DIR=$T/bags DATA_DIR=$T/data RUNS_DIR=$T/runs CHECKPOINT_DIR=$T/checkpoints
 unset NAV_MODEL NAV_WEIGHTS FINETUNED_DIR TOPOMAP REPLAY_BAG
 B=$ROOT/bin
 NG=0
@@ -105,6 +105,31 @@ check "docker compose -f docker-compose.jetson.yml --profile standalone up -d" e
 check "docker compose -f docker-compose.jetson.yml up -d" env TOPOMAP=/data/topomaps/course_a "$B/jetson.sh" up
 check "nav python3 tools/plot_nav_log.py /workspace/log/nav/latest" "$B/jetson.sh" plot
 check "docker compose -f docker-compose.jetson.yml --profile standalone down" "$B/jetson.sh" down
+
+# --- Jetson の上で、学習 PC と同じ確認 (OMNIVLA_JETSON=1 で Jetson のつもりにする) ---
+J=(env OMNIVLA_JETSON=1)
+check "docker compose -f docker-compose.jetson.yml up -d policy" "${J[@]}" "$B/desk_eval.sh" run1.bag course_a
+check "docker compose -f docker-compose.jetson.yml run --rm --no-deps -T policy python3 tools/desk_eval.py --bag /bags/run1.bag" \
+    "${J[@]}" "$B/desk_eval.sh" run1.bag course_a
+check "--topomap /data/topomaps/course_a --model remote --url http://127.0.0.1:8765" \
+    "${J[@]}" NAV_MODEL=edge FINETUNED_DIR=/runs/r1/checkpoints/step_000010 "$B/desk_eval.sh" run1.bag course_a
+check "--topomap /data/topomaps/course_a --policy oracle" "${J[@]}" "$B/desk_eval.sh" run1.bag course_a --policy oracle
+check "jetson.yml run --rm --no-deps -T policy python3 tools/bag_info.py /bags/run1.bag" "${J[@]}" "$B/bag_info.sh" run1.bag
+check "jetson.yml run --rm --no-deps -T policy python3 tools/make_topomap.py --out /data/topomaps/course_b" \
+    "${J[@]}" "$B/make_topomap.sh" course_b run1.bag
+check "Jetson で bag を流します" "${J[@]}" "$B/replay.sh" run1.bag course_a
+check "up -d --force-recreate --no-deps nav record robot" "${J[@]}" "$B/replay_video.sh" run1.bag course_a
+check "docker-compose.jetson.yml" "${J[@]}" bash -c "source '$B/_lib.sh'; echo \$REPLAY_POLICY_COMPOSE"
+check "docker compose -f docker-compose.jetson.yml build" "${J[@]}" "$B/setup.sh" none
+fails "学習 PC で" "${J[@]}" "$B/train.sh" 7b
+fails "学習 PC で" "${J[@]}" "$B/make_dataset.sh" run1.bag
+check "rsync -aR --info=progress2 $T/bags/./run1.bag me@jet:omnivla_real/bags/" \
+    env TOPOMAP=course_a "$B/to_jetson.sh" me@jet --bag run1.bag
+if command -v docker > /dev/null && docker compose version > /dev/null 2>&1; then
+    # Jetson では bag 用の構成の推論サーバが Jetson 用のものになる
+    check "image: omnivla_real:jetson-policy" bash -c "cd '$ROOT' && REPLAY_POLICY_COMPOSE=docker-compose.jetson.yml docker compose -f docker-compose.replay.yml config policy"
+    check "image: omnivla_real:latest" bash -c "cd '$ROOT' && docker compose -f docker-compose.replay.yml config policy"
+fi
 
 # --- 使い方の表示 ---
 for f in "$B"/*.sh; do

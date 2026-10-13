@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 # =============================================================================
 # Jetson AGX Orin 用 推論サーバ (tools/policy_server.py): OmniVLA 7B / OmniVLA-edge を GPU で動かす. ROS は入れない.
+# 学習 PC と同じ机上評価・bag の確認 (bin/desk_eval.sh など) もこのイメージで動く (bag は rosbags で読む).
 # ROS 1 のノードは別コンテナ (docker/Dockerfile.ros1) で動かし、localhost の HTTP でつなぐ
 # (ROS 1 Noetic は Ubuntu 20.04 用, Jetson の PyTorch は JetPack ごとに Ubuntu が決まるため分ける).
 #
@@ -25,17 +26,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends git git-lfs ca-
     && rm -rf /var/lib/apt/lists/*
 
 # ---- Python 依存 (ベースの torch / torchvision / numpy は置き換えない) ----
-COPY docker/requirements-edge.txt docker/requirements-7b.txt docker/install_omnivla.sh /tmp/
+COPY docker/requirements-edge.txt docker/requirements-7b.txt docker/requirements-jetson-tools.txt docker/install_omnivla.sh /tmp/
 RUN python3 -c "import torch, torchvision; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())" \
     && python3 -m pip freeze | grep -iE '^(torch|torchvision|torchaudio|numpy)==' > /tmp/keep.txt; cat /tmp/keep.txt \
-    && python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements-edge.txt \
+    && python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements-edge.txt -r /tmp/requirements-jetson-tools.txt \
     && if [ "${WITH_7B}" = "1" ]; then \
          python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements-7b.txt && bash /tmp/install_omnivla.sh; \
        fi
 
 COPY . /workspace
 WORKDIR /workspace
-RUN python3 -c "import torch, clip, efficientnet_pytorch; import omnivla_real.edge, omnivla_real.remote; print('edge OK')" \
+RUN python3 -c "import torch, clip, efficientnet_pytorch; import omnivla_real.edge, omnivla_real.remote, matplotlib; print('edge OK')" \
+    && (python3 -c "import sys; sys.exit(sys.version_info < (3, 10))" || echo "Python < 3.10: rosbags なし (bag を読むものは学習 PC で)") \
+    && (python3 -c "import sys; sys.exit(sys.version_info >= (3, 10))" || python3 -c "import rosbags; print('rosbags OK')") \
     && if [ "${WITH_7B}" = "1" ]; then python3 -c "import transformers, peft; import omnivla_real.policy; print('7b OK')"; fi
 
 EXPOSE 8765

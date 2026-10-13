@@ -1,0 +1,4 @@
+# Jetson の推論サーバのイメージで、学習 PC と同じ机上評価・bag の確認をするため (bin/desk_eval.sh, bag_info.sh, make_topomap.sh など)
+# rosbags 0.10 は Python 3.10 以上 (JetPack 6). JetPack 5 (Python 3.8) では bag を読むものは学習 PC で
+rosbags>=0.10.4,<0.11; python_version >= "3.10"
+matplotlib

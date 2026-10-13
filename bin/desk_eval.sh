@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 6. 机上評価: 別の走行の bag をモデルに入れて、記録と比べる. 結果は runs/desk_eval/<bag>_<時刻>/
 # モデルは .env の NAV_MODEL / NAV_WEIGHTS / FINETUNED_DIR (走行と同じ). topomap を省くと .env の TOPOMAP.
+# Jetson でも同じコマンド. Jetson では走行と同じ推論サーバ (docker-compose.jetson.yml の policy) を起動して使う
+# (動いていればそのまま). report.txt の「推論時間」が Jetson での 1 回の推論 (通信込み) の時間.
 #
 #   bin/desk_eval.sh run2.bag course_a
 #   bin/desk_eval.sh run2.bag course_a --policy oracle       # モデルの代わりに正解を返す (仕組みの確認)
@@ -20,9 +22,18 @@ ARGS=()
 M=$(env_get NAV_MODEL "")
 W=$(env_get NAV_WEIGHTS "")
 F=$(env_get FINETUNED_DIR "")
-[ -n "$M" ] && ARGS+=(--model "$M")
-[ -n "$W" ] && ARGS+=(--weights "$(cpath runs "" "$W")")
-[ -n "$F" ] && ARGS+=(--finetuned_dir "$(cpath runs "" "$F")")
+if on_jetson && [[ " $* " != *" --policy oracle "* ]]; then
+    # 推論サーバ (モデルは .env から読み込まれる). 起動直後はモデルの読み込みを待つ (desk_eval.py が最大 10 分待つ)
+    ensure_env
+    PORT=$(env_get POLICY_PORT 8765)
+    say "推論サーバを使います (http://127.0.0.1:$PORT  モデル: ${M:-(navigator.yaml)} $F$W)"
+    jetson up -d policy
+    ARGS+=(--model remote --url "http://127.0.0.1:$PORT")
+else
+    [ -n "$M" ] && ARGS+=(--model "$M")
+    [ -n "$W" ] && ARGS+=(--weights "$(cpath runs "" "$W")")
+    [ -n "$F" ] && ARGS+=(--finetuned_dir "$(cpath runs "" "$F")")
+fi
 OUT=/runs/desk_eval/$(bag_name "$BAG")_$(date +%Y%m%d_%H%M%S)
 in_shell python3 tools/desk_eval.py --bag "$BAG" --out "$OUT" --debug_every 10 "${ARGS[@]}" "$@"
 say "結果: $(hpath "$OUT")  (overview.png, timeline.png, report.txt)"

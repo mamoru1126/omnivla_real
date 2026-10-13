@@ -326,6 +326,12 @@ def test_desk_eval_oracle_follows_course():
         assert s["commands"]["turn_direction_agreement"] > 0.95
         w6 = s["integrated_windows"]["6s"]
         assert w6["model"]["pos_err_median_m"] < 0.35                 # 6 秒積算して 35cm 以内
+        assert s["latency"]["n"] > 0 and s["latency"]["median_s"] >= 0  # 推論時間 (Jetson での確認用)
+        sys.path.insert(0, os.path.join(REPO, "tools"))
+        from desk_eval import text_report  # tools/desk_eval.py
+        s["model"] = {"server": {"model": "edge", "checkpoint": "/runs/x"}}
+        txt = text_report(s)
+        assert "推論時間: 中央値" in txt and "推論サーバのモデル: edge /runs/x" in txt
         # 積算の関数自体: 一定の指令で直進
         p = integrate_commands(np.arange(0, 3.01, 1 / 3), np.full(10, 0.3), np.zeros(10), (0, 0, 0))
         assert abs(p[-1, 0] - 0.9) < 1e-6

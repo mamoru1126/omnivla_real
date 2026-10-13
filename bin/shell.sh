@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 学習用コンテナに入る (GPU, /bags /data /runs /checkpoints がマウントされた状態).
+# 学習用コンテナに入る (GPU, /bags /data /runs /checkpoints がマウントされた状態). Jetson では推論サーバのイメージ.
 #
 #   bin/shell.sh                          # bash に入る
 #   bin/shell.sh python3 tools/xxx.py ... # コマンドを 1 つ実行して終わる

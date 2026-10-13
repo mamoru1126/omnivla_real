@@ -115,8 +115,16 @@ def text_report(s: dict) -> str:
     L = []
     w, c, f = s.get("waypoints", {}), s.get("commands", {}), s.get("integrated_full", {})
     fmt = lambda v, u="": "-" if v is None else (f"{v:.3f}{u}" if isinstance(v, float) else f"{v}{u}")  # noqa: E731
+    srv = (s.get("model") or {}).get("server")
+    if srv:
+        L.append(f"推論サーバのモデル: {srv.get('model')} {srv.get('checkpoint') or ''}".rstrip())
     L.append(f"frames: {s.get('frames_evaluated')} / {s.get('frames')}  (sample_rate {s.get('sample_rate')} Hz, "
              f"controller {s.get('controller')})")
+    if s.get("latency"):
+        la = s["latency"]
+        L.append(f"推論時間: 中央値 {la['median_s'] * 1000:.0f} ms  p90 {la['p90_s'] * 1000:.0f} ms  "
+                 f"最大 {la['max_s'] * 1000:.0f} ms  (参考: waypoint の間隔 {1000 / s['sample_rate']:.0f} ms)"
+                 if s.get("sample_rate") else f"推論時間: 中央値 {la['median_s'] * 1000:.0f} ms")
     L.append("")
     L.append("[予測軌跡 vs 実際にその後走った軌跡]")
     L.append(f"  ADE {fmt(w.get('ade_m'), ' m')}  FDE {fmt(w.get('fde_m'), ' m')}  向き {fmt(w.get('heading_err_deg'), ' deg')}")
@@ -214,6 +222,9 @@ def main(argv=None):
                                                                    np.asarray(course))
         summary.update({"bag": args.bag, "topomap": args.topomap, "goal_mode": goal_mode, "pose_source": src,
                         "policy": args.policy, "model": vars(nav.model), "trim_offset_frames": offset})
+        if getattr(policy, "server_info", None):   # 推論サーバ経由: サーバが読み込んでいるモデル
+            summary["model"]["server"] = {k: v for k, v in policy.server_info.items() if k != "meta"}
+            summary["model"]["server"]["meta"] = policy.server_info.get("meta")
         plots(args.out, ft, rec, summary, nodes_xy)
         with open(os.path.join(args.out, "report.json"), "w") as f:
             json.dump(summary, f, indent=1, default=str)

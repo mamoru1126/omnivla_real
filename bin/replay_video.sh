@@ -2,6 +2,7 @@
 # bin/replay.sh と同じ構成 (推論サーバ + Jetson と同じ nav + bag をロボット代わり) で bag を最後まで流し、
 # デバッグ画面と同じ内容 (カメラ画像 + 予測軌跡、サブゴール、指示値、俯瞰図、履歴、出来事) を動画に保存する.
 # ブラウザは使わない. 動画は走行ログから作る (tools/nav_video.py, ffmpeg).
+# 学習 PC でも Jetson でも同じ.
 #
 #   bin/replay_video.sh run2.bag course_a                    # -> runs/replay/<時刻>.mp4
 #   bin/replay_video.sh run2.bag course_a --rate 2 --speed 4 # bag を 2 倍速で流し、動画は 4 倍速
@@ -77,6 +78,7 @@ mkdir -p "$NAVLOG"
 before=$(ls -1 "$NAVLOG" 2> /dev/null | sort)
 
 say "bag: $BAG  topomap: $TOPO  model: $(env_get NAV_MODEL '(navigator.yaml)') $(env_get FINETUNED_DIR '')$(env_get NAV_WEIGHTS '')"
+jetson_replay_note
 ensure_image omnivla_real:ros1 replay build nav
 replay up -d roscore policy
 replay up -d --force-recreate --no-deps nav record robot

@@ -6,6 +6,7 @@
 #   bin/make_dataset.sh run1.bag --pose_source cmd        # オプション (- で始まる引数から後) は bag_to_dataset.py に渡す
 # 出力先を変えるとき: DATASET=/data/dataset_b bin/make_dataset.sh ...  (学習の設定の data_dirs も合わせる)
 source "$(dirname "$0")/_lib.sh"
+not_on_jetson "データセットの作成"
 BAGS=()
 while [ $# -gt 0 ] && [[ $1 != -* ]]; do
     BAGS+=("$(cbags "$1")")

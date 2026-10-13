@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 7. 学習 PC で、bag をロボットの代わりにして実機と同じ構成を動かす (docker-compose.replay.yml). ブラウザで確認する.
+# 7. bag をロボットの代わりにして実機と同じ構成を動かす (docker-compose.replay.yml). ブラウザで確認する.
+# 学習 PC でも Jetson でも同じ (Jetson では推論サーバが Jetson 用のもの = 実機の走行と同じ).
 # モデルは .env の NAV_MODEL / NAV_WEIGHTS / FINETUNED_DIR. topomap を省くと .env の TOPOMAP.
 #
 #   bin/replay.sh run2.bag course_a              # 起動して robot と nav のログを表示 (Ctrl-C でログの表示だけ止まる)
@@ -62,6 +63,7 @@ done
 export REPLAY_BAG=$BAG TOPOMAP=$TOPO
 mkdir -p "$(host_dir runs)/replay"
 say "bag: $BAG  topomap: $TOPO  model: $(env_get NAV_MODEL '(navigator.yaml)') $(env_get FINETUNED_DIR '')$(env_get NAV_WEIGHTS '')"
+jetson_replay_note
 ensure_image omnivla_real:ros1 replay build nav
 # 推論サーバと roscore は動いていればそのまま (モデルを読み直さない). nav・記録・robot は毎回作り直す
 replay up -d roscore policy
