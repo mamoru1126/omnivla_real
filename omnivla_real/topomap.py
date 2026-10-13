@@ -349,7 +349,7 @@ class SubgoalTracker:
                         self._travel_at_switch = travel
                         return False
                     return self._advance(best + 1, f"image similarity {cand[best]:.3f} (node {best})", travel)
-                return False
+                # まだ確定していない: 下の「道のりで通り過ぎた」は見る (似た候補が入れ替わり続けても止まらない)
         else:
             self._pending, self._pending_count = None, 0
         # 画像で判定できないまま、道のり上で今のノードを通り過ぎた (最終ゴールなら止まる)

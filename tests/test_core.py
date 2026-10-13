@@ -236,6 +236,25 @@ def test_image_odom_does_not_run_ahead_on_long_course():
     assert max(leads) <= 4 and np.median(np.abs(leads)) <= 2, (max(leads), np.median(leads))
 
 
+def test_image_odom_keeps_up_when_images_are_ambiguous():
+    """近くも遠くも同じくらい似ていて、画像の判定が確定しない (一番似たノードが入れ替わり続ける) 場合でも、
+    道のりで通り過ぎたら進める (サブゴールが止まって遅れない)."""
+    rng = np.random.default_rng(1)
+    n = 200
+    nodes = [GoalNode(Image.new("RGB", (2, 2)), (float(k), 0.0, 0.0)) for k in range(n)]
+    tr = SubgoalTracker(Topomap(nodes, frame="odom", start=nodes[0].pose), TrackerConfig(reach_check="image_odom"),
+                        "image_odom")
+    leads = []
+    for i in range(1100):
+        s = i * 0.2
+        tr.update(None, lambda j: 0.91 + rng.normal(0, 0.03), s)   # noqa: B023
+        leads.append(tr.index - min(n - 1, int(math.floor(s)) + 1))
+        if tr.done:
+            break
+    assert tr.done and s > n - 5, s
+    assert min(leads) >= -3, min(leads)
+
+
 def test_topomap_from_run_and_tracker_modes():
     tmp = tempfile.mkdtemp()
     try:

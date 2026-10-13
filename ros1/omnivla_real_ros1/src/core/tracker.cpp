@@ -158,7 +158,7 @@ bool SubgoalTracker::image_check(const std::function<double(int)>& sim, const st
         }
         return advance(*best + 1, fmt("image similarity %.3f (node %.0f)", cand[*best], *best), travel);
       }
-      return false;
+      // まだ確定していない: 下の「道のりで通り過ぎた」は見る (似た候補が入れ替わり続けても止まらない)
     }
   } else {
     pending_.reset();
