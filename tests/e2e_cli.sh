@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 合成した rosbag (ROS1 / ROS2 sqlite3 / ROS2 mcap) で、ツールを README の順に通しで動かす (CI 用).
+# 合成した rosbag (ROS1 / ROS2 sqlite3 / ROS2 mcap) で、ツールを docs/training_pc.md の順に通しで動かす (CI 用).
 #   bash tests/e2e_cli.sh [OUT_DIR]
 # torch が入っていれば OmniVLA-edge の学習 (数 step, CPU) → その重みで机上評価 まで動かす。
 set -euo pipefail

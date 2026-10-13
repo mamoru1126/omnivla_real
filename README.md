@@ -17,374 +17,52 @@
 - **OmniVLA 7B** (LoRA で学習)
 - **OmniVLA-edge** (軽量. Jetson で速い)
 
+## 手順書
+
+| | 内容 |
+|---|---|
+| [docs/training_pc.md](docs/training_pc.md) | 学習 PC (x86_64 + NVIDIA GPU): 準備、bag の確認、学習、topomap、机上評価、bag での確認 (1〜7)、設定ファイル、テスト |
+| [docs/jetson.md](docs/jetson.md) | Jetson AGX Orin: 準備、走行、トピック、デバッグ画面、Jetson での机上評価・bag での確認 (8) |
+
 ## 流れ
 
-1. bag の中身を見て、`configs/robot.yaml` にトピック名を書く (`bag_info.py`)
-2. オドメトリが使えるか確かめる (`check_odometry.py`)
-3. 学習データに変換する (`bag_to_dataset.py`)
-4. 学習する (`finetune_edge.py` / `finetune_omnivla.py`)
-5. サブゴール画像列 (topomap) を作る (`make_topomap.py`)
-6. 机上評価する (`desk_eval.py`)
-7. bag をロボットの代わりにして、実機と同じ構成で動かす (学習 PC, ブラウザで確認)
-8. Jetson で走らせる (ROS 1)
+| | すること | コマンド | どこで |
+|---|---|---|---|
+| 準備 | `.env` を作り、イメージをビルドして公式の重みを取る | `bin/setup.sh` | 学習 PC / Jetson |
+| 1 | bag の中身を見て、`configs/robot.yaml` にトピック名を書く | `bin/bag_info.sh` | 学習 PC |
+| 2 | オドメトリが使えるか確かめる | `bin/check_odometry.sh` | 学習 PC |
+| 3 | 学習データに変換する | `bin/make_dataset.sh` | 学習 PC |
+| 4 | 学習する | `bin/train.sh 7b\|edge` | 学習 PC |
+| 5 | サブゴール画像列 (topomap) を作る | `bin/make_topomap.sh` | 学習 PC |
+| 6 | 机上評価する | `bin/desk_eval.sh` | 学習 PC (Jetson でも可) |
+| 7 | bag をロボットの代わりにして、実機と同じ構成で動かす (ブラウザ / 動画) | `bin/replay.sh` / `bin/replay_video.sh` | 学習 PC (Jetson でも可) |
+| 8 | 重みと topomap を送って、Jetson で走らせる | `bin/to_jetson.sh` → `bin/jetson.sh up` | Jetson |
 
-## 準備 (学習 PC: x86_64 + NVIDIA GPU)
-
-Docker と NVIDIA Container Toolkit が必要です。
+## はじめかた
 
 ```bash
+# 学習 PC
 git clone https://github.com/mamoru1126/omnivla_real.git && cd omnivla_real
-bin/setup.sh          # .env を作る + イメージのビルド + 公式の重み (7B と edge). edge だけなら bin/setup.sh edge
+bin/setup.sh                                 # .env + イメージ + 公式の重み
+bin/bag_info.sh run1.bag                     # bags/ に置いた bag を見る → configs/robot.yaml
+bin/make_dataset.sh run1.bag run2.bag        # → data/dataset
+bin/train.sh 7b                              # → runs/<run>/checkpoints/step_XXXXXX (.env の FINETUNED_DIR に書く)
+bin/make_topomap.sh course_a run1.bag        # → data/topomaps/course_a (.env の TOPOMAP に書く)
+bin/desk_eval.sh run3.bag course_a           # topomap とは別の走行で評価 → runs/desk_eval/
+bin/to_jetson.sh user@jetson                 # Jetson に送る
+
+# Jetson
+bin/setup.sh none                            # .env + イメージ (重みは学習 PC から送る)
+bin/jetson.sh up                             # 走行. ブラウザで http://<Jetson の IP>:8080
 ```
 
-フォルダとコンテナ内のパスの対応 (`.env` で変更可):
-
-| ホスト | コンテナ |
-|---|---|
-| `./bags` | `/bags` |
-| `./data` | `/data` (学習データ・topomap) |
-| `./runs` | `/runs` (学習・評価の結果) |
-| `./checkpoints` | `/checkpoints` (公式の重み) |
-
-### コマンド (`bin/`)
-
-各段階は `bin/` のスクリプトで実行します。中で `docker compose` を呼ぶので、どこから実行しても構いません。
-
-| 段階 | コマンド | 中でしていること |
-|---|---|---|
-| 準備 | `bin/setup.sh [all\|edge\|7b\|none]` | `.env` を作る、`docker compose build`、`scripts/download_checkpoints.sh` |
-| 1 | `bin/bag_info.sh BAG` | `tools/bag_info.py` |
-| 2 | `bin/check_odometry.sh BAG` | `tools/check_odometry.py` |
-| 3 | `bin/make_dataset.sh BAG...` | `tools/bag_to_dataset.py` + `training/inspect_dataset.py` |
-| 4 | `bin/train.sh 7b\|edge [-d]` | `training/finetune_omnivla.py` / `finetune_edge.py` |
-| 5 | `bin/make_topomap.sh 名前 BAG` | `tools/make_topomap.py` |
-| 6 | `bin/desk_eval.sh BAG [topomap]` | `tools/desk_eval.py` |
-| 7 | `bin/replay.sh BAG [topomap]` / `again` / `down` | `docker-compose.replay.yml` |
-| 7 | `bin/replay_video.sh BAG [topomap]` / `--log ログ` | 同じ構成で bag を流し、デバッグ画面と同じ内容を動画に (`tools/nav_video.py`) |
-| | `bin/plot_nav_log.sh [ログ]` | `tools/plot_nav_log.py` |
-| 8 | `bin/to_jetson.sh user@jetson [--bag BAG]` (学習 PC で) | 重みと topomap (と評価用の bag) を rsync で送る |
-| 8 | `bin/jetson.sh build\|up\|status\|logs\|plot\|down` (Jetson で) | `docker-compose.jetson.yml` |
-| | `bin/shell.sh [コマンド]` | 学習用コンテナに入る / 1 コマンド実行 |
-
-- bag や topomap は、名前 (`run1.bag`, `course_a`)、ホストのパス (`./bags/run1.bag`)、コンテナのパス (`/bags/run1.bag`) のどれで指定しても構いません。分割された bag は `a_0.bag,a_1.bag` です。
-- 後ろに付けたオプション (`--start_sec 10` など) は、そのまま中のツールに渡します。
+- コマンドはどれも `-h` で使い方を表示します。中で `docker compose` を呼ぶので、どこから実行しても構いません。
 - モデルと topomap は `.env` の `NAV_MODEL` / `FINETUNED_DIR` / `NAV_WEIGHTS` / `TOPOMAP` を使います (机上評価・bag での確認・Jetson で同じ)。
-- 使い方は `-h` で表示します。`OMNIVLA_DRY_RUN=1` を付けると、実行せずに中のコマンドを表示します。
-- Jetson の上では、学習 (3, 4) 以外は同じコマンドで動きます (Jetson 用のイメージを自動で使います)。[8 の「Jetson で机上評価・bag での確認」](#jetson-で机上評価bag-での確認)。
+- 設定ファイルは `configs/` (`robot.yaml`: トピックと画像の前処理、`navigator.yaml`: 走行と机上評価、`convert.yaml`、`finetune_*.yaml`) です。
 
-## 1. bag の中身を見る
+## 確かめたこと / まだのこと
 
-```bash
-bin/bag_info.sh run1.bag      # ROS 1 (./bags/run1.bag)
-bin/bag_info.sh run1          # ROS 2: bag のディレクトリ (.db3 / .mcap)
-```
+- 確かめたこと: 実機の bag (ROS 1) での変換・7B の学習・topomap・机上評価、学習 PC での bag を使った確認 (ブラウザ・動画)。CI では合成した bag で全体を通しています ([テスト](docs/training_pc.md#テスト))。
+- まだのこと: Jetson 上でのイメージのビルドと実行、7B の Jetson での推論時間、実機での走行。
 
-表示されたトピック名を `configs/robot.yaml` の `topics` に書きます。
-
-| 種類 | 対応している型 |
-|---|---|
-| 画像 | `Image` / `CompressedImage` |
-| ホイールオドメトリ | `nav_msgs/Odometry` |
-| 指示値 | `Twist` / `TwistStamped` / 独自型 (フィールドを指定) |
-| 自己位置 (任意) | `PoseStamped` / `PoseWithCovarianceStamped` / `Odometry` / `/tf` |
-
-- 車体が画像に写り込む場合は `image.crop` で削ります。
-- 分割された bag は `a_0.bag,a_1.bag` のようにカンマでつなぐと、1 本の走行として扱います (以降のツールも同じ)。
-
-## 2. オドメトリが使えるか確かめる
-
-```bash
-bin/check_odometry.sh run1.bag     # 結果は runs/check/run1/
-```
-
-学習ラベルは「この先約 2.7 秒の動き」です。ラベルに使える位置の候補は 3 つ (自己位置があれば 4 つ) あり、このツールはそれらの短時間の動きがどれだけ一致するかを比べます。
-
-- ホイールオドメトリ
-- オドメトリの速度の積算
-- 指示値の積算
-
-あわせて、指示値から実際に動き出すまでの遅れと、速度の比 (スリップ) も推定します。
-
-- odom と cmd の差が数 cm なら、既定の `pose_source: odom` で OK です。
-- オドメトリが信用できない場合は `pose_source: cmd` (+ `cmd_delay`) にします。
-- 自己位置がある場合は `pose_source: localization` も選べます。
-
-## 3. 学習データに変換する
-
-```bash
-bin/make_dataset.sh run1.bag run2.bag      # data/dataset に追加. runs/inspect に正解軌跡を画像に重ねた確認用の図
-```
-
-- bag はエピソード単位でなくて構いません。変換時に次のように区切ります。
-  - 3 Hz で間引く。
-  - 止まっている時間 (3 秒超)、画像やオドメトリの途切れ、後退で区切る。
-  - 長い区間は 60 秒ごとに分ける。
-- 走り出す前の停止や途中の停止は、学習の起点から外します。区間の最後の停止は「ゴールで止まる」学習に使います。
-- どこを使ったかは `/data/dataset/_reports/<bag>.png` で確認できます。設定は `configs/convert.yaml` にあります。
-- 同じコースでも、時間帯・明るさ・走る位置 (少し左右にずれる) を変えて何回か走った bag を入れると強くなります。
-- コースから外れて戻る走りも入れると、外れたときに復帰できるようになります。シミュレータの DART のような自動の外乱は、実データでは使えません。
-
-## 4. 学習
-
-```bash
-bin/train.sh 7b                    # OmniVLA 7B, LoRA (24GB 以上). configs/finetune_7b.yaml
-bin/train.sh edge                  # OmniVLA-edge (数 GB の GPU で可). configs/finetune_edge.yaml
-bin/train.sh 7b -d                 # 裏で動かす (端末を閉じても続く). ログは docker logs -f omnivla_train_7b
-bin/train.sh 7b --max_steps 3000   # 設定ファイルの値をオプションで上書き
-```
-
-- 結果は `runs/<run>/checkpoints/step_XXXXXX/` に出ます。走行に使うものを `.env` の `NAV_MODEL` と `FINETUNED_DIR` (例 `/runs/<run>/checkpoints/step_005000`) に書きます。
-- 検証に使う走行は `val_bags: [run2]` のように bag 名で指定できます。
-- 7B をマージ済みモデルにしたい場合は `training/merge_lora.py` を使います。
-
-## 5. サブゴール画像列 (topomap) を作る
-
-コースを 1 回走った bag から、1 m ごとに画像を切り出します。
-
-```bash
-bin/make_topomap.sh course_a run1.bag --spacing 1.0     # data/topomaps/course_a/. .env の TOPOMAP=/data/topomaps/course_a
-```
-
-- 出力は `0.jpg, 1.jpg, ...`、`poses.yaml` (各画像の位置)、`overview.png` です。
-- 使う範囲は `--start_sec` / `--end_sec` で切り出せます。
-
-## 6. 机上評価
-
-topomap を作った走行とは別の走行の bag で評価します。録画した画像を順にモデルへ入れ、走行時と同じ処理をして、記録と比べます。
-
-- サブゴールの切り替え
-- 推論
-- 予測軌跡 → 指示値
-
-```bash
-bin/desk_eval.sh run2.bag course_a     # モデルは .env の NAV_MODEL / FINETUNED_DIR. 結果は runs/desk_eval/run2_<時刻>/
-# 推論サーバ経由 (bin/replay.sh で推論サーバが動いているとき): bin/desk_eval.sh run2.bag course_a --model remote --url http://127.0.0.1:8765
-```
-
-| 出力 | 中身 |
-|---|---|
-| `overview.png` | 実際の走行、**モデルの指示値を積算した軌跡**、記録の指示値を積算した軌跡、サブゴール |
-| `timeline.png` | 速度・角速度 (モデル vs 記録)、サブゴール番号、画像の類似度 |
-| `report.txt` / `report.json` | 下の表の指標 |
-| `steps.csv` | フレームごとの値 |
-| `debug/` | 予測軌跡を画像に重ねたもの |
-
-| 指標 | 意味 |
-|---|---|
-| `waypoints.ade_m` | 予測した 8 点と、実際にその後走った 8 点のずれ |
-| `commands.turn_direction_agreement` | 曲がる場面で、モデルの旋回の向きが記録と合っている割合 |
-| `integrated_windows` | 実際の位置から N 秒間、モデルの指示値だけで進めたときの終点のずれ。記録の指示値で同じことをした値 (`recorded_cmd`) と同程度なら十分 |
-| `subgoals.reached_goal` | 最後のサブゴールまで切り替わったか。`reach_check` は判定の方法 |
-
-- 入力は録画なので開ループです (モデルが曲がり損ねても、画像は記録どおりに進みます)。スタートから積算した軌跡 (`integrated_full`) は誤差が溜まるので、主に N 秒窓で見ます。
-- `--policy oracle` を付けると、モデルの代わりに記録の正解を返します。評価やサブゴール切り替えの仕組みの確認に使います。
-- `--goal_mode hindsight` にすると、topomap を使わず「記録の 1.5 m 先の画像」をゴールにします。
-
-サブゴールの切り替え方 (`configs/navigator.yaml` の `engine.tracker.reach_check: auto`):
-
-| 状況 | 判定 |
-|---|---|
-| 自己位置がある | 位置で判定 (`pose`) |
-| 自己位置がない | 画像の類似度 + オドメトリの道のり (走った距離) で判定 (`image_odom`)。道のりで先すぎるサブゴールは候補にしない。画像で判定できないまま道のりで通り過ぎたら進める。オドメトリの位置 (x, y) は長いコースだと向きのドリフトで大きくずれるので使わない |
-
-画像の類似度のしきい値 (`image_threshold`) は、机上評価の `report.json` の `similarity_threshold` を見て決めます。
-
-## 7. bag をロボットの代わりにして、実機と同じ構成で動かす (学習 PC)
-
-机上評価 (6) とは別に、走行時の構成そのものを学習 PC で動かして確かめます。Jetson で使う `nav` コンテナ (`docker-compose.jetson.yml` の定義そのまま) と推論サーバを立て、別の走行の bag をロボットの代わりに流します。様子はブラウザのデバッグ画面で見ます。
-
-| コンテナ | 実機では | 中身 |
-|---|---|---|
-| `roscore` | ロボットのメイン PC など | ROS master |
-| `policy` | Jetson の `policy` | 推論サーバ (同じ `tools/policy_server.py`。ここでは x86 の GPU) |
-| `nav` | Jetson の `nav` | ROS 1 ナビゲーションノード (C++) とデバッグ画面。**定義もイメージも Jetson と同じ** |
-| `robot` | ロボット (カメラ・オドメトリ) | bag の画像・オドメトリ (・自己位置) をシミュレーション時刻で流す (`scripts/bag_robot.sh`) |
-| `record` | | ノードが出した `/cmd_vel`, `/omnivla/path`, `/omnivla/status` を記録 |
-
-```bash
-# .env に NAV_MODEL / FINETUNED_DIR (Jetson と同じ値) を書いておく
-bin/replay.sh run2.bag course_a          # 起動して robot と nav のログを表示 (Ctrl-C でログの表示だけ止まる)
-# → ブラウザで http://localhost:8080 (別の PC からは http://<学習 PC の IP>:8080)
-bin/replay.sh again                      # もう一度最初から流す (推論サーバはそのまま)
-bin/replay.sh down                       # 片付け
-```
-
-- `robot` は、`nav` が準備できる (推論サーバのモデルを読み終わる) のを待ってから bag を流し始めます。7B は数分かかります。
-- bag からは `robot.yaml` の画像・オドメトリ (・自己位置) だけを流します。記録された `/cmd_vel` は流しません。
-- ROS master はこの PC の中だけです (`.env` の `ROS_MASTER_URI` がロボットを指していても使いません)。
-
-| オプション | `.env` | 意味 |
-|---|---|---|
-| (bag) | `REPLAY_BAG` | bag。カンマ区切りで複数、ディレクトリなら中の `*.bag` 全部 |
-| `--rate R` | `REPLAY_RATE` | 再生速度 (既定 1.0) |
-| `--start S` | `REPLAY_START` | 先頭から何秒飛ばすか |
-| `--args "-u 60"` | `REPLAY_ARGS` | `rosbag play` にそのまま渡す (この例は 60 秒だけ) |
-| `--manual` | `NAV_AUTOSTART=false` | ブラウザの「開始」を押してから走り出す (実機と同じ確認ができる) |
-
-- 出力は `RUNS_DIR/replay/` に出ます。
-  - `out_<時刻>.bag`: ノードが出した指示値・予測軌跡・状態
-  - `nav/<時刻>/`: 走行ログ。`bin/plot_nav_log.sh` で図とレポート
-- bag が終わっても画面はそのまま見られます。
-
-**動画に残す** (ブラウザ不要): 同じ構成で bag を最後まで流し、デバッグ画面と同じ内容 (カメラ画像 + 予測軌跡、サブゴール、v / ω、俯瞰図、60 秒の履歴、出来事) を mp4 にします。
-
-```bash
-bin/replay_video.sh run2.bag course_a                 # -> runs/replay/<時刻>.mp4
-bin/replay_video.sh run2.bag course_a --speed 4       # 動画を 4 倍速で (--rate は bag の再生速度)
-bin/replay_video.sh --log runs/replay/nav/latest      # 既にある走行ログから動画だけ作る
-bin/replay_video.sh --log log/nav/20261013_120000     # Jetson から持ってきた実機の走行ログも同じ
-```
-
-- 動画は走行ログ (`steps.csv`、カメラ画像 `raw/`、サブゴール画像 `goals/`、`events.log`) から作ります。実機のログも `io.log_images: true` (既定) なら動画にできます。
-- 初回は ROS 1 のイメージに ffmpeg を入れるため、作り直しが入ります。
-- `bin/replay.sh` を使わずに `docker compose -f docker-compose.replay.yml up` (`REPLAY_BAG` と `TOPOMAP` は `.env` か環境変数) でも同じです。
-- bag の画像は指示値に反応しません (開ループ)。モデルが曲がり損ねても、画像は記録どおりに進みます。ロボットが指示どおりに動いたらどう見えるか、までは分かりません。
-
-## 8. Jetson AGX Orin で走らせる (ROS 1)
-
-コンテナを 2 つに分け、localhost の HTTP でつなぎます。
-
-| コンテナ | 中身 | Dockerfile |
-|---|---|---|
-| `policy` | 推論サーバ (Python)。OmniVLA を GPU で動かす。ROS なし | `docker/Dockerfile.jetson` |
-| `nav` | ROS 1 Noetic のナビゲーションノード (C++) とデバッグ画面。PyTorch なし | `docker/Dockerfile.ros1` |
-
-分けている理由: ROS 1 Noetic は Ubuntu 20.04 用ですが、Jetson で GPU を使える PyTorch は JetPack ごとに Ubuntu が決まっています (JetPack 6 は 22.04)。分けておけば、JetPack が決まっていなくても ROS 1 側はそのまま使えます。
-
-推論サーバのベースイメージは、JetPack に合わせて `.env` の `JETSON_BASE_IMAGE` で選びます。
-
-| JetPack | `JETSON_BASE_IMAGE` |
-|---|---|
-| 6.1 / 6.2 (L4T r36.4) | `dustynv/l4t-pytorch:r36.4.0` (既定) |
-| 6.0 (L4T r36.2) | `dustynv/l4t-pytorch:r36.2.0` |
-| 5.1.2 (L4T r35.4) | `dustynv/l4t-pytorch:2.2-r35.4.1` |
-
-```bash
-# Jetson で
-git clone https://github.com/mamoru1126/omnivla_real.git && cd omnivla_real
-cp .env.example .env    # JETSON_BASE_IMAGE, ROS_MASTER_URI を書く
-bin/jetson.sh build
-
-# 学習 PC で: .env の NAV_MODEL / FINETUNED_DIR / TOPOMAP の重みと topomap を送る (7B は元のモデルも)
-bin/to_jetson.sh user@jetson          # 最後に Jetson の .env に書く行が表示される
-
-# Jetson で
-bin/jetson.sh up                      # ROS master は ROS_MASTER_URI のもの. ログを表示 (Ctrl-C で表示だけ止まる)
-bin/jetson.sh up --standalone         # roscore もここで立てる場合
-bin/jetson.sh status                  # 状態と推論サーバの応答
-bin/jetson.sh down                    # 止める
-```
-
-- `nav` は推論サーバの準備ができるのを待ってから始まります。7B の読み込みには数分かかります。
-- カメラ画像とオドメトリ (自己位置があればそれも) が届くと走り出します (`autostart`)。`.env` の `NAV_AUTOSTART=false` にすると、ブラウザの「開始」か `/omnivla/enable` で走り出します。
-
-| | トピック | 型 |
-|---|---|---|
-| 入力 | `robot.yaml` の `topics.image` / `odom` / `localization` | |
-| 入力 | `/omnivla/enable` | `std_msgs/Bool`。開始 / 停止 |
-| 入力 | `/omnivla/topomap` | `std_msgs/String`。topomap を切り替えて開始 |
-| 出力 | `/cmd_vel` | `Twist` (`io.cmd_stamped: true` で `TwistStamped`) |
-| 出力 | `/omnivla/path` | `nav_msgs/Path`。予測軌跡 8 点 (`base_link` 座標) |
-| 出力 | `/omnivla/status` | JSON。状態, サブゴール番号, 類似度, 推論時間 |
-| ブラウザ | http://&lt;Jetson の IP&gt;:8080 | デバッグ画面 |
-
-- 速度の上限は `navigator.yaml` の `engine.controller.track_max_v` / `track_max_w` で、ロボットに合わせます。
-- 推論結果が `io.cmd_timeout` 秒より古くなると 0 を出します。推論サーバが止まった場合も 0 になります。
-- 走行ログは `log/nav/<時刻>/` に保存されます。
-  - `bin/jetson.sh plot` で、一番新しい走行の図とレポートを作れます。学習 PC に持ってきたものは `bin/plot_nav_log.sh log/nav/<時刻>`。
-- ROS 1 ノードは既存の ROS 1 環境 (catkin ワークスペース) に入れても動きます。
-  - `ros1/omnivla_real_ros1` を置いて `catkin_make` します。C++ の依存は同梱のヘッダだけです。
-  - 起動時に設定を読むため、python3 と PyYAML / numpy / Pillow が要ります。`OMNIVLA_REAL_ROOT` に本リポジトリを指定します。
-- 推論サーバは別の PC (学習 PC など) で動かしても構いません。その場合はサーバを `--host 0.0.0.0` で起動し、`policy_url:=http://<IP>:8765` を指定します。
-- Python 版の ROS 1 ノードも残しています (`roslaunch ... impl:=py`)。デバッグ画面は C++ 版だけです。
-
-ROS 2 で使う場合は `ros2 launch omnivla_real_ros navigator.launch.py` で起動します (ROS 2 ノードも同梱)。
-
-### Jetson で机上評価・bag での確認
-
-学習 PC で行った確認 (6, 7) は、Jetson の上でも同じコマンドで動きます。モデルは実機の走行と同じ推論サーバ (`docker-compose.jetson.yml` の `policy`) を使うので、**Jetson での推論時間**も含めて確かめられます。
-
-```bash
-# 学習 PC で: 評価に使う bag も送る
-bin/to_jetson.sh user@jetson --bag 20260919_150554.bag
-
-# Jetson で
-bin/desk_eval.sh 20260919_150554.bag course_a      # 机上評価. report.txt の「推論時間」が Jetson での値
-bin/replay.sh 20260919_150554.bag course_a         # bag をロボットの代わりにして、ブラウザで確認
-bin/replay_video.sh 20260919_150554.bag course_a   # 同じ構成で動画に
-bin/replay.sh down && bin/jetson.sh up             # 実機の走行に戻す
-```
-
-| コマンド | 学習 PC | Jetson |
-|---|---|---|
-| `bin/desk_eval.sh` | 学習用コンテナでモデルを直接読み込む | 推論サーバを起動して使う (`--model remote`)。動いていればそのまま |
-| `bin/replay.sh` / `replay_video.sh` | 推論サーバは `docker-compose.yml` の `policy` | 推論サーバは `docker-compose.jetson.yml` の `policy` (`REPLAY_POLICY_COMPOSE`) |
-| `bin/bag_info.sh` / `check_odometry.sh` / `make_topomap.sh` / `plot_nav_log.sh` / `shell.sh` | 学習用コンテナ | 推論サーバのイメージ (bag は rosbags で読む) |
-| `bin/train.sh` / `make_dataset.sh` | ○ | 学習 PC で |
-
-- Jetson かどうかは `/etc/nv_tegra_release` で見分けます。`OMNIVLA_JETSON=1` / `0` で決め打ちもできます。
-- bag を流している間、実機の走行用の `nav` は bag 用に置き換わります。ROS master は Jetson の中だけですが、念のためロボットのモーターは切っておきます。
-- bag を読むもの (rosbags) は Python 3.10 以上が要るので JetPack 6 だけです。JetPack 5 では学習 PC で行います。
-- 机上評価と bag での確認を推論サーバ経由にしているのは、モデルを 2 つ読み込まない (7B は GPU のメモリを多く使う) ためと、走行と同じ通信込みの時間を測るためです。
-
-### デバッグ画面
-
-走行中にブラウザで http://&lt;Jetson の IP&gt;:8080 を開きます (ロボットと同じネットワークの PC やタブレットから)。
-
-| 表示 | 中身 |
-|---|---|
-| いまの画像 | モデルに入れた画像 (切り抜き・縮小の後) に、予測した 8 点の軌跡を重ねたもの |
-| サブゴール | いま目指しているサブゴール画像と、そこまでの距離。下にコースのサブゴールが並び、今の位置が分かる |
-| 指示値 | ロボットに出している v と ω、直近 60 秒の履歴 |
-| 予測した軌跡 | 上から見た図 (0.5 m 方眼) |
-| サブゴールの判定 | 画像の類似度と切り替えのしきい値、推論時間と回数 |
-| 出来事 | サブゴールの切り替え、開始・停止 |
-
-- 画面の「停止」ボタンか Esc キーで止まります。「開始」は確認してから動き出します。
-- 画面を開いている人がいないときは、画面用の画像を作りません (走行の負荷は増えません)。
-- 認証はありません。ロボットの中のネットワークだけで使い、外から見せたくないときは `navigator.yaml` の `io.web_host: 127.0.0.1` にします。ポートは `io.web_port` (0 で無効) です。
-- 画面を閉じたり接続が切れたりしても、ノードは走り続けます。止めるときは停止ボタンかロボット側で止めます。
-
-### 軽くするためにしていること
-
-- ROS 1 ノードは C++ です。カメラの JPEG はデコードせずに、そのまま推論サーバとブラウザに渡します (メッセージのコピーもしません)。
-- 画像の切り抜き・縮小は推論サーバ側で、学習時と同じ関数で行います。
-- 推論サーバは送られた画像を覚えています。観測履歴とサブゴール画像は 2 回目から名前だけを送ります。
-- 推論は新しいカメラ画像が来たときだけです。指示値は 10Hz で最新の結果を出し続けます。
-- PyTorch で動かすモデル本体 (推論サーバ) は Python のままです。
-
-## 設定ファイル
-
-| ファイル | 内容 |
-|---|---|
-| `configs/robot.yaml` | トピック名、画像の前処理 (変換・topomap・評価・走行で共通)、カメラの値 (表示用) |
-| `configs/convert.yaml` | bag → 学習データの変換 |
-| `configs/finetune_edge.yaml` / `finetune_7b.yaml` | 学習 |
-| `configs/navigator.yaml` | 走行と机上評価: モデル、制御、サブゴールの切り替え、トピック |
-
-## テスト
-
-```bash
-python3 -m pytest -q tests                 # 単体テスト + 本物の rosbag を書いて読む + C++ と Python の突き合わせ
-bash tests/e2e_cli.sh /tmp/e2e             # 合成した bag で 1〜6 を通しで実行
-bash tests/bin_check.sh                    # bin/ のスクリプトが正しいコマンドを組み立てるか (docker は実行しない)
-```
-
-CI (GitHub Actions) では合成したコース走行の bag を使い、次を確認しています。
-
-- ROS 1 / ROS 2 sqlite3 / ROS 2 mcap の bag を読む
-- 変換 → edge の学習 (CPU で数 step) → topomap → 机上評価
-- 推論サーバ経由の推論が、プロセス内の推論と同じ結果になる
-- C++ のノードの中身 (制御・サブゴールの切り替え・走行全体) が Python の実装と同じ結果になる (`tests/test_cpp.py`)
-- ROS 1: 推論サーバ + ROS 1 コンテナ (`docker/Dockerfile.ros1`) で bag を再生し、`/cmd_vel` と `/omnivla/path` が出る。デバッグ画面に結果と画像が届く (C++ / Python 両方のノード)
-- `docker-compose.replay.yml`: Jetson と同じ `nav` コンテナ + bag をロボット代わりにして、デバッグ画面と記録した出力を確認 (推論サーバは CPU)
-- ROS 2 ノードも同様
-- 学習用イメージのビルド、Jetson 用推論サーバの Dockerfile (x86 の PyTorch イメージを代わりのベースにして依存のインストールまで)
-
-## 未確認のこと
-
-- 実機の bag、実機での走行
-- Jetson 上でのイメージのビルド (推論サーバ・ROS 1 とも)
-- 7B の GPU での学習・推論
-
-これらはまだ試していません。7B の Jetson での推論時間は未計測です (Jetson で `bin/desk_eval.sh` を実行すると report.txt の「推論時間」に出ます)。遅すぎる場合は edge に切り替えます (学習・走行の手順は同じ)。
+7B の Jetson での推論時間は、Jetson で `bin/desk_eval.sh` を実行すると report.txt の「推論時間」に出ます。遅すぎる場合は edge に切り替えます (学習・走行の手順は同じ)。
