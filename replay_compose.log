@@ -1,0 +1,106 @@
+record-1  | [0m[INFO] [1791884234.178579585]: Subscribing to /cmd_vel[0m
+record-1  | [0m[INFO] [1791884234.181329089]: Subscribing to /omnivla/path[0m
+record-1  | [0m[INFO] [1791884234.182574276]: Subscribing to /omnivla/status[0m
+record-1  | [33m[WARN] [1791884236.185397404]: /use_sim_time set to true and no clock published.  Still waiting for valid time...[0m
+record-1  | [0m[INFO] [1791884237.858460075, 1000.002000000]: Recording to '/runs/replay/out_2026-10-13-09-37-17.bag'.[0m
+robot-1   | [robot] bag: /bags/course_ros1_0.bag /bags/course_ros1_1.bag (53.8 s, 速度 x1.0, 0 s から)
+robot-1   | [robot] 流すトピック: /camera/image_raw/compressed /odom
+robot-1   | [robot] ブラウザ: http://localhost:8080  (別の PC からは http://<この PC の IP>:8080)
+robot-1   | [0m[INFO] [1791884235.838631828]: Opening /bags/course_ros1_0.bag[0m
+robot-1   | [0m[INFO] [1791884235.851330301]: Opening /bags/course_ros1_1.bag[0m
+robot-1   | Waiting 2 seconds after advertising topics... done.
+robot-1   | 
+robot-1   | Hit space to toggle paused, or 's' to step.
+robot-1   | 
+robot-1   | Done.
+robot-1   | [robot] bag の再生が終わりました (rc=0).
+robot-1   | [robot] 画面はそのまま見られます: http://localhost:8080
+robot-1   | [robot] 記録: /runs/replay (ホストの RUNS_DIR/replay). out_<時刻>.bag と nav/<時刻>/ (図にする: bin/plot_nav_log.sh)
+robot-1   | [robot] もう一度流す: bin/replay.sh again  (または docker compose -f docker-compose.replay.yml restart nav && ... restart robot)
+nav-1     | roscore/master is not yet running, will wait for it to start
+nav-1     | master has started, initiating launch
+nav-1     | ... logging to /root/.ros/log/aad7cae6-c6e9-11f1-bd11-000d3a9dd469/roslaunch-runnervmwvtoz-1.log
+nav-1     | Checking log directory for disk usage. This may take a while.
+nav-1     | Press Ctrl-C to interrupt
+nav-1     | Done checking log file disk usage. Usage is <1GB.
+nav-1     | ]2;/workspace/ros1/omnivla_real_ros1/launch/navigator.launch
+nav-1     | [1mstarted roslaunch server http://runnervmwvtoz:39675/[0m
+nav-1     | 
+nav-1     | SUMMARY
+nav-1     | ========
+nav-1     | 
+nav-1     | PARAMETERS
+nav-1     |  * /omnivla_navigator/autostart: True
+nav-1     |  * /omnivla_navigator/log_dir: /runs/replay/nav
+nav-1     |  * /omnivla_navigator/nav_config: /workspace/config...
+nav-1     |  * /omnivla_navigator/overrides: 
+nav-1     |  * /omnivla_navigator/policy_url: http://127.0.0.1:...
+nav-1     |  * /omnivla_navigator/repo_root: /workspace
+nav-1     |  * /omnivla_navigator/robot_config: /workspace/config...
+nav-1     |  * /omnivla_navigator/topomap: /data/topomap
+nav-1     |  * /omnivla_navigator/web_port: 
+nav-1     |  * /rosdistro: noetic
+nav-1     |  * /rosversion: 1.17.4
+nav-1     |  * /use_sim_time: True
+nav-1     | 
+nav-1     | NODES
+nav-1     |   /
+nav-1     |     omnivla_navigator (omnivla_real_ros1/navigator)
+nav-1     | 
+nav-1     | [1mROS_MASTER_URI=http://localhost:11311[0m
+nav-1     | ]2;/workspace/ros1/omnivla_real_ros1/launch/navigator.launch http://localhost:11311
+nav-1     | [1mprocess[omnivla_navigator-1]: started with pid [63][0m
+nav-1     | [0m[INFO] [1791884233.078438374]: note: the C++ node always uses the policy server (model: edge runs in the server)[0m
+nav-1     | [0m[INFO] [1791884233.080224998]: connecting to the policy server http://127.0.0.1:8765[0m
+nav-1     | [0m[INFO] [1791884233.081335021]: policy server: edge at 127.0.0.1:8765 (history=yes)[0m
+nav-1     | [0m[INFO] [1791884233.081406049]: ready: model=edge, sample_rate=3.000000 Hz, topomap=/data/topomap (24 subgoals)[0m
+nav-1     | [0m[INFO] [1791884233.081561873]: debug page: http://<this machine>:8080[0m
+nav-1     | [0m[INFO] [1791884233.087501297]: waiting for /camera/image_raw/compressed and /odom[0m
+nav-1     | [0m[INFO] [1791884237.963087241, 1000.002692794]: start: 24 subgoals, reach_check=image_odom, log=/runs/replay/nav/20261013_093717[0m
+nav-1     | [0m[INFO] [1791884240.721183413, 1002.766771903]: subgoal 0 -> 3/23 [image similarity 1.000 (node 2)][0m
+nav-1     | [0m[INFO] [1791884243.863749150, 1005.909821675]: subgoal 3 -> 5/23 [image similarity 1.000 (node 4)][0m
+nav-1     | [0m[INFO] [1791884246.048433663, 1008.088614322]: subgoal 5 -> 6/23 [image similarity 1.000 (node 5)][0m
+nav-1     | [0m[INFO] [1791884248.413292874, 1010.456553117]: subgoal 6 -> 8/23 [image similarity 1.000 (node 7)][0m
+nav-1     | [0m[INFO] [1791884251.967355382, 1014.005265219]: subgoal 8 -> 9/23 [image similarity 1.000 (node 8)][0m
+nav-1     | [0m[INFO] [1791884256.589280564, 1018.632055353]: subgoal 9 -> 10/23 [image similarity 1.000 (node 9)][0m
+nav-1     | [0m[INFO] [1791884257.305449407, 1019.347706385]: subgoal 10 -> 11/23 [image similarity 1.000 (node 10)][0m
+nav-1     | [0m[INFO] [1791884265.861615921, 1027.902776197]: subgoal 11 -> 14/23 [image similarity 1.000 (node 13)][0m
+nav-1     | [0m[INFO] [1791884274.083288067, 1036.127527290]: subgoal 14 -> 15/23 [passed by odometry (1.07m behind)][0m
+nav-1     | [0m[INFO] [1791884275.970802505, 1038.013450138]: subgoal 15 -> 16/23 [passed by odometry (1.05m behind)][0m
+nav-1     | [0m[INFO] [1791884276.241238176, 1038.285621410]: subgoal 16 -> 18/23 [image similarity 1.000 (node 17)][0m
+nav-1     | [0m[INFO] [1791884277.935331556, 1039.979880555]: subgoal 18 -> 20/23 [image similarity 1.000 (node 19)][0m
+nav-1     | [0m[INFO] [1791884283.410969857, 1045.451393001]: subgoal 20 -> 23/23 [image similarity 1.000 (node 22)][0m
+nav-1     | [omnivla_navigator-1] killing on exit
+nav-1     | shutting down processing monitor...
+nav-1     | ... shutting down processing monitor complete
+nav-1     | [1mdone[0m
+roscore-1  | ... logging to /root/.ros/log/aad7cae6-c6e9-11f1-bd11-000d3a9dd469/roslaunch-runnervmwvtoz-1.log
+roscore-1  | Checking log directory for disk usage. This may take a while.
+roscore-1  | Press Ctrl-C to interrupt
+roscore-1  | Done checking log file disk usage. Usage is <1GB.
+roscore-1  | ]2;roscore
+roscore-1  | [1mstarted roslaunch server http://runnervmwvtoz:34369/[0m
+roscore-1  | ros_comm version 1.17.4
+roscore-1  | 
+roscore-1  | 
+roscore-1  | SUMMARY
+roscore-1  | ========
+roscore-1  | 
+roscore-1  | PARAMETERS
+roscore-1  |  * /rosdistro: noetic
+roscore-1  |  * /rosversion: 1.17.4
+roscore-1  | 
+roscore-1  | NODES
+roscore-1  | 
+roscore-1  | auto-starting new master
+roscore-1  | [1mprocess[master]: started with pid [63][0m
+roscore-1  | [1mROS_MASTER_URI=http://runnervmwvtoz:11311/[0m
+roscore-1  | ]2;roscore http://runnervmwvtoz:11311/
+roscore-1  | [1msetting /run_id to aad7cae6-c6e9-11f1-bd11-000d3a9dd469[0m
+roscore-1  | [1mprocess[rosout-1]: started with pid [78][0m
+roscore-1  | started core service [/rosout]
+roscore-1  | [rosout-1] killing on exit
+roscore-1  | [master] killing on exit
+roscore-1  | shutting down processing monitor...
+roscore-1  | ... shutting down processing monitor complete
+roscore-1  | [1mdone[0m

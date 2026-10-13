@@ -1,0 +1,21 @@
+[INFO] [1791884176.704339, 0.000000]: loading model (remote) ...
+[remote] edge at 127.0.0.1:8765 (history=True)
+[INFO] [1791884176.735063, 0.000000]: ready: model=remote, sample_rate=3.0 Hz, topomap=/tmp/e2e/topomap (24 subgoals)
+[INFO] [1791884176.741761, 0.000000]: waiting for /camera/image_raw/compressed and /odom
+[INFO] [1791884180.935104, 1000.012796]: start: 24 subgoals, reach_check=image_odom, log=/tmp/e2e/ros1_node/nav/20261013_093620
+[INFO] [1791884181.273603, 1000.355629]: subgoal 0 -> 2/23 [image similarity 1.000 (node 1)]
+[INFO] [1791884184.624636, 1003.704140]: subgoal 2 -> 4/23 [image similarity 1.000 (node 3)]
+[INFO] [1791884192.199980, 1011.282808]: subgoal 4 -> 5/23 [passed by odometry (1.09m behind)]
+[INFO] [1791884194.058635, 1013.139385]: subgoal 5 -> 6/23 [passed by odometry (1.02m behind)]
+[INFO] [1791884196.474698, 1015.549723]: subgoal 6 -> 7/23 [passed by odometry (1.06m behind)]
+[INFO] [1791884197.192594, 1016.275887]: subgoal 7 -> 9/23 [image similarity 1.000 (node 8)]
+[INFO] [1791884201.499739, 1020.574854]: subgoal 9 -> 11/23 [image similarity 1.000 (node 10)]
+[INFO] [1791884208.325063, 1027.405134]: subgoal 11 -> 13/23 [image similarity 1.000 (node 12)]
+[INFO] [1791884216.667075, 1035.748571]: subgoal 13 -> 14/23 [passed by odometry (1.05m behind)]
+[INFO] [1791884218.513215, 1037.597015]: subgoal 14 -> 15/23 [passed by odometry (1.01m behind)]
+[INFO] [1791884220.594505, 1039.674860]: subgoal 15 -> 16/23 [passed by odometry (1.04m behind)]
+[INFO] [1791884222.405822, 1041.482862]: subgoal 16 -> 17/23 [passed by odometry (1.01m behind)]
+[INFO] [1791884224.885135, 1043.966750]: subgoal 17 -> 18/23 [passed by odometry (1.03m behind)]
+[INFO] [1791884227.370023, 1046.447795]: subgoal 18 -> 19/23 [passed by odometry (1.05m behind)]
+[INFO] [1791884227.948727, 1047.026474]: subgoal 19 -> 20/23 [image similarity 1.000 (node 19)]
+[INFO] [1791884228.580503, 1047.490277]: stop: shutdown

@@ -1,0 +1,18 @@
+[0m[INFO] [1791884121.413811715]: note: the C++ node always uses the policy server (model: edge runs in the server)[0m
+[0m[INFO] [1791884121.415600714]: connecting to the policy server http://127.0.0.1:8765[0m
+[0m[INFO] [1791884121.416553832]: policy server: edge at 127.0.0.1:8765 (history=yes)[0m
+[0m[INFO] [1791884121.416604689]: ready: model=edge, sample_rate=3.000000 Hz, topomap=/tmp/e2e/topomap (24 subgoals)[0m
+[0m[INFO] [1791884121.416716287]: debug page: http://<this machine>:8090[0m
+[0m[INFO] [1791884121.422260292]: waiting for /camera/image_raw/compressed and /odom[0m
+[0m[INFO] [1791884125.665465940, 1000.002662028]: start: 24 subgoals, reach_check=image_odom, log=/tmp/e2e/ros1_node/nav/20261013_093525[0m
+[0m[INFO] [1791884128.855533462, 1003.192318525]: subgoal 0 -> 3/23 [image similarity 1.000 (node 2)][0m
+[0m[INFO] [1791884131.896074228, 1006.239557371]: subgoal 3 -> 5/23 [image similarity 1.000 (node 4)][0m
+[0m[INFO] [1791884134.379032372, 1008.719285753]: subgoal 5 -> 6/23 [image similarity 1.000 (node 5)][0m
+[0m[INFO] [1791884136.104932436, 1010.442857266]: subgoal 6 -> 8/23 [image similarity 1.000 (node 7)][0m
+[0m[INFO] [1791884144.182352836, 1018.526819867]: subgoal 8 -> 9/23 [passed by odometry (1.06m behind)][0m
+[0m[INFO] [1791884145.210462165, 1019.554928185]: subgoal 9 -> 12/23 [image similarity 1.000 (node 11)][0m
+[0m[INFO] [1791884153.545601276, 1027.881732017]: subgoal 12 -> 14/23 [image similarity 1.000 (node 13)][0m
+[0m[INFO] [1791884160.258649894, 1034.596956262]: subgoal 14 -> 17/23 [image similarity 1.000 (node 16)][0m
+[0m[INFO] [1791884160.809892355, 1035.151310209]: subgoal 17 -> 18/23 [image similarity 1.000 (node 17)][0m
+[0m[INFO] [1791884165.160606515, 1039.499527220]: subgoal 18 -> 20/23 [image similarity 1.000 (node 19)][0m
+[0m[INFO] [1791884170.263318194, 1044.605805186]: subgoal 20 -> 23/23 [image similarity 1.000 (node 22)][0m
