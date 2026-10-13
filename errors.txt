@@ -1,0 +1,9 @@
+115:#10 5.375   git-man libbrotli1 libcurl3-gnutls libcurl4 liberror-perl libexpat1
+127:#10 5.454   curl git git-lfs git-man libbrotli1 libcurl3-gnutls libcurl4 liberror-perl
+155:#10 6.691 Get:20 http://archive.ubuntu.com/ubuntu jammy/main amd64 liberror-perl all 0.17029-1 [26.5 kB]
+219:#10 8.683 Selecting previously unselected package liberror-perl.
+220:#10 8.685 Preparing to unpack .../18-liberror-perl_0.17029-1_all.deb ...
+221:#10 8.686 Unpacking liberror-perl (0.17029-1) ...
+253:#10 11.82 Setting up liberror-perl (0.17029-1) ...
+362:#12 9.128 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+457:#12 35.69 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv

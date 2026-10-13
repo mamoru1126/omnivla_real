@@ -1,0 +1,14 @@
+/opt/conda/lib/python3.10/site-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[policy_server] loading edge ...
+/opt/conda/lib/python3.10/site-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[edge] ready (device=cpu, metric_waypoint_spacing=0.1, context_stride=1)
+[policy_server] loaded in 1.8s
+  0%|                                               | 0.00/338M [00:00<?, ?iB/s] 10%|███▉                                   | 34.5M/338M [00:00<00:00, 361MiB/s] 22%|████████▍                              | 73.5M/338M [00:00<00:00, 390MiB/s] 33%|█████████████                           | 111M/338M [00:00<00:00, 388MiB/s] 44%|█████████████████▊                      | 150M/338M [00:00<00:00, 397MiB/s] 56%|██████████████████████▎                 | 189M/338M [00:00<00:00, 401MiB/s] 68%|███████████████████████████             | 228M/338M [00:00<00:00, 404MiB/s] 79%|███████████████████████████████▊        | 268M/338M [00:00<00:00, 409MiB/s] 91%|████████████████████████████████████▍   | 307M/338M [00:00<00:00, 409MiB/s]100%|████████████████████████████████████████| 338M/338M [00:00<00:00, 403MiB/s]
+[policy_server] warmup done (latency 130 ms)
+[policy_server] image preprocess (robot.yaml): crop=[0.0, 0.0, 0.0, 0.0] width=320 rotate180=False
+[policy_server] edge on http://127.0.0.1:8770
+[remote] edge at 127.0.0.1:8770 (history=True)
+waypoints (8, 4) latency 0.147
+desk_eval deps OK
