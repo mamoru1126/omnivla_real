@@ -57,7 +57,7 @@ def plots(out: str, ft, rec, summary, nodes_xy):
     except ImportError:
         return
     fig, ax = plt.subplots(figsize=(9, 9), dpi=100)
-    ax.plot(ft.x, ft.y, color="#222", lw=2.5, label="actual (ground truth)")
+    ax.plot(ft.x, ft.y, color="#222", lw=1.8, label="actual (ground truth)", zorder=3)
     pm = np.asarray(summary["paths"]["model"])
     pc = np.asarray(summary["paths"]["recorded_cmd"])
     ax.plot(pm[:, 0], pm[:, 1], color="#d0602f", lw=1.5, label="model commands, integrated")
@@ -69,10 +69,11 @@ def plots(out: str, ft, rec, summary, nodes_xy):
             c, s = math.cos(r["yaw"]), math.sin(r["yaw"])
             xs = r["x"] + c * w[:, 0] - s * w[:, 1]
             ys = r["y"] + s * w[:, 0] + c * w[:, 1]
-            ax.plot(np.r_[r["x"], xs], np.r_[r["y"], ys], color="#d0602f", lw=0.6, alpha=0.5)
+            ax.plot(np.r_[r["x"], xs], np.r_[r["y"], ys], color="#d0602f", lw=0.8, alpha=0.7, zorder=4)
     if nodes_xy is not None and len(nodes_xy):
-        ax.plot(nodes_xy[:, 0], nodes_xy[:, 1], "s", color="#b7791f", ms=4, label="subgoals")
-    ax.plot(ft.x[0], ft.y[0], "o", color="green", ms=9)
+        # 下に薄く (actual や予測軌跡が隠れないように)
+        ax.plot(nodes_xy[:, 0], nodes_xy[:, 1], "o", color="#e0b050", ms=7, alpha=0.35, mew=0, label="subgoals", zorder=1)
+    ax.plot(ft.x[0], ft.y[0], "o", color="green", ms=9, zorder=5)
     ax.set_aspect("equal")
     ax.legend(fontsize=8)
     ax.set_title("thin orange: predicted 8 waypoints (every few frames)")
