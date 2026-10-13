@@ -41,7 +41,7 @@ from omnivla_real.topomap_build import build_topomap  # noqa: E402
 from omnivla_real.trajectory_io import find_trajectories, load_meta, load_trajectory  # noqa: E402
 from synthetic import header, jpeg_bytes, quat, render, simulate_course, stamp  # noqa: E402
 
-CONFIGS = os.path.join(REPO, "configs")
+CONFIGS = os.path.join(REPO, "tests", "configs")   # configs/ はロボットに合わせて書き換えるので、テストは固定の写しを使う
 
 
 def robot_cfg(localization: bool = False, raw: bool = False) -> RobotConfig:
@@ -200,6 +200,30 @@ def test_preprocess_crop():
 
 
 # ---------------------------------------------------------------- topomap / tracker
+def test_image_odom_does_not_run_ahead_on_long_course():
+    """長いコースで、オドメトリの位置 (x, y) が向きのドリフトで大きくずれ、画像の類似度がどこでも高くても、
+    image_odom のサブゴールが実際の位置より先走らない (道のりで候補を絞り、手前のノードでも道のりを直す)."""
+    rng = np.random.default_rng(0)
+    n = 200
+    nodes = [GoalNode(Image.new("RGB", (2, 2)), (float(k), 0.0, 0.0)) for k in range(n)]   # 1 m 間隔の直線
+    tm = Topomap(nodes, frame="odom", start=nodes[0].pose)
+    tr = SubgoalTracker(tm, TrackerConfig(reach_check="image_odom"), "image_odom")
+    travel, leads = 0.0, []
+    for i in range(1200):
+        s_true = i * 0.2                                    # 0.6 m/s, 3 Hz
+        travel = s_true * 1.02                              # オドメトリの道のりは 2% 多め
+        th = math.radians(0.1) * s_true                     # 向きのドリフト (200 m で 20 度)
+        pose = (s_true * math.cos(th), s_true * math.sin(th), th)
+        sims = lambda j: 0.93 - 0.01 * abs(j - s_true) + rng.normal(0, 0.03)   # noqa: E731  どこでもよく似ている
+        tr.update(pose, sims, travel)
+        truth = min(n - 1, int(math.floor(s_true)) + 1)
+        leads.append(tr.index - truth)
+        if tr.done:
+            break
+    assert s_true > n - 5, f"finished too early at {s_true:.0f} m of {n - 1} m"
+    assert max(leads) <= 4 and np.median(np.abs(leads)) <= 2, (max(leads), np.median(leads))
+
+
 def test_topomap_from_run_and_tracker_modes():
     tmp = tempfile.mkdtemp()
     try:

@@ -38,11 +38,40 @@ std::string resolve_mode(const std::string& mode, bool has_localization, bool ha
   return "image";
 }
 
+std::vector<double> course_distances(const TopomapIndex& t) {
+  const auto& nodes = t.nodes;
+  std::vector<double> out;
+  if (std::all_of(nodes.begin(), nodes.end(), [](const TopomapNode& n) { return n.s.has_value(); })) {
+    for (const auto& n : nodes) out.push_back(*n.s);
+    return out;
+  }
+  if (has_poses(t)) {
+    out.push_back(0.0);
+    for (size_t k = 1; k < nodes.size(); ++k)
+      out.push_back(out.back() + std::hypot(nodes[k].pose->x - nodes[k - 1].pose->x,
+                                            nodes[k].pose->y - nodes[k - 1].pose->y));
+    return out;
+  }
+  double sp = 1.0;
+  if (t.meta.is_object() && t.meta.contains("spacing_m") && t.meta["spacing_m"].is_number() &&
+      t.meta["spacing_m"].get<double>() != 0.0)
+    sp = t.meta["spacing_m"].get<double>();
+  for (size_t k = 0; k < nodes.size(); ++k) out.push_back(static_cast<double>(k) * sp);
+  return out;
+}
+
 SubgoalTracker::SubgoalTracker(const TopomapIndex& topomap, const TrackerConfig& cfg, const std::string& mode)
     : map_(topomap), cfg_(cfg), mode_(mode) {
   if (map_.nodes.empty()) throw std::runtime_error("empty topomap");
   if ((mode == "pose" || mode == "odom" || mode == "image_odom") && !has_poses(map_))
     throw std::runtime_error("reach_check=" + mode + " needs node poses in poses.yaml");
+  dist = course_distances(map_);
+  anchor_s_ = dist[0];
+}
+
+double SubgoalTracker::course_s_of(double travel) {
+  if (!anchor_travel_) anchor_travel_ = travel;
+  return anchor_s_ + (travel - *anchor_travel_);
 }
 
 bool SubgoalTracker::advance(int to, const std::string& reason, const std::optional<double>& travel) {
@@ -80,24 +109,26 @@ bool SubgoalTracker::pose_check(const Pose& pose, const std::optional<double>& t
   return false;
 }
 
-bool SubgoalTracker::image_check(const std::function<double(int)>& sim, const std::optional<Pose>& course_pose,
-                                 const std::optional<double>& travel) {
+bool SubgoalTracker::image_check(const std::function<double(int)>& sim, const std::optional<double>& travel) {
   const int last = num_nodes() - 1;
-  const int hi = std::min(last, index + std::max(0, cfg_.search_window));
+  const int w = std::max(0, cfg_.search_window);
+  const int hi = std::min(last, index + w);
+  const bool use_odom = mode_ == "image_odom" && travel.has_value();
+  // image_odom は今のノードより手前も比べる (道のりの推定を後ろへ直すため. 戻りはしない)
+  const int lo = use_odom ? std::max(0, index - w) : index;
   similarities.clear();
-  for (int j = index; j <= hi; ++j) similarities[j] = sim(j);
+  for (int j = lo; j <= hi; ++j) similarities[j] = sim(j);
   last_similarity = similarities[index];
-  if (course_pose) {
-    const Pose rel = relative_pose(*course_pose, *map_.nodes[index].pose);
-    last_distance = std::hypot(rel.x, rel.y);
-  }
-  // オドメトリで明らかに遠いノードは候補から外す
+  std::optional<double> est;
+  if (use_odom) est = course_s_of(*travel);
+  course_s = est;
+  if (est) last_distance = dist[index] - *est;  // 道のりで今のサブゴールまで (負なら通り過ぎ)
+  // 道のりで明らかに先のノードは候補から外す
   std::map<int, double> cand = similarities;
-  if (mode_ == "image_odom" && course_pose) {
+  if (est) {
     for (auto it = cand.begin(); it != cand.end();) {
       const double gate = it->first == last ? std::min(cfg_.odom_gate_m, cfg_.goal_odom_gate_m) : cfg_.odom_gate_m;
-      const Pose rel = relative_pose(*course_pose, *map_.nodes[it->first].pose);
-      if (std::hypot(rel.x, rel.y) > gate)
+      if (dist[it->first] - *est > gate)
         it = cand.erase(it);
       else
         ++it;
@@ -114,6 +145,17 @@ bool SubgoalTracker::image_check(const std::function<double(int)>& sim, const st
       pending_count_ = (pending_ && *pending_ == *best) ? pending_count_ + 1 : 1;
       pending_ = *best;
       if (pending_count_ >= std::max(1, cfg_.confirm)) {
+        if (est) {  // 画像で見えたノードに道のりを寄せる (前回の補正から走った距離の forward_correction 倍まで)
+          const double lim = std::max(0.0, cfg_.forward_correction) * (*travel - *anchor_travel_);
+          anchor_s_ = std::min(std::max(dist[*best], *est - lim), *est + lim);
+          anchor_travel_ = *travel;
+        }
+        if (*best < index) {  // 手前のノードが一番似ている: 道のりを直すだけ (サブゴールは戻さない)
+          pending_.reset();
+          pending_count_ = 0;
+          travel_at_switch_ = *travel;
+          return false;
+        }
         return advance(*best + 1, fmt("image similarity %.3f (node %.0f)", cand[*best], *best), travel);
       }
       return false;
@@ -122,11 +164,9 @@ bool SubgoalTracker::image_check(const std::function<double(int)>& sim, const st
     pending_.reset();
     pending_count_ = 0;
   }
-  // 画像で判定できないまま、オドメトリ上で今のノードを通り過ぎた (最終ゴールなら止まる)
-  if (mode_ == "image_odom" && course_pose) {
-    const Pose rel = relative_pose(*course_pose, *map_.nodes[index].pose);
-    if (rel.x < -cfg_.odom_pass_m) return advance(index + 1, fmt("passed by odometry (%.2fm behind)", -rel.x), travel);
-  }
+  // 画像で判定できないまま、道のり上で今のノードを通り過ぎた (最終ゴールなら止まる)
+  if (est && *est - dist[index] > cfg_.odom_pass_m)
+    return advance(index + 1, fmt("passed by odometry (%.2fm behind)", *est - dist[index]), travel);
   return false;
 }
 
@@ -138,7 +178,7 @@ bool SubgoalTracker::update(const std::optional<Pose>& pose, const std::function
     return pose_check(*pose, travel);
   }
   if (!sim) return false;
-  return image_check(sim, mode_ == "image_odom" ? pose : std::nullopt, travel);
+  return image_check(sim, travel);
 }
 
 }  // namespace omnivla

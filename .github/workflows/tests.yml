@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Use the test configs (configs/ is tuned for the real robot; the synthetic bags need the defaults)
+        run: cp tests/configs/robot.yaml tests/configs/navigator.yaml configs/
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -81,6 +83,8 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+      - name: Use the test configs (configs/ is tuned for the real robot; the synthetic bags need the defaults)
+        run: cp tests/configs/robot.yaml tests/configs/navigator.yaml configs/
       - uses: actions/download-artifact@v4
         with:
           name: e2e
@@ -128,6 +132,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - name: Use the test configs (configs/ is tuned for the real robot; the synthetic bags need the defaults)
+        run: cp tests/configs/robot.yaml tests/configs/navigator.yaml configs/
       - uses: actions/download-artifact@v4
         with:
           name: e2e

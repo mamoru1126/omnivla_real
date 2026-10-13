@@ -80,6 +80,7 @@ struct TrackerConfig {
   double odom_pass_m = 1.0;
   double goal_odom_gate_m = 1.5;
   double min_travel_m = 0.2;
+  double forward_correction = 0.1;
 };
 
 struct EngineConfig {

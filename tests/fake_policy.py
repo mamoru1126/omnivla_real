@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """テスト用の偽の推論サーバ (torch 不要). 本物の tools/policy_server.py と同じ通信をする.
 
-  python3 tests/fake_policy.py --port 8799 [--robot configs/robot.yaml]
+  python3 tests/fake_policy.py --port 8799 [--robot tests/configs/robot.yaml]
 
 出力は入力画像の明るさなどから決まる (同じ入力なら同じ出力). 観測履歴の扱いは OmniVLA-edge と同じ。
 C++ ノードと Python の NavEngine が同じ動きをするかの確認 (tests/test_cpp.py) に使う。
@@ -81,7 +81,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--port", type=int, default=8799)
     ap.add_argument("--host", default="127.0.0.1")
-    ap.add_argument("--robot", default=os.path.join(REPO, "configs/robot.yaml"))
+    ap.add_argument("--robot", default=os.path.join(REPO, "tests/configs/robot.yaml"))
     ap.add_argument("--speed", type=float, default=0.15, help="予測する速さ [m/s] (画面の確認用)")
     args = ap.parse_args(argv)
     server = PolicyServer(FakeEdgePolicy(speed=args.speed), "fake", args.host, args.port, log=lambda s: print(s, flush=True),

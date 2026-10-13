@@ -1,0 +1,15 @@
+# bag -> 学習データの変換設定 (tools/bag_to_dataset.py)
+sample_rate: 3.0        # 学習フレームの周期 [Hz]. OmniVLA の推論周期と同じ 3Hz を推奨
+pose_source: odom       # ラベル (この先の動き) に使う位置: odom | odom_twist | cmd | localization
+cmd_delay: 0.0          # pose_source: cmd のとき、指令から動き出すまでの遅れ [s] (check_odometry.py で推定)
+cmd_timeout: 0.5        # この秒数指令が来なければ停止とみなす
+max_pose_gap: 0.5       # 位置のサンプルがこれ以上空いたら使わない [s]
+max_image_gap: 1.0      # 画像がこれ以上途切れたら区切る [s]
+min_speed: 0.05         # 「動いている」判定 [m/s]
+min_yaw_rate: 0.1       # 「その場旋回」判定 [rad/s]
+max_stop_sec: 3.0       # これより長く止まったら区切る [s]
+keep_stop_sec: 1.0      # 区間の最後に残す停止 [s] (ゴールで止まることの学習用)
+allow_reverse: false    # 後退を学習に含めるか
+min_segment_sec: 5.0
+min_segment_m: 1.0
+chunk_sec: 60.0         # 長い区間をこの長さで分ける (学習/検証の分割単位)

@@ -95,7 +95,7 @@ def plots(out: str, ft, rec, summary, nodes_xy):
         axs[2].step(t, [r.get("subgoal", np.nan) for r in rec], where="post", label="subgoal (model)", color="#7a4fd0")
         if any(r.get("subgoal_gt") is not None for r in rec):
             axs[2].step(t, [r.get("subgoal_gt") if r.get("subgoal_gt") is not None else np.nan for r in rec],
-                        where="post", label="subgoal (by position)", color="#999", ls="--")
+                        where="post", label="subgoal (truth: by distance travelled)", color="#999", ls="--")
         ax2 = axs[2].twinx()
         ax2.plot(t, [r.get("similarity") if r.get("similarity") is not None else np.nan for r in rec],
                  color="#2e8b57", lw=0.8, label="similarity")
@@ -139,7 +139,7 @@ def text_report(s: dict) -> str:
         L.append("")
         L.append(f"[サブゴール ({g['reach_check']})]")
         L.append(f"  最後まで到達: {g['reached_goal']}  最後のサブゴール {g['last_subgoal']}/{g['num_nodes'] - 1}")
-        L.append(f"  位置から見た正解との差 (中央値) {fmt(g.get('index_minus_truth_median'))}  "
+        L.append(f"  正解 (自己位置 or 道のり) との差 (中央値) {fmt(g.get('index_minus_truth_median'))}  "
                  f"|差| p90 {fmt(g.get('index_minus_truth_abs_p90'))}  類似度 中央値 {fmt(g.get('similarity_median'))}")
     if s.get("similarity_threshold"):
         st = s["similarity_threshold"]

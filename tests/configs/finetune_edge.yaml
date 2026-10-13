@@ -1,0 +1,31 @@
+# OmniVLA-edge のファインチューニング (training/finetune_edge.py). 学習は数 GB の GPU で可
+weights: /checkpoints/omnivla-edge    # 公式の重み (omnivla-edge.pth のあるディレクトリ)
+clip_type: ViT-B/32                    # 公式と同じ (言語を使わない時も "xxxx" の特徴を入れる)
+
+data_dirs:
+  - /data/dataset
+val_ratio: 0.1
+val_bags: []
+metric_waypoint_spacing: 0.0           # 0 = dataset_info.json の値
+image_goal_offset: [2, 30]
+pose_goal_offset: [2, 300]
+modality_weights:
+  image: 1.0
+context_stride: 1                      # 観測履歴の間隔 [フレーム] (3Hz なら 1/3 秒おきの過去 5 枚)
+turn_sample_ratio: 0.5
+augment: true
+num_workers: 6
+
+batch_size: 32
+max_steps: 10000
+learning_rate: 1.0e-4
+weight_decay: 1.0e-4
+lr_warmup_steps: 200
+cosine_decay: true
+smooth_loss_weight: 0.1
+dist_loss_weight: 0.0
+
+run_root: /runs
+val_freq: 1000
+save_freq: 2000
+keep_last: 3

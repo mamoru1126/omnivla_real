@@ -12,8 +12,11 @@
   odom      ホイールオドメトリで判定. 走行開始時のロボット位置を topomap の start と同じ場所とみなして重ねる
             (長いコースではドリフトするので単独では非推奨)
   image     画像の類似度で「今どのノードの近くにいるか」を推定 (現在のノード〜search_window 先まで比較)
-  image_odom image と同じだが、オドメトリで明らかに遠いノードには切り替えない / 画像で判定できないまま
-            オドメトリ上で通り過ぎたら進める (見た目が似た場所での誤判定を防ぐ)
+  image_odom image と同じだが、オドメトリの「道のり」(走った距離) で候補を絞る. 道のりで明らかに先のノードには
+            切り替えない / 画像で判定できないまま道のり上で通り過ぎたら進める (見た目が似た場所での誤判定を防ぐ).
+            位置 (x, y) ではなく道のりを使うので、向きのドリフトがたまる長いコースでも崩れない.
+            画像で一番似ているノードに道のりを寄せる (今のノードより手前も比べる. 寄せる量は前回から走った距離の
+            forward_correction 倍まで. 見た目が似た場所が続いても、道のりの推定が画像に引きずられて先走らない)
   auto      自己位置があれば pose, オドメトリがあれば image_odom, どちらも無ければ image
 """
 from __future__ import annotations
@@ -195,6 +198,30 @@ class TrackerConfig:
     odom_pass_m: float = 1.0            # image_odom: オドメトリ上ノードをこれだけ通り過ぎたら進める
     goal_odom_gate_m: float = 1.5       # image_odom: 最終ゴールはオドメトリ上これ以内でだけ画像で判定 (手前で止まらない)
     min_travel_m: float = 0.2           # image: 切り替えてからこれだけ進むまで次に切り替えない (odom がある場合)
+    forward_correction: float = 0.1     # image_odom: 画像で道のりを補正できる量 (前回の補正から走った距離の割合, 前後とも)
+
+
+def course_distances(topomap: Topomap) -> List[float]:
+    """各ノードのスタートからの道のり [m]. poses.yaml の s、無ければノード位置の間の距離の累積、
+    位置も無ければ番号 x 間隔 (topomap.json の spacing_m, 無ければ 1 m)."""
+    nodes = topomap.nodes
+    if all(n.s is not None for n in nodes):
+        return [float(n.s) for n in nodes]
+    if all(n.pose is not None for n in nodes):
+        out = [0.0]
+        for a, b in zip(nodes[:-1], nodes[1:]):
+            out.append(out[-1] + math.hypot(b.pose[0] - a.pose[0], b.pose[1] - a.pose[1]))
+        return out
+    sp = float(topomap.spacing or 1.0)
+    return [k * sp for k in range(len(nodes))]
+
+
+def node_at_distance(dist: Sequence[float], d: float) -> int:
+    """道のり d [m] でまだ通り過ぎていない最初のノード (最後のノードを超えたら最後)."""
+    for k, s in enumerate(dist):
+        if s > d:
+            return k
+    return len(dist) - 1
 
 
 def resolve_mode(mode: str, has_localization: bool, has_odom: bool, topomap: Topomap) -> str:
@@ -227,6 +254,10 @@ class SubgoalTracker:
         self._pending: Optional[int] = None
         self._pending_count = 0
         self._travel_at_switch = 0.0
+        self.dist = course_distances(topomap)        # 各ノードの道のり [m]
+        self._anchor_s = self.dist[0]                # 道のりの推定 = _anchor_s + (travel - _anchor_travel)
+        self._anchor_travel: Optional[float] = None
+        self.course_s: Optional[float] = None        # 今の道のりの推定 [m] (image_odom)
 
     @property
     def nodes(self) -> List[GoalNode]:
@@ -273,22 +304,32 @@ class SubgoalTracker:
         return False
 
     # -- image --------------------------------------------------------------
-    def _image_check(self, sim_fn: Callable[[int], float], course_pose: Optional[Pose],
-                     travel: Optional[float]) -> bool:
+    def _course_s(self, travel: float) -> float:
+        if self._anchor_travel is None:
+            self._anchor_travel = travel
+        return self._anchor_s + (travel - self._anchor_travel)
+
+    def _image_check(self, sim_fn: Callable[[int], float], travel: Optional[float]) -> bool:
         c = self.cfg
         last = len(self.nodes) - 1
-        hi = min(last, self.index + max(0, c.search_window))
-        sims = {j: float(sim_fn(j)) for j in range(self.index, hi + 1)}
+        w = max(0, c.search_window)
+        hi = min(last, self.index + w)
+        use_odom = self.mode == "image_odom" and travel is not None
+        # image_odom は今のノードより手前も比べる (道のりの推定を後ろへ直すため. 戻りはしない)
+        lo = max(0, self.index - w) if use_odom else self.index
+        sims = {j: float(sim_fn(j)) for j in range(lo, hi + 1)}
         self.similarities = sims
         self.last_similarity = sims[self.index]
-        if course_pose is not None:
-            self.last_distance = math.hypot(*relative_pose(course_pose, self.current.pose)[:2])
-        # オドメトリで明らかに遠いノードは候補から外す
+        est = self._course_s(travel) if use_odom else None
+        self.course_s = est
+        if est is not None:
+            self.last_distance = self.dist[self.index] - est   # 道のりで今のサブゴールまで (負なら通り過ぎ)
+        # 道のりで明らかに先のノードは候補から外す
         cand = dict(sims)
-        if self.mode == "image_odom" and course_pose is not None:
+        if est is not None:
             for j in list(cand):
                 gate = min(c.odom_gate_m, c.goal_odom_gate_m) if j == last else c.odom_gate_m
-                if math.hypot(*relative_pose(course_pose, self.nodes[j].pose)[:2]) > gate:
+                if self.dist[j] - est > gate:
                     cand.pop(j)
         best = max(cand, key=cand.get) if cand else None
         thr = lambda j: c.goal_image_threshold if j == last else c.image_threshold  # noqa: E731
@@ -298,22 +339,30 @@ class SubgoalTracker:
                 self._pending_count = self._pending_count + 1 if self._pending == best else 1
                 self._pending = best
                 if self._pending_count >= max(1, c.confirm):
+                    if est is not None:
+                        # 画像で見えたノードに道のりを寄せる (前回の補正から走った距離の forward_correction 倍まで)
+                        lim = max(0.0, c.forward_correction) * (travel - self._anchor_travel)
+                        self._anchor_s = min(max(self.dist[best], est - lim), est + lim)
+                        self._anchor_travel = travel
+                    if best < self.index:   # 手前のノードが一番似ている: 道のりを直すだけ (サブゴールは戻さない)
+                        self._pending, self._pending_count = None, 0
+                        self._travel_at_switch = travel
+                        return False
                     return self._advance(best + 1, f"image similarity {cand[best]:.3f} (node {best})", travel)
                 return False
         else:
             self._pending, self._pending_count = None, 0
-        # 画像で判定できないまま、オドメトリ上で今のノードを通り過ぎた (最終ゴールなら止まる)
-        if self.mode == "image_odom" and course_pose is not None:
-            rel = relative_pose(course_pose, self.current.pose)
-            if rel[0] < -c.odom_pass_m:
-                return self._advance(self.index + 1, f"passed by odometry ({-rel[0]:.2f}m behind)", travel)
+        # 画像で判定できないまま、道のり上で今のノードを通り過ぎた (最終ゴールなら止まる)
+        if est is not None and est - self.dist[self.index] > c.odom_pass_m:
+            return self._advance(self.index + 1, f"passed by odometry ({est - self.dist[self.index]:.2f}m behind)",
+                                 travel)
         return False
 
     # -- main ---------------------------------------------------------------
     def update(self, pose: Optional[Pose] = None, sim_fn: Optional[Callable[[int], float]] = None,
                travel: Optional[float] = None) -> bool:
-        """pose: pose/odom/image_odom では topomap と同じ座標の位置. sim_fn(j): 現在画像とノード j の類似度.
-        travel: オドメトリ上の累積走行距離 [m] (任意). 進んだら True."""
+        """pose: pose/odom では topomap と同じ座標の位置. sim_fn(j): 現在画像とノード j の類似度.
+        travel: オドメトリ上の累積走行距離 [m] (image_odom はこの道のりで候補を絞る). 進んだら True."""
         if self.done or self.mode == "none":
             return False
         if self.mode in ("pose", "odom"):
@@ -322,4 +371,4 @@ class SubgoalTracker:
             return self._pose_check(pose, travel)
         if sim_fn is None:
             return False
-        return self._image_check(sim_fn, pose if self.mode == "image_odom" else None, travel)
+        return self._image_check(sim_fn, travel)

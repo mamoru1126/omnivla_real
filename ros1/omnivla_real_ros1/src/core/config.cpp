@@ -144,6 +144,7 @@ NavConfig nav_config_from_json(const json& j) {
       get(k, "odom_pass_m", o.odom_pass_m);
       get(k, "goal_odom_gate_m", o.goal_odom_gate_m);
       get(k, "min_travel_m", o.min_travel_m);
+      get(k, "forward_correction", o.forward_correction);
     }
   }
   if (j.contains("io")) {
@@ -190,7 +191,8 @@ json to_json(const TrackerConfig& o) {
           {"image_threshold", o.image_threshold}, {"goal_image_threshold", o.goal_image_threshold},
           {"search_window", o.search_window},   {"confirm", o.confirm},
           {"odom_gate_m", o.odom_gate_m},       {"odom_pass_m", o.odom_pass_m},
-          {"goal_odom_gate_m", o.goal_odom_gate_m}, {"min_travel_m", o.min_travel_m}};
+          {"goal_odom_gate_m", o.goal_odom_gate_m}, {"min_travel_m", o.min_travel_m},
+          {"forward_correction", o.forward_correction}};
 }
 
 json run_config_tool(const std::string& repo_root, const std::vector<std::string>& args) {

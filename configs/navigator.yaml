@@ -32,9 +32,11 @@ engine:
     goal_image_threshold: 0.85 # image: 最終ゴール
     search_window: 2           # image: 今のノードから何個先まで比べるか
     confirm: 2                 # image: 何回続けて同じ判定なら切り替えるか
-    odom_gate_m: 2.5           # image_odom: オドメトリ上これより遠いノードには切り替えない
-    odom_pass_m: 1.0           # image_odom: オドメトリ上これだけ通り過ぎたら進める (最終ゴールなら停止)
-    goal_odom_gate_m: 1.5      # image_odom: 最終ゴールはオドメトリ上これ以内でだけ画像で判定
+    # image_odom: オドメトリの「道のり」(走った距離) で候補を絞る. 位置 (x, y) は向きのドリフトで長いコースだとずれるので使わない
+    odom_gate_m: 2.5           # image_odom: 道のりでこれより先のノードには切り替えない [m]
+    odom_pass_m: 1.0           # image_odom: 道のりでこれだけ通り過ぎたら進める (最終ゴールなら停止) [m]
+    goal_odom_gate_m: 1.5      # image_odom: 最終ゴールは道のりでこれ以内でだけ画像で判定 [m]
+    forward_correction: 0.1    # image_odom: 画像で道のりの推定を直せる量 (前回の補正から走った距離の割合, 前後とも)
     min_travel_m: 0.2
 
 io:

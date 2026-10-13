@@ -204,7 +204,7 @@ def make_replay_case(out_dir: str, laps: int = 1):
     from omnivla_real.topomap_build import build_topomap
     from synthetic import simulate_course
 
-    robot = RobotConfig.load(os.path.join(REPO, "configs", "robot.yaml"))
+    robot = RobotConfig.load(os.path.join(REPO, "tests", "configs", "robot.yaml"))
     msgs = simulate_course(image_size=(160, 120), laps=laps)
     s = read_streams(ListSource(msgs), robot, os.path.join(out_dir, "frames"), 3.0)
     topomap = os.path.join(out_dir, "topomap")
@@ -235,8 +235,8 @@ def test_engine_replay_matches_python():
     try:
         url = f"http://127.0.0.1:{port}"
         # --- Python ---
-        nav = load_nav_config(os.path.join(REPO, "configs", "navigator.yaml"))
-        robot = RobotConfig.load(os.path.join(REPO, "configs", "robot.yaml"))
+        nav = load_nav_config(os.path.join(REPO, "tests", "configs", "navigator.yaml"))
+        robot = RobotConfig.load(os.path.join(REPO, "tests", "configs", "robot.yaml"))
         pol = RemotePolicy(url, log=lambda s: None)
         eng = NavEngine(pol, load_topomap(topomap), nav.engine, robot)
         eng.on_odom(frames[0]["t"], tuple(frames[0]["odom"]))
@@ -253,6 +253,8 @@ def test_engine_replay_matches_python():
                 py.append((eng.state, None, None, None))
         # --- C++ ---
         got = run("replay", None, ["--repo", REPO, "--frames", os.path.join(tmp, "frames.json"), "--topomap", topomap,
+                                   "--robot", os.path.join(REPO, "tests", "configs", "robot.yaml"),
+                                   "--nav", os.path.join(REPO, "tests", "configs", "navigator.yaml"),
                                    "--set", f"model.url={url}", "--set", "io.web_port=0",
                                    "--set", f"io.log_dir={tmp}/log"])
         assert got["mode"] == eng.mode == "image_odom", (got["mode"], eng.mode)

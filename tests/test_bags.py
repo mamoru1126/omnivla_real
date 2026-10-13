@@ -30,7 +30,7 @@ from omnivla_real.robot_config import RobotConfig  # noqa: E402
 from omnivla_real.runio import open_run  # noqa: E402
 from synthetic import simulate_course  # noqa: E402
 
-CONFIGS = os.path.join(REPO, "configs")
+CONFIGS = os.path.join(REPO, "tests", "configs")   # configs/ はロボットに合わせて書き換えるので、テストは固定の写しを使う
 _MSGS = {}
 
 

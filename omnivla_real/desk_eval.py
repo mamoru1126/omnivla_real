@@ -25,7 +25,7 @@ from .engine import EngineConfig, NavEngine
 from .geometry import relative_pose, to_local, wrap_angle
 from .policy_base import PolicyOutput
 from .robot_config import RobotConfig
-from .topomap import GoalNode, Topomap
+from .topomap import GoalNode, Topomap, node_at_distance
 
 
 @dataclass
@@ -146,6 +146,19 @@ def nearest_node_ahead(nodes: Sequence[GoalNode], pose) -> Optional[int]:
     return k if rel[0] > 0 or k == len(nodes) - 1 else k + 1
 
 
+def truth_subgoal(engine) -> Optional[int]:
+    """正解のサブゴール番号の目安. 自己位置があれば位置から、オドメトリだけなら道のり (走った距離) から.
+    (オドメトリの位置 x, y は長いコースだと向きのドリフトで大きくずれるので使わない)"""
+    tr = engine.tracker
+    if tr is None:
+        return None
+    if engine.mode == "pose":
+        return nearest_node_ahead(tr.nodes, engine.course_pose())
+    if engine.odom is not None:
+        return node_at_distance(tr.dist, tr.dist[0] + engine.travel)
+    return None
+
+
 def run_desk_eval(ft: FrameTable, policy, robot: RobotConfig, engine_cfg: EngineConfig, cfg: DeskEvalConfig,
                   topomap: Optional[Topomap] = None, odom_xyz: Optional[np.ndarray] = None,
                   progress: Optional[Callable[[str], None]] = None, debug_cb: Optional[Callable] = None):
@@ -185,7 +198,7 @@ def run_desk_eval(ft: FrameTable, policy, robot: RobotConfig, engine_cfg: Engine
             wps, v, w = res.waypoints, res.v, res.w
             r.update(state=res.state, subgoal=res.subgoal, similarity=res.similarity, latency=res.latency,
                      course_pose=engine.course_pose())
-            gt_node = nearest_node_ahead(topomap.nodes, engine.course_pose()) if engine.mode != "image" else None
+            gt_node = truth_subgoal(engine)
             r["subgoal_gt"] = gt_node
             if res.debug is not None and debug_cb and cfg.debug_every and i % cfg.debug_every == 0:
                 debug_cb(i, res.debug)
