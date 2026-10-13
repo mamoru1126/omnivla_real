@@ -32,6 +32,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from omnivla_real.navlog import rebuild_step_times, times_usable  # noqa: E402
 from omnivla_real.robot_config import RobotConfig, camera_model, preprocess_image  # noqa: E402
 
 W, H = 1280, 720
@@ -72,7 +73,7 @@ def _f(v: str) -> Optional[float]:
     return None if math.isnan(x) else x
 
 
-def read_steps(run_dir: str) -> List[dict]:
+def read_steps(run_dir: str, events, rate: float = 3.0) -> List[dict]:
     rows = []
     with open(os.path.join(run_dir, "steps.csv")) as f:
         for r in csv.DictReader(f):
@@ -89,9 +90,11 @@ def read_steps(run_dir: str) -> List[dict]:
                          "wps": np.array(wps) if wps else None})
     if not rows:
         raise SystemExit("steps.csv is empty (ナビゲーションが推論する前に終わった)")
-    if any(r["t"] is None for r in rows):   # 時刻が無ければ 3Hz とみなす
-        for k, r in enumerate(rows):
-            r["t"] = k / 3.0
+    # 古いログ (時刻を有効数字 5 桁で書いていたので実機の時刻だと全部同じ値) は events.log の時刻から推定する
+    if not times_usable([r["t"] for r in rows]):
+        print("注意: ログの時刻が使えないので、events.log のサブゴールの切り替え時刻から推定します (古い形式のログ)")
+        for r, t in zip(rows, rebuild_step_times([r["subgoal"] for r in rows], events, rate)):
+            r["t"] = t
     return rows
 
 
@@ -338,8 +341,9 @@ def main(argv=None) -> int:
         robot = RobotConfig.load(args.robot)
     else:
         robot = RobotConfig.load(None, meta.get("robot") or {})
-    rows = read_steps(run_dir)
     events = read_events(run_dir)
+    rate = float((meta.get("engine") or {}).get("sample_rate") or 0) or 3.0
+    rows = read_steps(run_dir, events, rate)
     if not os.path.isdir(os.path.join(run_dir, "raw")):
         print("注意: ログにカメラ画像 (raw/) がありません. navigator.yaml の io.log_images: true で走らせてください")
     rend = Renderer(run_dir, rows, events, robot, meta)

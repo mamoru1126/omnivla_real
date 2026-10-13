@@ -58,6 +58,14 @@ std::string f5(double v) {
 }
 std::string f5(const std::optional<double>& v) { return v ? f5(*v) : ""; }
 
+// 時刻は桁を落とさない (実機の時刻は 1.7e9 秒なので %.5g だと全部同じ値になる)
+std::string ftime(double v) {
+  if (std::isnan(v)) return "";
+  char buf[64];
+  std::snprintf(buf, sizeof(buf), "%.3f", v);
+  return buf;
+}
+
 double deg(double r) { return r * 180.0 / 3.14159265358979323846; }
 
 }  // namespace
@@ -132,7 +140,7 @@ void NavLogger::step(int step, double t, const std::optional<Pose>& pose, int su
   track_pose(t, pose);
   const int k = std::min<int>(kWaypointIndex, static_cast<int>(wps.size()) - 1);
   const double pred_bearing = deg(std::atan2(wps[k][1], wps[k][0]));
-  std::string row = std::to_string(step) + "," + f5(t) + ",";
+  std::string row = std::to_string(step) + "," + ftime(t) + ",";
   row += pose ? f5(pose->x) + "," + f5(pose->y) + "," + f5(pose->yaw) : std::string(",,");
   row += "," + std::to_string(subgoal) + "," + std::to_string(num_nodes) + ",";
   row += sg ? f5(sg->x) + "," + f5(sg->y) + "," + f5(sg->yaw) : std::string(",,");

@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from omnivla_real.controller import ControllerConfig, trajectory_command  # noqa: E402
 from omnivla_real.geometry import to_world  # noqa: E402
+from omnivla_real.navlog import rebuild_step_times, times_usable  # noqa: E402
 
 OPPOSITE_MIN_DEG = 15.0   # これより大きく横にあるサブゴールだけ「逆向き」を判定
 UNDER_TURN_MIN_W = 0.15   # 予測の旋回がこれ [rad/s] 以上のときだけ「実行できていない」を判定
@@ -64,7 +65,24 @@ def _value(v):
 
 def load_steps(run_dir: str):
     with open(os.path.join(run_dir, "steps.csv")) as f:
-        return [{k: _value(v) for k, v in r.items()} for r in csv.DictReader(f)]
+        rows = [{k: _value(v) for k, v in r.items()} for r in csv.DictReader(f)]
+    # 古いログは時刻を有効数字 5 桁で書いていた (実機の時刻だと全部同じ値): events.log の時刻から推定する
+    if not times_usable([r.get("sim_time") if isinstance(r.get("sim_time"), float) else None for r in rows]):
+        events = []
+        ef = os.path.join(run_dir, "events.log")
+        if os.path.exists(ef):
+            for line in open(ef, encoding="utf-8", errors="replace"):
+                if line.startswith("[") and "]" in line:
+                    t, _, text = line[1:].partition("]")
+                    try:
+                        events.append((float(t), text.strip()))
+                    except ValueError:
+                        pass
+        print("note: sim_time in this log has no resolution; estimating it from events.log")
+        sg = [int(r["subgoal"]) if isinstance(r.get("subgoal"), float) else 0 for r in rows]
+        for r, t in zip(rows, rebuild_step_times(sg, events)):
+            r["sim_time"] = t
+    return rows
 
 
 def waypoints_of(r) -> np.ndarray:

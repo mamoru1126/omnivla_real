@@ -7,6 +7,7 @@ core_check (C++) は OMNIVLA_CORE_CHECK で場所を指定するか、無けれ�
 """
 from __future__ import annotations
 
+import csv
 import json
 import math
 import os
@@ -270,6 +271,9 @@ def test_engine_replay_matches_python():
         # 走行ログ (plot_nav_log.py で読める)
         logs = sorted(os.listdir(os.path.join(tmp, "log")))
         assert logs and os.path.exists(os.path.join(tmp, "log", logs[-1], "steps.csv"))
+        with open(os.path.join(tmp, "log", logs[-1], "steps.csv")) as f:   # 時刻は桁を落とさない (実機の時刻は 1.7e9 秒)
+            tcol = [r["sim_time"] for r in csv.DictReader(f)]
+        assert tcol and all(len(t.split(".")[-1]) == 3 for t in tcol), tcol[:3]
         sys.path.insert(0, os.path.join(REPO, "tools"))
         import plot_nav_log
         plot_nav_log.main([os.path.join(tmp, "log", "latest")])

@@ -200,6 +200,18 @@ def test_preprocess_crop():
 
 
 # ---------------------------------------------------------------- topomap / tracker
+def test_rebuild_step_times_for_old_logs():
+    """古いログ (sim_time を有効数字 5 桁で書いていた) は events.log のサブゴール切り替え時刻からステップの時刻を推定する."""
+    from omnivla_real.navlog import rebuild_step_times, times_usable
+    true = [1.76e9 + k / 6.0 for k in range(120)]                 # 6 Hz
+    sub = [k // 10 for k in range(120)]
+    events = [(0.0, "start: 12 subgoals")] + [(true[k], f"subgoal {sub[k] - 1} -> {sub[k]}/11 [image]")
+                                               for k in range(1, 120) if sub[k] != sub[k - 1]]
+    assert not times_usable([float(f"{t:.5g}") for t in true]) and times_usable(true)
+    est = rebuild_step_times(sub, events)
+    assert max(abs(a - b) for a, b in zip(est, true)) < 1e-3
+
+
 def test_image_odom_does_not_run_ahead_on_long_course():
     """長いコースで、オドメトリの位置 (x, y) が向きのドリフトで大きくずれ、画像の類似度がどこでも高くても、
     image_odom のサブゴールが実際の位置より先走らない (道のりで候補を絞り、手前のノードでも道のりを直す)."""

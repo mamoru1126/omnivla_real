@@ -39,6 +39,50 @@ def step_columns() -> List[str]:
     return cols
 
 
+def times_usable(times: Sequence[Optional[float]]) -> bool:
+    """steps.csv の sim_time が使えるか. 古いログは有効数字 5 桁で書いていたので、実機の時刻 (1.7e9 秒) だと全部同じ値."""
+    if any(t is None or (isinstance(t, float) and math.isnan(t)) for t in times):
+        return False
+    return len(times) <= 2 or len(set(times)) >= len(times) / 2
+
+
+def rebuild_step_times(subgoals: Sequence[int], events: Sequence[tuple], rate: float = 3.0) -> List[float]:
+    """時刻が使えない古いログ用: events.log の時刻 (小数 2 桁で残っている) から各ステップの時刻を推定する.
+    "subgoal a -> b" の出来事の時刻を、サブゴールが b になった最初のステップに合わせ、間は直線で埋める.
+    手がかりが無ければ rate [Hz] で並べる."""
+    n = len(subgoals)
+    anchors: Dict[int, float] = {}
+    for t, text in events:   # ("start" の時刻は時計が動く前の 0 のことがあるので使わない)
+        parts = text.split()
+        if len(parts) >= 4 and parts[0] == "subgoal" and parts[2] == "->":
+            try:
+                to = int(parts[3].split("/")[0])
+            except ValueError:
+                continue
+            k = next((i for i, s in enumerate(subgoals) if s >= to), None)
+            if k is not None and k not in anchors:
+                anchors[k] = float(t)
+    pts = sorted(anchors.items())
+    # 時刻が逆戻りする手がかりは捨てる
+    mono: List[tuple] = []
+    for k, t in pts:
+        if not mono or (k > mono[-1][0] and t > mono[-1][1]):
+            mono.append((k, t))
+    if len(mono) < 2:
+        t0 = mono[0][1] if mono else 0.0
+        return [t0 + k / rate for k in range(n)]
+    ks, tsec = [p[0] for p in mono], [p[1] for p in mono]
+    out = list(np.interp(range(n), ks, tsec))
+    r0 = (ks[1] - ks[0]) / max(1e-6, tsec[1] - tsec[0])
+    r1 = (ks[-1] - ks[-2]) / max(1e-6, tsec[-1] - tsec[-2])
+    for k in range(n):   # 手がかりの外側は端の速さで伸ばす
+        if k < ks[0]:
+            out[k] = tsec[0] - (ks[0] - k) / max(r0, 1e-6)
+        elif k > ks[-1]:
+            out[k] = tsec[-1] + (k - ks[-1]) / max(r1, 1e-6)
+    return [float(t) for t in out]
+
+
 def _open_perm(path: str) -> None:
     try:
         os.chmod(path, 0o777 if os.path.isdir(path) else 0o666)
@@ -151,7 +195,9 @@ class NavRunLogger:
         for i in range(NUM_WP):
             yaw_i = math.degrees(math.atan2(wps[i, 3], wps[i, 2])) if wps.shape[1] >= 4 else None
             row += [wps[i, 0], wps[i, 1], yaw_i]
-        self.csv.writerow([_fmt(float(c)) if isinstance(c, (np.floating, float)) else _fmt(c) for c in row])
+        cells = [_fmt(float(c)) if isinstance(c, (np.floating, float)) else _fmt(c) for c in row]
+        cells[1] = f"{float(sim_time):.3f}"   # 時刻は桁を落とさない (実機の時刻は 1.7e9 秒なので %.5g だと全部同じ値になる)
+        self.csv.writerow(cells)
         self.csv_file.flush()
         if self.save_debug and debug_img is not None:
             self._save_img(debug_img, os.path.join(self.dir, "debug", f"{step:06d}.jpg"), 80)
