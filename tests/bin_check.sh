@@ -82,6 +82,17 @@ check "docker compose -f docker-compose.replay.yml down" "$B/replay.sh" down
 fails "topomap を指定" "$B/replay.sh" run1.bag
 fails "知らないオプション" "$B/replay.sh" run1.bag course_a --fast
 check "tools/plot_nav_log.py /runs/replay/nav/latest" "$B/plot_nav_log.sh"
+check "up -d --force-recreate --no-deps nav record robot" "$B/replay_video.sh" run1.bag course_a --rate 2
+check "robot python3 tools/nav_video.py /runs/replay/nav/DRYRUN --out /runs/replay/DRYRUN.mp4 --speed 4" \
+    "$B/replay_video.sh" run1.bag course_a --speed 4
+mkdir -p "$T/runs/replay/nav/20261013_100000" "$T/runs/replay/nav/20261013_110000"
+check "tools/nav_video.py /runs/replay/nav/20261013_100000 --out /runs/replay/nav/20261013_100000/video.mp4" \
+    "$B/replay_video.sh" --log "$T/runs/replay/nav/20261013_100000"
+check "tools/nav_video.py /runs/replay/nav/20261013_110000 --out /runs/replay/nav/20261013_110000/video.mp4" \
+    "$B/replay_video.sh" --log /runs/replay/nav/latest
+check "--out /runs/videos/a.mp4 --fps 5" "$B/replay_video.sh" --log /runs/replay/nav/latest --out "$T/runs/videos/a.mp4" --fps 5
+fails "コンテナから見えない" "$B/replay_video.sh" --log /runs/replay/nav/latest --out /tmp/x.mp4
+fails "知らないオプション" "$B/replay_video.sh" run1.bag course_a --fast
 
 # --- Jetson ---
 check "rsync -aR --info=progress2 $T/runs/./r1/checkpoints/step_000010 me@jet:omnivla_real/runs/" \

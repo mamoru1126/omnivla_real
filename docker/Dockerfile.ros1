@@ -13,7 +13,7 @@ ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABL
     OMNIVLA_REAL_ROOT=/workspace PYTHONPATH=/workspace ROSCONSOLE_STDOUT_LINE_BUFFERED=1
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN apt-get update && apt-get install -y --no-install-recommends python3-pip python3-yaml \
+RUN apt-get update && apt-get install -y --no-install-recommends python3-pip python3-yaml ffmpeg \
         ros-noetic-image-transport-plugins ros-noetic-rqt-image-view \
     && rm -rf /var/lib/apt/lists/*
 COPY docker/requirements-ros1.txt /tmp/

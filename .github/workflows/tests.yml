@@ -206,6 +206,18 @@ jobs:
           docker run --rm -v "$PWD":/workspace -v /tmp/e2e/runs_replay:/runs omnivla_real:ros1 \
             python3 tools/plot_nav_log.py /runs/replay/nav/latest 2>&1 | tail -5
           [ "$WEB" = 0 ] && [ "$RC" = 0 ]
+      - name: bin/replay_video.sh --log (デバッグ画面と同じ内容の動画を走行ログから作る)
+        env:
+          BAG_DIR: /tmp/e2e/bags
+          DATA_DIR: /tmp/e2e
+          RUNS_DIR: /tmp/e2e/runs_replay
+        run: |
+          set -o pipefail
+          bin/replay_video.sh --log /runs/replay/nav/latest --out /runs/replay/video.mp4 --speed 4 2>&1 | tee ci/replay_video.log
+          docker run --rm -v /tmp/e2e/runs_replay:/runs --entrypoint bash omnivla_real:ros1 -c '
+            d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 /runs/replay/video.mp4); echo "duration $d s"
+            python3 -c "import sys; assert float(sys.argv[1]) > 2" "$d"
+            ffmpeg -v error -y -ss 2 -i /runs/replay/video.mp4 -frames:v 1 /runs/replay/video_frame.jpg' 2>&1 | tee -a ci/replay_video.log
       - name: Publish logs to ci-logs-ros1 branch
         if: always()
         run: |
@@ -214,6 +226,7 @@ jobs:
           sudo cp -r /tmp/e2e/ros1_node $D/ 2>/dev/null || true
           sudo cp -r /tmp/e2e/ros1_node_py $D/ 2>/dev/null || true
           sudo mkdir -p $D/replay
+          sudo cp /tmp/e2e/runs_replay/replay/video_frame.jpg $D/replay/ 2>/dev/null || true
           sudo find /tmp/e2e/runs_replay/replay/nav -maxdepth 2 \( -name "*.png" -o -name "*.txt" -o -name "*.json" -o -name "*.csv" \) -exec cp {} $D/replay/ \; 2>/dev/null || true
           sudo chown -R $(id -u) $D
           find $D -name "*.jpg" -size +200k -delete

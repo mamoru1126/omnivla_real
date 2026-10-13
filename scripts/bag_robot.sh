@@ -76,7 +76,7 @@ for b in "${BAGS[@]}"; do
 done
 say "bag: ${BAGS[*]} (${DUR} s, 速度 x$RATE, ${START} s から)"
 say "流すトピック: ${TOPIC_LIST[*]}"
-say "ブラウザ: http://localhost:$WEB_PORT  (別の PC からは http://<この PC の IP>:$WEB_PORT)"
+if [ "${WEB_PORT:-0}" != 0 ]; then say "ブラウザ: http://localhost:$WEB_PORT  (別の PC からは http://<この PC の IP>:$WEB_PORT)"; fi
 
 # shellcheck disable=SC2086
 rosbag play --clock -q -d 2 -r "$RATE" -s "$START" ${REPLAY_ARGS:-} "${BAGS[@]}" --topics "${TOPIC_LIST[@]}" &
@@ -86,7 +86,8 @@ trap 'kill -TERM $PLAY 2> /dev/null; exit 130' INT TERM
 wait $PLAY
 rc=$?
 trap - INT TERM
-say "bag の再生が終わりました (rc=$rc). 画面はそのまま見られます: http://localhost:$WEB_PORT"
+say "bag の再生が終わりました (rc=$rc)."
+if [ "${WEB_PORT:-0}" != 0 ]; then say "画面はそのまま見られます: http://localhost:$WEB_PORT"; fi
 say "記録: /runs/replay (ホストの RUNS_DIR/replay). out_<時刻>.bag と nav/<時刻>/ (図にする: bin/plot_nav_log.sh)"
 say "もう一度流す: bin/replay.sh again  (または docker compose -f docker-compose.replay.yml restart nav && ... restart robot)"
 exit $rc

@@ -91,6 +91,30 @@ cpath() {
     echo "/$kind${sub:+/$sub}/$p"
 }
 
+# これから作るファイル (出力先) のパス → コンテナの中のパス. マウントされたディレクトリの下でないとだめ
+cpath_new() {
+    local p=$1 h k d
+    case $p in
+        /bags/* | /data/* | /runs/* | /checkpoints/* | /workspace/*)
+            echo "$p"
+            return
+            ;;
+    esac
+    h=$(cd "$CALLER_PWD" && realpath -m -- "$p")
+    for k in bags data runs checkpoints; do
+        d=$(host_dir "$k")
+        if [[ $h == "$d"/* ]]; then
+            echo "/$k${h#"$d"}"
+            return
+        fi
+    done
+    if [[ $h == "$ROOT"/* ]]; then
+        echo "/workspace${h#"$ROOT"}"
+        return
+    fi
+    die "$p はコンテナから見えない場所です. $(host_dir runs) の下などを指定してください"
+}
+
 # コンテナの中のパス → ホストのパス
 hpath() {
     local p=$1 k

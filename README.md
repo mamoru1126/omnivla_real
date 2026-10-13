@@ -60,6 +60,7 @@ bin/setup.sh          # .env を作る + イメージのビルド + 公式の重
 | 5 | `bin/make_topomap.sh 名前 BAG` | `tools/make_topomap.py` |
 | 6 | `bin/desk_eval.sh BAG [topomap]` | `tools/desk_eval.py` |
 | 7 | `bin/replay.sh BAG [topomap]` / `again` / `down` | `docker-compose.replay.yml` |
+| 7 | `bin/replay_video.sh BAG [topomap]` / `--log ログ` | 同じ構成で bag を流し、デバッグ画面と同じ内容を動画に (`tools/nav_video.py`) |
 | | `bin/plot_nav_log.sh [ログ]` | `tools/plot_nav_log.py` |
 | 8 | `bin/to_jetson.sh user@jetson` (学習 PC で) | 重みと topomap を rsync で送る |
 | 8 | `bin/jetson.sh build\|up\|status\|logs\|plot\|down` (Jetson で) | `docker-compose.jetson.yml` |
@@ -223,6 +224,18 @@ bin/replay.sh down                       # 片付け
   - `out_<時刻>.bag`: ノードが出した指示値・予測軌跡・状態
   - `nav/<時刻>/`: 走行ログ。`bin/plot_nav_log.sh` で図とレポート
 - bag が終わっても画面はそのまま見られます。
+
+**動画に残す** (ブラウザ不要): 同じ構成で bag を最後まで流し、デバッグ画面と同じ内容 (カメラ画像 + 予測軌跡、サブゴール、v / ω、俯瞰図、60 秒の履歴、出来事) を mp4 にします。
+
+```bash
+bin/replay_video.sh run2.bag course_a                 # -> runs/replay/<時刻>.mp4
+bin/replay_video.sh run2.bag course_a --speed 4       # 動画を 4 倍速で (--rate は bag の再生速度)
+bin/replay_video.sh --log runs/replay/nav/latest      # 既にある走行ログから動画だけ作る
+bin/replay_video.sh --log log/nav/20261013_120000     # Jetson から持ってきた実機の走行ログも同じ
+```
+
+- 動画は走行ログ (`steps.csv`、カメラ画像 `raw/`、サブゴール画像 `goals/`、`events.log`) から作ります。実機のログも `io.log_images: true` (既定) なら動画にできます。
+- 初回は ROS 1 のイメージに ffmpeg を入れるため、作り直しが入ります。
 - `bin/replay.sh` を使わずに `docker compose -f docker-compose.replay.yml up` (`REPLAY_BAG` と `TOPOMAP` は `.env` か環境変数) でも同じです。
 - bag の画像は指示値に反応しません (開ループ)。モデルが曲がり損ねても、画像は記録どおりに進みます。ロボットが指示どおりに動いたらどう見えるか、までは分かりません。
 

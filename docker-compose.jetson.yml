@@ -72,6 +72,7 @@ services:
       NAV_AUTOSTART: ${NAV_AUTOSTART:-true}
       NAV_WEB_PORT: ${NAV_WEB_PORT:-}
       NAV_LOG_DIR: ${NAV_LOG_DIR:-}
+      NAV_OVERRIDES: ${NAV_OVERRIDES:-}   # navigator.yaml の上書き. 例 "io.log_images=true engine.tracker.image_threshold=0.85"
       USE_SIM_TIME: "false"          # bag で試すとき (docker-compose.replay.yml) だけ true
       # --wait: ROS master が立つのを待つ (roscore を別のコンテナで同時に起動するとき. 付けないと master がなければ自分で立てる)
       ROSLAUNCH_ARGS: ${ROSLAUNCH_ARGS:-}
@@ -85,6 +86,7 @@ services:
         exec roslaunch $$ROSLAUNCH_ARGS omnivla_real_ros1 navigator.launch policy_url:=http://127.0.0.1:$$POLICY_PORT
         topomap:=$$TOPOMAP autostart:=$$NAV_AUTOSTART use_sim_time:=$$USE_SIM_TIME
         $${NAV_WEB_PORT:+web_port:=$$NAV_WEB_PORT} $${NAV_LOG_DIR:+log_dir:=$$NAV_LOG_DIR}
+        $${NAV_OVERRIDES:+"overrides:=$$NAV_OVERRIDES"}
 
   roscore:
     <<: *common
