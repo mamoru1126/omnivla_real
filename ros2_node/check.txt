@@ -1,0 +1,6 @@
+/cmd_vel: 469 msgs (466 non-zero)
+   v in [0.000, 0.041]  w in [0.000, 1.000]
+/omnivla/path: 286 msgs, poses per path [9]
+/omnivla/status: 47 msgs, states ['idle', 'running']
+   last: {"state": "running", "subgoal": 20, "num_nodes": 24, "reach_check": "image_odom", "similarity": 0.9999999989999999, "distance": 0.8233489882075169, "travel_m": 21.16504585587671, "v": 0.04107726895076466, "w": 1.0, "latency": 0.13590025901794434, "time": 1791884048.4700902, "topomap": "/tmp/e2e/topomap"}
+OK

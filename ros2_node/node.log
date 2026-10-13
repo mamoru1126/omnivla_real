@@ -1,0 +1,22 @@
+[INFO] [1791883996.747948913] [omnivla_navigator]: loading model (edge) ...
+/usr/local/lib/python3.10/dist-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[edge] ready (device=cpu, metric_waypoint_spacing=0.1803149800959821, context_stride=1)
+[INFO] [1791883998.332101945] [omnivla_navigator]: ready: model=edge, sample_rate=3.0 Hz, topomap=/tmp/e2e/topomap (24 subgoals)
+[INFO] [1791883998.340101627] [omnivla_navigator]: waiting for /camera/image_raw/compressed and /odom
+[INFO] [1791884002.569325345] [omnivla_navigator]: start: 24 subgoals, reach_check=image_odom, log=/tmp/e2e/ros2_node/nav/20261013_093322
+[INFO] [1791884002.976625402] [omnivla_navigator]: subgoal 0 -> 2/23 [image similarity 1.000 (node 1)]
+[INFO] [1791884006.230728161] [omnivla_navigator]: subgoal 2 -> 4/23 [image similarity 1.000 (node 3)]
+[INFO] [1791884013.789302761] [omnivla_navigator]: subgoal 4 -> 5/23 [passed by odometry (1.11m behind)]
+[INFO] [1791884015.796503437] [omnivla_navigator]: subgoal 5 -> 6/23 [passed by odometry (1.12m behind)]
+[INFO] [1791884018.065905086] [omnivla_navigator]: subgoal 6 -> 7/23 [passed by odometry (1.09m behind)]
+[INFO] [1791884018.726875247] [omnivla_navigator]: subgoal 7 -> 9/23 [image similarity 1.000 (node 8)]
+[INFO] [1791884019.890955526] [omnivla_navigator]: subgoal 9 -> 11/23 [image similarity 1.000 (node 10)]
+[INFO] [1791884029.765874487] [omnivla_navigator]: subgoal 11 -> 12/23 [image similarity 1.000 (node 11)]
+[INFO] [1791884033.365611379] [omnivla_navigator]: subgoal 12 -> 13/23 [image similarity 1.000 (node 12)]
+[INFO] [1791884037.540471631] [omnivla_navigator]: subgoal 13 -> 14/23 [passed by odometry (1.00m behind)]
+[INFO] [1791884039.502798118] [omnivla_navigator]: subgoal 14 -> 15/23 [passed by odometry (1.03m behind)]
+[INFO] [1791884041.428254002] [omnivla_navigator]: subgoal 15 -> 16/23 [passed by odometry (1.01m behind)]
+[INFO] [1791884043.520873172] [omnivla_navigator]: subgoal 16 -> 17/23 [passed by odometry (1.06m behind)]
+[INFO] [1791884045.601297909] [omnivla_navigator]: subgoal 17 -> 18/23 [passed by odometry (1.01m behind)]
+[INFO] [1791884048.016981823] [omnivla_navigator]: subgoal 18 -> 20/23 [image similarity 1.000 (node 19)]
