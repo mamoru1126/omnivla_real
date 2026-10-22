@@ -1,0 +1,9 @@
+# USBカメラと速度指令のシミュレーター接続試験用です。
+name: usb_camera_simulator_test
+topics:
+  image: /camera/compressed
+  odom: ""
+  cmd: /omnivla/cmd_vel/raw
+  localization: ""
+image:
+  width: 320

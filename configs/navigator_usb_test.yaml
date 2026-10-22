@@ -1,0 +1,20 @@
+# 到達判定を使わず、カメラから速度指令までの接続だけを確認します。
+model:
+  model: remote
+  url: http://127.0.0.1:8765
+engine:
+  modality: image
+  max_image_age: 1.0
+  controller:
+    mode: trajectory
+    track_max_v: 0.05
+    track_max_w: 0.15
+  tracker:
+    reach_check: none
+io:
+  cmd_vel: /cmd_vel
+  control_rate: 10.0
+  cmd_timeout: 1.0
+  max_inference_rate: 3.0
+  log_dir: /workspace/log/nav
+  log_images: false

@@ -1,0 +1,28 @@
+# docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-humble.yml build policy nav
+# docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-humble.yml up -d policy nav
+services:
+  nav:
+    image: omnivla_real:ros2-humble
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ros2
+    environment:
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-42}
+      RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+      FASTRTPS_DEFAULT_PROFILES_FILE: /etc/omnivla/fastdds.xml
+      ROBOT_CONFIG: ${ROBOT_CONFIG:-/workspace/configs/robot.yaml}
+      NAV_CONFIG: ${NAV_CONFIG:-/workspace/configs/navigator.yaml}
+      CMD_VEL_TOPIC: ${CMD_VEL_TOPIC:-/omnivla/cmd_vel/raw}
+    volumes:
+      - ${DDS_PROFILE_FILE:-../nakanoshima_2026/docker/fastdds_usb.xml}:/etc/omnivla/fastdds.xml:ro
+    command:
+      - bash
+      - -c
+      - >-
+        source /opt/omnivla_ws/install/setup.bash &&
+        exec ros2 run omnivla_real_ros navigator --ros-args
+        -r /cmd_vel:=$$CMD_VEL_TOPIC
+        -p robot_config:=$$ROBOT_CONFIG -p nav_config:=$$NAV_CONFIG
+        -p policy_url:=http://127.0.0.1:$$POLICY_PORT
+        -p topomap:=$$TOPOMAP -p autostart:=$$NAV_AUTOSTART
+        -p use_sim_time:=false

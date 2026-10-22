@@ -1,0 +1,21 @@
+FROM ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    OMNIVLA_REAL_ROOT=/workspace \
+    PYTHONPATH=/workspace \
+    PYTHONUNBUFFERED=1
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3-numpy python3-pil python3-yaml \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY omnivla_real /workspace/omnivla_real
+COPY ros2 /workspace/ros2
+WORKDIR /workspace
+RUN source /opt/ros/humble/setup.bash \
+    && colcon build --base-paths /workspace/ros2 --build-base /opt/omnivla_ws/build \
+       --install-base /opt/omnivla_ws/install \
+    && python3 -c "import omnivla_real.ros_common, omnivla_real.remote"
+
+CMD ["bash"]

@@ -15,7 +15,11 @@ source "$(dirname "$0")/_lib.sh"
 ip_addr() { hostname -I 2> /dev/null | awk '{print $1}'; }
 web_port() { env_get NAV_WEB_PORT "$(sed -n -E 's/^[[:space:]]*web_port:[[:space:]]*([0-9]+).*/\1/p' configs/navigator.yaml | head -1)"; }
 follow() {
-    say "ブラウザ: http://$(ip_addr):$(web_port)"
+    if [ "$(env_get JETSON_ROS_DISTRO noetic)" = humble ]; then
+        say "状態確認: /omnivla/status (ROS 2 Humble)"
+    else
+        say "ブラウザ: http://$(ip_addr):$(web_port)"
+    fi
     say "Ctrl-C でログの表示だけ止まります (走ったまま). 止める: bin/jetson.sh down"
     jetson logs -f --tail 50 policy nav
 }
@@ -32,6 +36,8 @@ case $CMD in
         ensure_env
         PROFILE=()
         if [ "${1:-}" = --standalone ]; then
+            [ "$(env_get JETSON_ROS_DISTRO noetic)" = noetic ] \
+                || die "Humble は ROS master が不要です。--standalone を外してください"
             PROFILE=(--profile standalone)
             export ROSLAUNCH_ARGS=--wait   # roscore コンテナの master を待つ
         fi
@@ -39,8 +45,13 @@ case $CMD in
         [ -n "$T" ] || say "注意: .env の TOPOMAP が空です (ブラウザや /omnivla/topomap で指定するまで走りません)"
         [ -z "$T" ] || [ -e "$(hpath "$T")" ] || die "TOPOMAP が見つかりません: $T (ホストでは $(hpath "$T"))"
         say "モデル: $(env_get NAV_MODEL '(navigator.yaml)') $(env_get FINETUNED_DIR '')$(env_get NAV_WEIGHTS '')  topomap: $T"
-        say "ROS master: $(env_get ROS_MASTER_URI http://localhost:11311)"
-        ensure_image omnivla_real:ros1 jetson build nav
+        if [ "$(env_get JETSON_ROS_DISTRO noetic)" = humble ]; then
+            say "ROS 2 Humble domain: $(env_get ROS_DOMAIN_ID 42)"
+            ensure_image omnivla_real:ros2-humble jetson build nav
+        else
+            say "ROS master: $(env_get ROS_MASTER_URI http://localhost:11311)"
+            ensure_image omnivla_real:ros1 jetson build nav
+        fi
         jetson "${PROFILE[@]}" up -d
         follow
         ;;
