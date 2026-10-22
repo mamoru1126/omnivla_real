@@ -1,0 +1,3 @@
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+policy server (:8765/info):
+  応答なし (起動中か止まっている)

@@ -1,0 +1,30 @@
+policy-1  | [policy_server] loading 7b ...
+policy-1  | Traceback (most recent call last):
+policy-1  |   File "/workspace/tools/policy_server.py", line 79, in <module>
+policy-1  |     main()
+policy-1  |   File "/workspace/tools/policy_server.py", line 54, in main
+policy-1  |     policy = make_policy(nav.model)
+policy-1  |   File "/workspace/omnivla_real/nav_config.py", line 90, in make_policy
+policy-1  |     return load_policy(m.model, m.weights, m.finetuned_dir, m.device, m.metric_waypoint_spacing or None, m.half,
+policy-1  |   File "/workspace/omnivla_real/policy_base.py", line 29, in load_policy
+policy-1  |     from .policy import OmniVLAPolicy, PolicyConfig
+policy-1  |   File "/workspace/omnivla_real/policy.py", line 27, in <module>
+policy-1  |     from .omnivla_model import (OmniVLAComponents, build_prompt, collate, count_action_tokens, forward_actions,
+policy-1  |   File "/workspace/omnivla_real/omnivla_model.py", line 31, in <module>
+policy-1  |     from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig
+policy-1  | ModuleNotFoundError: No module named 'prismatic'
+policy-1  | [policy_server] loading 7b ...
+policy-1  | Traceback (most recent call last):
+policy-1  |   File "/workspace/tools/policy_server.py", line 79, in <module>
+policy-1  |     main()
+policy-1  |   File "/workspace/tools/policy_server.py", line 54, in main
+policy-1  |     policy = make_policy(nav.model)
+policy-1  |   File "/workspace/omnivla_real/nav_config.py", line 90, in make_policy
+policy-1  |     return load_policy(m.model, m.weights, m.finetuned_dir, m.device, m.metric_waypoint_spacing or None, m.half,
+policy-1  |   File "/workspace/omnivla_real/policy_base.py", line 29, in load_policy
+policy-1  |     from .policy import OmniVLAPolicy, PolicyConfig
+policy-1  |   File "/workspace/omnivla_real/policy.py", line 27, in <module>
+policy-1  |     from .omnivla_model import (OmniVLAComponents, build_prompt, collate, count_action_tokens, forward_actions,
+policy-1  |   File "/workspace/omnivla_real/omnivla_model.py", line 31, in <module>
+policy-1  |     from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig
+policy-1  | ModuleNotFoundError: No module named 'prismatic'
