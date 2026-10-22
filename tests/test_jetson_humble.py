@@ -12,14 +12,14 @@ ROOT = Path(__file__).resolve().parents[1]
 class JetsonDistroTest(unittest.TestCase):
     """既存のNoetic起動とHumbleの切り替えを確認します。"""
 
-    def test_humble_defaults_to_direct_lan_profile(self) -> None:
-        """Humbleの既定値が直接接続LANと専用速度トピックを選ぶことを確認します。"""
+    def test_humble_defaults_to_robot_links_profile(self) -> None:
+        """Humbleの既定値が専用LAN・USBと専用速度トピックを選ぶことを確認します。"""
         settings = dict(
             line.split("=", 1)
             for line in (ROOT / ".env.example").read_text().splitlines()
             if line and not line.startswith("#") and "=" in line
         )
-        profile = "../nakanoshima_2026/docker/fastdds_direct_lan.xml"
+        profile = "../nakanoshima_2026/docker/fastdds_robot_links.xml"
         self.assertEqual(settings["DDS_PROFILE_FILE"], profile)
         self.assertEqual(settings["ROS_DOMAIN_ID"], "42")
         self.assertEqual(settings["CMD_VEL_TOPIC"], "/omnivla/cmd_vel/raw")

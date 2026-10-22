@@ -55,7 +55,7 @@ NAV_MODEL=edge
 NAV_WEIGHTS=/checkpoints/omnivla-edge
 ROS_DOMAIN_ID=42
 CMD_VEL_TOPIC=/omnivla/cmd_vel/raw
-DDS_PROFILE_FILE=../nakanoshima_2026/docker/fastdds_direct_lan.xml
+DDS_PROFILE_FILE=../nakanoshima_2026/docker/fastdds_robot_links.xml
 ```
 
 `JETSON_BASE_IMAGE`には、JetPackに対応したCUDA版PyTorchイメージを指定します。
@@ -75,10 +75,10 @@ ATMOBIの最終出力`/cmd_vel`には直接配信しません。
 Humble版のデバッグ情報はROSトピックと走行ログで確認します。
 既存のWeb画面はROS 1のC++ノード専用です。
 
-DDSの既定設定は実機の直接接続LAN用です。
+DDSの既定設定は、専用LANと検証用USB Ethernetの両経路を許可します。
 ATMOBI PCは`192.168.0.100/24`、Jetsonは`192.168.0.200/24`です。
-Fast DDSは上記2アドレスとloopbackのインターフェースだけを使います。
-旧USB試験用アドレスでは待ち受けません。
+USB側はそれぞれ`192.168.1.1/24`、`192.168.1.100/24`です。
+Fast DDSは上記4アドレスとloopbackのインターフェースだけを使います。
 ドメイン番号だけでは社内LANへの通信を防げません。
 Fast DDSのインターフェース制限とunicast探索を併用します。
 接続元IPを制限するファイアウォールとは異なります。
@@ -89,12 +89,12 @@ ATMOBI PCのGW値は`192.168.0.1`です。
 NICの設定と切り替え手順は、隣接リポジトリの
 [`nakanoshima_2026/README.md`](../nakanoshima_2026/README.md)に記載しています。
 
-旧USB試験を続ける場合だけ、`.env`の`DDS_PROFILE_FILE`を
-`../nakanoshima_2026/docker/fastdds_usb.xml`に戻してください。
-その場合のIPは本PCが`192.168.1.1`、Jetsonが`192.168.1.100`です。
-カメラと本PCのブリッジも同じUSBプロファイルに合わせます。
+通常は接続を切り替えても、DDSの設定ファイルを変更しません。
+カメラと本PCのブリッジも、同じ両経路対応プロファイルを使います。
+ノード起動後に追加したNICで通信できない場合は、
+アドレスを有効化してからカメラ・nav・ブリッジを再起動します。
 保存設定を変更しただけでは、稼働中のnavコンテナは切り替わりません。
-LANを接続し、停止状態で次のコマンドを実行してください。
+使用するLANまたはUSBを接続し、停止状態で次のコマンドを実行してください。
 電源を切って移設した場合に備え、policyも起動対象に含めています。
 
 ```bash
@@ -102,9 +102,17 @@ docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-humble.yml 
   up -d --force-recreate policy nav
 ```
 
-2026年10月22日は移設用の保存設定を更新しました。
-稼働中のUSB試験コンテナは継続しています。
+2026年10月22日は、LAN・USB両経路対応を稼働中の環境にも反映しました。
+policy・navの未起動状態から、ブラウザーの開始ボタンだけで起動を確認しました。
+USB経由でenableの開始・停止とstatusによる状態確認を実施しました。
 実機LANでの速度伝達と実走行は未確認です。
+
+ATMOBI PCのブラウザーに、SSH経由の「OmniVLA開始」「OmniVLA終了」を追加しています。
+開始操作は必要なpolicy・navを起動し、enableを送ってstatusを確認します。
+終了操作はenableの`false`を送って停止状態を確認します。
+`NAV_AUTOSTART=false`を維持してください。
+パスワードはブラウザーで操作ごとに入力し、アプリには保存しません。
+操作手順とホスト鍵の登録は、上記の隣接リポジトリのREADMEを参照してください。
 
 USBカメラだけで速度伝達を確認する場合は、次の試験設定を使えます。
 試験用topomapには、実際のUSBカメラから保存した画像を配置します。
