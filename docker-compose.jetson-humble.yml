@@ -24,5 +24,5 @@ services:
         -r /cmd_vel:=$$CMD_VEL_TOPIC
         -p robot_config:=$$ROBOT_CONFIG -p nav_config:=$$NAV_CONFIG
         -p policy_url:=http://127.0.0.1:$$POLICY_PORT
-        -p topomap:=$$TOPOMAP -p autostart:=$$NAV_AUTOSTART
+        $${TOPOMAP:+-p "topomap:=$$TOPOMAP"} -p autostart:=$$NAV_AUTOSTART
         -p use_sim_time:=false

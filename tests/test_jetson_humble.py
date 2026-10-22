@@ -1,8 +1,10 @@
 """JetsonのROSディストリビューション選択を検証します。"""
 
+import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 
 import yaml
@@ -47,6 +49,37 @@ class JetsonDistroTest(unittest.TestCase):
             if line and not line.startswith("#") and "=" in line
         )
         self.assertEqual(settings["TOPOMAP"], "")
+
+    def test_humble_topomap_argument_handles_empty_and_spaced_paths(self) -> None:
+        compose = yaml.safe_load((ROOT / "docker-compose.jetson-humble.yml").read_text())
+        command = compose["services"]["nav"]["command"][-1].replace("$$", "$")
+        with tempfile.TemporaryDirectory() as directory:
+            ros2 = Path(directory) / "ros2"
+            ros2.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, sys\n"
+                "print(json.dumps(sys.argv[1:]))\n"
+            )
+            ros2.chmod(0o755)
+            for topomap in ("", "/data/topomaps/course_a", "/data/topomaps/course a"):
+                with self.subTest(topomap=topomap):
+                    env = dict(
+                        os.environ, PATH=directory + os.pathsep + os.environ["PATH"],
+                        TOPOMAP=topomap, NAV_AUTOSTART="false", POLICY_PORT="8765",
+                        CMD_VEL_TOPIC="/omnivla/cmd_vel/raw",
+                        ROBOT_CONFIG="/workspace/configs/robot.yaml",
+                        NAV_CONFIG="/workspace/configs/navigator.yaml",
+                    )
+                    result = subprocess.run(
+                        ["bash", "-c", "source() { :; }\n" + command],
+                        env=env, text=True, capture_output=True, check=False,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    arguments = json.loads(result.stdout)
+                    values = [value for value in arguments if value.startswith("topomap:=")]
+                    self.assertEqual(values, ["topomap:=" + topomap] if topomap else [])
+                    self.assertIn("autostart:=false", arguments)
+                    self.assertIn("/cmd_vel:=/omnivla/cmd_vel/raw", arguments)
 
     def run_jetson(self, distro: str, *args: str) -> subprocess.CompletedProcess:
         env = dict(os.environ, OMNIVLA_DRY_RUN="1", JETSON_ROS_DISTRO=distro)

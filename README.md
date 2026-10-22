@@ -130,6 +130,10 @@ ATMOBI PCのブラウザーに、SSH経由の「OmniVLA開始」「OmniVLA終了
 試験画像`data/topomaps/usb_camera_test/0.jpg`は削除せず残しますが、既定では選択しません。
 以前の`reach_check=none`は廃止し、`engine.tracker.reach_check=auto`へ戻しました。
 topomapを指定するまでは走行を開始しません。
+Humble起動時は、空の`TOPOMAP`をROS 2引数へ渡さず、ノード既定の空文字列を使用します。
+空の`-p topomap:=`はROS 2の引数エラーになるため使用しません。
+ブラウザーの開始ボタンは推論の開始も要求するため、経路未指定の場合は
+「TOPOMAPが未設定です」と表示し、コンテナ起動やenable送信前に中止します。
 
 ```bash
 ROBOT_CONFIG=/workspace/configs/robot.yaml
