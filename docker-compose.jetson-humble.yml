@@ -14,7 +14,7 @@ services:
       NAV_CONFIG: ${NAV_CONFIG:-/workspace/configs/navigator.yaml}
       CMD_VEL_TOPIC: ${CMD_VEL_TOPIC:-/omnivla/cmd_vel/raw}
     volumes:
-      - ${DDS_PROFILE_FILE:-../nakanoshima_2026/docker/fastdds_usb.xml}:/etc/omnivla/fastdds.xml:ro
+      - ${DDS_PROFILE_FILE:-../nakanoshima_2026/docker/fastdds_direct_lan.xml}:/etc/omnivla/fastdds.xml:ro
     command:
       - bash
       - -c

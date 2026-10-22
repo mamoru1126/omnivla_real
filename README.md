@@ -55,7 +55,7 @@ NAV_MODEL=edge
 NAV_WEIGHTS=/checkpoints/omnivla-edge
 ROS_DOMAIN_ID=42
 CMD_VEL_TOPIC=/omnivla/cmd_vel/raw
-DDS_PROFILE_FILE=../nakanoshima_2026/docker/fastdds_usb.xml
+DDS_PROFILE_FILE=../nakanoshima_2026/docker/fastdds_direct_lan.xml
 ```
 
 `JETSON_BASE_IMAGE`には、JetPackに対応したCUDA版PyTorchイメージを指定します。
@@ -75,10 +75,36 @@ ATMOBIの最終出力`/cmd_vel`には直接配信しません。
 Humble版のデバッグ情報はROSトピックと走行ログで確認します。
 既存のWeb画面はROS 1のC++ノード専用です。
 
-DDS設定は`192.168.1.1`と`192.168.1.100`のUSB接続専用です。
-IPアドレスが異なる場合は、DDS設定も変更してください。
+DDSの既定設定は実機の直接接続LAN用です。
+ATMOBI PCは`192.168.0.100/24`、Jetsonは`192.168.0.200/24`です。
+Fast DDSは上記2アドレスとloopbackのインターフェースだけを使います。
+旧USB試験用アドレスでは待ち受けません。
 ドメイン番号だけでは社内LANへの通信を防げません。
 Fast DDSのインターフェース制限とunicast探索を併用します。
+接続元IPを制限するファイアウォールとは異なります。
+2台専用LANを社内LANへブリッジしないでください。
+ATMOBI PCのGW値は`192.168.0.1`です。
+ただし、2台だけの直接接続ではGWは存在しません。
+2台の通信にGWは不要なため、JetsonのLAN側にはGWを追加しません。
+NICの設定と切り替え手順は、隣接リポジトリの
+[`nakanoshima_2026/README.md`](../nakanoshima_2026/README.md)に記載しています。
+
+旧USB試験を続ける場合だけ、`.env`の`DDS_PROFILE_FILE`を
+`../nakanoshima_2026/docker/fastdds_usb.xml`に戻してください。
+その場合のIPは本PCが`192.168.1.1`、Jetsonが`192.168.1.100`です。
+カメラと本PCのブリッジも同じUSBプロファイルに合わせます。
+保存設定を変更しただけでは、稼働中のnavコンテナは切り替わりません。
+LANを接続し、停止状態で次のコマンドを実行してください。
+電源を切って移設した場合に備え、policyも起動対象に含めています。
+
+```bash
+docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-humble.yml \
+  up -d --force-recreate policy nav
+```
+
+2026年10月22日は移設用の保存設定を更新しました。
+稼働中のUSB試験コンテナは継続しています。
+実機LANでの速度伝達と実走行は未確認です。
 
 USBカメラだけで速度伝達を確認する場合は、次の試験設定を使えます。
 試験用topomapには、実際のUSBカメラから保存した画像を配置します。
