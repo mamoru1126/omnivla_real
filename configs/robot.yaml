@@ -4,7 +4,7 @@ name: my_robot
 
 topics:
   image: /camera/compressed   # sensor_msgs/CompressedImage or sensor_msgs/Image
-  odom: ""                              # 現構成はカメラのみ。オドメトリを使う場合に設定
+  odom: /odom                           # nav_msgs/Odometry (ホイールオドメトリ)
   cmd: /cmd_vel                         # geometry_msgs/Twist or TwistStamped (指示値)
   localization: ""                      # 任意: 自己位置 (PoseStamped / PoseWithCovarianceStamped / Odometry / /tf)
   localization_frame: map               # localization が /tf のとき: 親フレーム

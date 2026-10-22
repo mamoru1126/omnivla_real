@@ -124,24 +124,29 @@ ATMOBI PCのブラウザーに、SSH経由の「OmniVLA開始」「OmniVLA終了
 退避先は`~/Documents/nakanoshima/.retired-usb-config-20261022-1137/`です。
 現構成では旧試験用ファイルを参照しません。
 
-ファイルの集約後も、USBカメラだけで速度伝達を確認する設定を維持します。
-元の`master`の速度上限や到達判定へ戻す変更ではありません。
-試験用topomapには、実際のUSBカメラから保存した画像を配置します。
-カメラ画像と同じゴール画像で即座に到達扱いになることを避けるため、
-`engine.tracker.reach_check`を`none`にしています。
-実走行用の経路設定ではありません。
+2026年10月22日、`jetson`ブランチで追加した接続試験用のゴール・経路設定を
+`master`の既定値へ戻しました。`master`には実コースのゴール画像や経路は登録されておらず、
+`.env.example`の`TOPOMAP`は空です。実機の`.env`も空に戻しています。
+試験画像`data/topomaps/usb_camera_test/0.jpg`は削除せず残しますが、既定では選択しません。
+以前の`reach_check=none`は廃止し、`engine.tracker.reach_check=auto`へ戻しました。
+topomapを指定するまでは走行を開始しません。
 
 ```bash
 ROBOT_CONFIG=/workspace/configs/robot.yaml
 NAV_CONFIG=/workspace/configs/navigator.yaml
-TOPOMAP=/data/topomaps/usb_camera_test
+TOPOMAP=
 NAV_AUTOSTART=false
 ```
 
-`robot.yaml`の`topics.odom`は空文字列です。
-現構成はオドメトリを要求しません。
-`navigator.yaml`の`engine.controller.track_max_v`は`0.05 m/s`です。
-`engine.controller.track_max_w`は`0.15 rad/s`です。
+`robot.yaml`の`topics.odom`も`master`の`/odom`へ戻しました。
+到達判定`auto`は、受信済みの自己位置・オドメトリとtopomapの位置情報に応じて
+`pose`、`image_odom`、`image`を選びます。トピック名を戻しただけで、
+ATMOBIからJetsonへオドメトリが新たに配線されるわけではありません。
+到達判定・ゴール半径等は`master`と同じです。
+速度上限もユーザーの指定に従い、`master`と同じ
+`engine.controller.track_max_v=0.6 m/s`、
+`engine.controller.track_max_w=1.0 rad/s`へ戻しました。
+`NAV_AUTOSTART=false`と専用速度トピックへのremapも維持します。
 画像の許容経過時間は、元の`master`と同じ0.5秒です。
 推論頻度の設定値は0で、新しい画像の到着に追従します。
 推論画像のログ保存も、元の`master`と同じ有効設定です。

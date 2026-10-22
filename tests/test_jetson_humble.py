@@ -5,6 +5,8 @@ from pathlib import Path
 import subprocess
 import unittest
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -30,6 +32,21 @@ class JetsonDistroTest(unittest.TestCase):
         self.assertIn("ROBOT_CONFIG: ${ROBOT_CONFIG:-/workspace/configs/robot.yaml}", compose)
         self.assertIn("NAV_CONFIG: ${NAV_CONFIG:-/workspace/configs/navigator.yaml}", compose)
         self.assertIn("-r /cmd_vel:=$$CMD_VEL_TOPIC", compose)
+
+    def test_standard_navigation_restores_master_goal_settings(self) -> None:
+        nav = yaml.safe_load((ROOT / "configs/navigator.yaml").read_text())
+        robot = yaml.safe_load((ROOT / "configs/robot.yaml").read_text())
+        self.assertEqual(nav["engine"]["tracker"]["reach_check"], "auto")
+        self.assertTrue(nav["engine"]["stop_at_goal"])
+        self.assertEqual(nav["engine"]["controller"]["track_max_v"], 0.6)
+        self.assertEqual(nav["engine"]["controller"]["track_max_w"], 1.0)
+        self.assertEqual(robot["topics"]["odom"], "/odom")
+        settings = dict(
+            line.split("=", 1)
+            for line in (ROOT / ".env.example").read_text().splitlines()
+            if line and not line.startswith("#") and "=" in line
+        )
+        self.assertEqual(settings["TOPOMAP"], "")
 
     def run_jetson(self, distro: str, *args: str) -> subprocess.CompletedProcess:
         env = dict(os.environ, OMNIVLA_DRY_RUN="1", JETSON_ROS_DISTRO=distro)
