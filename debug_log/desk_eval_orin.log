@@ -1,0 +1,8 @@
+bin/desk_eval.sh 20260919_150554.bag course_a
+[desk_eval] 推論サーバを使います (http://127.0.0.1:8765  モデル: 7b /runs/omnivla7b_20261009_134144/checkpoints/step_005000)
+[+] up 1/1
+ ✔ Container omnivla_real-policy-1 Started                                                                                                              0.6s
+Container omnivla_real-policy-run-2c9d26defd7a Creating
+Container omnivla_real-policy-run-2c9d26defd7a Created
+[remote] waiting for policy server 127.0.0.1:8765 ... (ConnectionRefusedError)
+[remote] waiting for policy server 127.0.0.1:8765 ... (ConnectionRefusedError)
