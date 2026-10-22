@@ -1,0 +1,32 @@
+ROR [2/7] RUN apt-get update && apt-get install -y --no-install-recommends git git-lfs ca-certificates curl     && rm -rf /var/lib/apt/lists/*  18.0s
+------
+ > [2/7] RUN apt-get update && apt-get install -y --no-install-recommends git git-lfs ca-certificates curl     && rm -rf /var/lib/apt/lists/*:
+2.369 Get:1 http://ports.ubuntu.com/ubuntu-ports jammy InRelease [270 kB]
+3.041 Get:2 http://ports.ubuntu.com/ubuntu-ports jammy-updates InRelease [128 kB]
+4.396 Get:3 http://ports.ubuntu.com/ubuntu-ports jammy-backports InRelease [127 kB]
+5.068 Get:4 http://ports.ubuntu.com/ubuntu-ports jammy-security InRelease [129 kB]
+7.611 Get:5 http://ports.ubuntu.com/ubuntu-ports jammy/main arm64 Packages [1758 kB]
+10.77 Get:6 http://ports.ubuntu.com/ubuntu-ports jammy/multiverse arm64 Packages [224 kB]
+11.17 Get:7 http://ports.ubuntu.com/ubuntu-ports jammy/restricted arm64 Packages [24.2 kB]
+14.41 Get:8 http://ports.ubuntu.com/ubuntu-ports jammy/universe arm64 Packages [17.2 MB]
+15.92 Get:9 http://ports.ubuntu.com/ubuntu-ports jammy-backports/main arm64 Packages [82.5 kB]
+16.94 Get:10 http://ports.ubuntu.com/ubuntu-ports jammy-backports/universe arm64 Packages [33.7 kB]
+16.99 Reading package lists...
+17.83 E: Release file for http://ports.ubuntu.com/ubuntu-ports/dists/jammy-updates/InRelease is not valid yet (invalid for another 17h 9min 28s). Updates for this repository will not be applied.
+17.83 E: Release file for http://ports.ubuntu.com/ubuntu-ports/dists/jammy-security/InRelease is not valid yet (invalid for another 5h 34min 6s). Updates for this repository will not be applied.
+------
+Dockerfile.jetson:25
+
+--------------------
+
+  24 |
+
+  25 | >>> RUN apt-get update && apt-get install -y --no-install-recommends git git-lfs ca-certificates curl \
+
+  26 | >>>     && rm -rf /var/lib/apt/lists/*
+
+  27 |
+
+--------------------
+
+failed to solve: process "/bin/bash -o pipefail -c apt-get update && apt-get install -y --no-install-recommends git git-lfs ca-certificates curl     && rm -rf /var/lib/apt/lists/*" did not complete successfully: exit code: 100
