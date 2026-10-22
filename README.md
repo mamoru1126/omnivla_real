@@ -103,8 +103,11 @@ docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-humble.yml 
 ```
 
 2026年10月22日は、LAN・USB両経路対応を稼働中の環境にも反映しました。
-policy・navの未起動状態から、ブラウザーの開始ボタンだけで起動を確認しました。
+policy・navの未起動状態から、ブラウザーと同じ開始処理で起動を確認しました。
 USB経由でenableの開始・停止とstatusによる状態確認を実施しました。
+標準設定への集約後も、本PCのROS 2側とROS 1側で非ゼロ指令を121件ずつ受信しました。
+両側で速度値と受信順序が一致しました。
+最大値は並進約0.05 m/s、角速度約0.057 rad/sで、設定した上限内でした。
 実機LANでの速度伝達と実走行は未確認です。
 
 ATMOBI PCのブラウザーに、SSH経由の「OmniVLA開始」「OmniVLA終了」を追加しています。
@@ -114,24 +117,62 @@ ATMOBI PCのブラウザーに、SSH経由の「OmniVLA開始」「OmniVLA終了
 パスワードはブラウザーで操作ごとに入力し、アプリには保存しません。
 操作手順とホスト鍵の登録は、上記の隣接リポジトリのREADMEを参照してください。
 
-USBカメラだけで速度伝達を確認する場合は、次の試験設定を使えます。
+今回のJetson構成は、元からある設定ファイルを編集して使用します。
+トピックは`configs/robot.yaml`で設定します。
+速度上限と到達判定は`configs/navigator.yaml`で設定します。
+旧試験用の`*_usb_test.yaml`は削除せず、リポジトリ外へ退避しました。
+退避先は`~/Documents/nakanoshima/.retired-usb-config-20261022-1137/`です。
+現構成では旧試験用ファイルを参照しません。
+
+ファイルの集約後も、USBカメラだけで速度伝達を確認する設定を維持します。
+元の`master`の速度上限や到達判定へ戻す変更ではありません。
 試験用topomapには、実際のUSBカメラから保存した画像を配置します。
 カメラ画像と同じゴール画像で即座に到達扱いになることを避けるため、
-試験設定では到達判定を無効にしています。
+`engine.tracker.reach_check`を`none`にしています。
 実走行用の経路設定ではありません。
 
 ```bash
-ROBOT_CONFIG=/workspace/configs/robot_usb_test.yaml
-NAV_CONFIG=/workspace/configs/navigator_usb_test.yaml
+ROBOT_CONFIG=/workspace/configs/robot.yaml
+NAV_CONFIG=/workspace/configs/navigator.yaml
 TOPOMAP=/data/topomaps/usb_camera_test
 NAV_AUTOSTART=false
 ```
 
-試験設定はオドメトリを要求しません。
-最大速度は`0.05 m/s`、最大角速度は`0.15 rad/s`です。
+`robot.yaml`の`topics.odom`は空文字列です。
+現構成はオドメトリを要求しません。
+`navigator.yaml`の`engine.controller.track_max_v`は`0.05 m/s`です。
+`engine.controller.track_max_w`は`0.15 rad/s`です。
+画像の許容経過時間は、元の`master`と同じ0.5秒です。
+推論頻度の設定値は0で、新しい画像の到着に追従します。
+推論画像のログ保存も、元の`master`と同じ有効設定です。
+`robot.yaml`の`topics.cmd`は元の`/cmd_vel`を維持します。
+実際のROS 2出力は、起動時のremapで`/omnivla/cmd_vel/raw`に限定します。
+今回のUSBカメラは、640×480のYUYV形式で15 FPSを使用します。
+Jetsonの`/etc/default/nakanoshima-humble-camera`に`FRAMERATE=15.0`を設定します。
+実機が15 FPSで撮像する状態で10 FPSずつ読み出すと、画像が滞留します。
+読み出し周期は、カメラが実際に使用するフレームレートに合わせてください。
+設定の変更とカメラの再起動後、画像到着時の遅れは約1秒から約0.22秒へ短縮しました。
+Humble版は引き続き、`policy_url`で別コンテナの推論サーバーを使用します。
+速度トピックのremapとLAN・USB両経路のDDS設定も維持します。
 開始と停止は`/omnivla/enable`の`std_msgs/msg/Bool`で操作します。
 推論結果が1秒間更新されない場合は、ゼロ速度を出力します。
-実機ではなく、Gazeboへの接続確認に使用してください。
+この設定は速度伝達の接続確認用で、経路の到達性能を確認するものではありません。
+実機では、非常停止できる状態で確認してください。
+
+設定はJetson上で編集してください。
+本PC側の同名ファイルだけを編集しても、Jetsonには反映されません。
+実機の走行とOmniVLAの推論を停止してから設定を変更します。
+`.env`の参照先を変更した場合は、navコンテナを再作成します。
+
+```bash
+docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-humble.yml \
+  up -d --force-recreate nav
+```
+
+以降、YAML内の数値だけを変更した場合は、`restart nav`で反映できます。
+再ビルドは不要です。
+反映後はブラウザーからOmniVLAを開始します。
+「OmniVLA終了」は実機全体の非常停止ではありません。
 
 ```bash
 # 学習 PC

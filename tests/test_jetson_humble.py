@@ -23,8 +23,13 @@ class JetsonDistroTest(unittest.TestCase):
         self.assertEqual(settings["DDS_PROFILE_FILE"], profile)
         self.assertEqual(settings["ROS_DOMAIN_ID"], "42")
         self.assertEqual(settings["CMD_VEL_TOPIC"], "/omnivla/cmd_vel/raw")
+        self.assertEqual(settings["ROBOT_CONFIG"], "/workspace/configs/robot.yaml")
+        self.assertEqual(settings["NAV_CONFIG"], "/workspace/configs/navigator.yaml")
         compose = (ROOT / "docker-compose.jetson-humble.yml").read_text()
         self.assertIn(f"${{DDS_PROFILE_FILE:-{profile}}}:/etc/omnivla/fastdds.xml:ro", compose)
+        self.assertIn("ROBOT_CONFIG: ${ROBOT_CONFIG:-/workspace/configs/robot.yaml}", compose)
+        self.assertIn("NAV_CONFIG: ${NAV_CONFIG:-/workspace/configs/navigator.yaml}", compose)
+        self.assertIn("-r /cmd_vel:=$$CMD_VEL_TOPIC", compose)
 
     def run_jetson(self, distro: str, *args: str) -> subprocess.CompletedProcess:
         env = dict(os.environ, OMNIVLA_DRY_RUN="1", JETSON_ROS_DISTRO=distro)
