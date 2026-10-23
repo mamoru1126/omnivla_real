@@ -610,3 +610,13 @@ if __name__ == "__main__":
                 traceback.print_exc()
                 print(f"FAIL {name}: {e}")
     sys.exit(1 if failed else 0)
+
+
+def test_nav_overrides_env_nested():
+    """NAV_OVERRIDES (環境変数) の "engine.tracker.x=..." を Python のノードでも使える."""
+    from omnivla_real.nav_config import load_nav_config
+    from omnivla_real.ros_common import parse_overrides
+    o = parse_overrides("engine.max_image_age=1.5 engine.tracker.image_threshold=0.93 io.log_images=false bogus")
+    assert o == {"engine.max_image_age": 1.5, "engine.tracker.image_threshold": 0.93, "io.log_images": False}
+    c = load_nav_config(os.path.join(CONFIGS, "navigator.yaml"), o)
+    assert c.engine.max_image_age == 1.5 and c.engine.tracker.image_threshold == 0.93 and c.io.log_images is False

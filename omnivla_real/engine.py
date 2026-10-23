@@ -69,6 +69,8 @@ class NavEngine:
         self.cfg.controller.dt = 1.0 / self.sample_rate  # waypoint k は (k+1)/sample_rate 秒後
         self.cam = camera_model(robot)
         self.state = "idle"
+        self.step_state = ""                 # 直近の step の結果 (running / waiting_image ...). state が running でも画像待ちのことがある
+        self.image_age: Optional[float] = None   # 直近の step での (今 - 画像の時刻) [s]
         self.tracker: Optional[SubgoalTracker] = None
         self.mode = "image"
         self.stuck = StuckDetector(timeout=cfg.stuck_timeout) if cfg.stuck_timeout > 0 else None
@@ -162,8 +164,12 @@ class NavEngine:
         events: List[str] = []
         if self.state != "running" or self.tracker is None:
             return self._result(0.0, 0.0, None, self.state, events=events)
-        if self._img_t is None or t - self._img_t > self.cfg.max_image_age:
-            return self._result(0.0, 0.0, None, "waiting_image", reason="no recent image", events=events)
+        self.image_age = None if self._img_t is None else t - self._img_t
+        if self._img_t is None or self.image_age > self.cfg.max_image_age:
+            self.step_state = "waiting_image"
+            age = "no image" if self._img_t is None else f"image age {self.image_age:.2f}s > max_image_age {self.cfg.max_image_age}s"
+            return self._result(0.0, 0.0, None, "waiting_image", reason=f"no recent image ({age})", events=events)
+        self.step_state = "running"
         self._used_seq = self._img_seq
         cur = self.current_image()
         pose = self.course_pose()
@@ -237,4 +243,5 @@ class NavEngine:
                 "reach_check": self.mode, "similarity": tr.last_similarity if tr else None,
                 "distance": tr.last_distance if tr else None, "travel_m": self.travel,
                 "v": self.last.v if self.last else 0.0, "w": self.last.w if self.last else 0.0,
-                "latency": self.last.latency if self.last else None, "time": time.time()}
+                "latency": self.last.latency if self.last else None, "time": time.time(),
+                "step_state": self.step_state, "image_age": self.image_age, "max_image_age": self.cfg.max_image_age}

@@ -68,8 +68,11 @@ def load_nav_config(path: Optional[str], overrides: Optional[Dict[str, Any]] = N
     for k, v in (overrides or {}).items():
         if v is None or v == "":
             continue
-        sec, _, key = k.partition(".")
-        data.setdefault(sec, {})[key] = v
+        *parents, key = k.split(".")       # "engine.tracker.image_threshold" も可
+        d = data
+        for p in parents:
+            d = d.setdefault(p, {})
+        d[key] = v
     cfg = NavConfig()
     _apply(cfg.model, data.get("model", {}), "model")
     _apply(cfg.io, data.get("io", {}), "io")

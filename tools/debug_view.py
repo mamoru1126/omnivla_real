@@ -106,14 +106,16 @@ def compose(st: State, robot: RobotConfig, cam, now: float):
             goal = Image.open(p).convert("RGB")
     lat = status.get("latency")
     lines = [
-        f"state {status.get('state', '-')}   ({status.get('reach_check', '-')})",
+        f"state {status.get('state', '-')}/{status.get('step_state') or '-'}   ({status.get('reach_check', '-')})"
+        + (f"  node img age {status['image_age']:.2f}/{status.get('max_image_age')}s" if status.get("image_age") is not None else ""),
         f"subgoal {status.get('subgoal', '-')}/{(status.get('num_nodes') or 1) - 1}   sim {fmt(status.get('similarity'), '{:.3f}')}",
         f"cmd v={fmt(cmd[0] if cmd else None)} w={fmt(cmd[1] if cmd else None)}   latency {fmt(lat * 1000 if lat else None, '{:.0f}')} ms",
         f"image {fmt(info['image_hz'], '{:.1f}')} Hz  age {fmt(info['image_age_s'])} s   odom {fmt(info['odom_hz'], '{:.1f}')} Hz",
     ]
     frame = render_debug(cur if cur is not None else Image.new("RGB", (320, 240), (60, 0, 0)),
                          goal, path, cam=cam, lines=lines)
-    row = {"time": now, "state": status.get("state"), "subgoal": sg, "num_nodes": status.get("num_nodes"),
+    row = {"time": now, "state": status.get("state"), "step_state": status.get("step_state"),
+           "node_image_age_s": status.get("image_age"), "subgoal": sg, "num_nodes": status.get("num_nodes"),
            "similarity": status.get("similarity"), "latency": lat, "travel_m": status.get("travel_m"),
            "v": cmd[0] if cmd else None, "w": cmd[1] if cmd else None, **info,
            "path_end_x": float(path[-1, 0]) if path is not None else None,
@@ -135,6 +137,10 @@ def summarize(rows: list, topics: dict) -> str:
     for r in rows:
         states[r.get("state")] = states.get(r.get("state"), 0) + 1
     L.append(f"状態: {states}")
+    steps = {}
+    for r in rows:
+        steps[r.get("step_state")] = steps.get(r.get("step_state"), 0) + 1
+    L.append(f"推論の結果 (step_state): {steps}   ノードが見た画像の遅れ [s]: {stat('node_image_age_s')}")
     sg = vals("subgoal")
     L.append(f"サブゴール: {sg[0] if sg else '-'} -> {sg[-1] if sg else '-'} / {rows[-1].get('num_nodes') if rows else '-'}")
     L.append(f"類似度: {stat('similarity', f='{:.3f}')}")

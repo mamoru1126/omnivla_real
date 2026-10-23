@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import threading
 import time
 from typing import Callable, Optional, Tuple
@@ -21,13 +22,31 @@ from .robot_config import RobotConfig
 from .topomap import Topomap, load_topomap
 
 
+def parse_overrides(text: str) -> dict:
+    """"engine.max_image_age=1.5 engine.tracker.image_threshold=0.93" -> {key: 値} (数値・真偽値は変換)."""
+    import yaml
+    out = {}
+    for kv in (text or "").split():
+        if "=" not in kv:
+            continue
+        k, v = kv.split("=", 1)
+        try:
+            out[k] = yaml.safe_load(v)
+        except yaml.YAMLError:
+            out[k] = v
+    return out
+
+
 class NavRunner:
     """エンジン + 推論スレッド + 指示値の保持. clock() は ROS の時刻 (bag 再生時は /clock) を返す関数."""
 
     def __init__(self, robot_cfg: str, nav_cfg: str, topomap: str = "", overrides: Optional[dict] = None,
                  clock: Callable[[], float] = time.time, log: Callable[[str], None] = print):
         self.robot = RobotConfig.load(robot_cfg)
-        self.cfg: NavConfig = load_nav_config(nav_cfg, overrides)
+        env_over = parse_overrides(os.environ.get("NAV_OVERRIDES", ""))
+        if env_over:
+            log(f"NAV_OVERRIDES: {env_over}")
+        self.cfg: NavConfig = load_nav_config(nav_cfg, {**env_over, **(overrides or {})})
         self.clock = clock
         self.log = log
         log(f"loading model ({self.cfg.model.model}) ...")
@@ -42,6 +61,7 @@ class NavRunner:
         self.topomap_path = topomap
         self._thread: Optional[threading.Thread] = None
         self._alive = True
+        self._wait_log_t = -1e9
         self.on_result: Optional[Callable[[StepResult], None]] = None
         log(f"ready: model={self.cfg.model.model}, sample_rate={self.engine.sample_rate} Hz, "
             f"topomap={topomap or '(none)'} ({len(tm)} subgoals)")
@@ -122,6 +142,10 @@ class NavRunner:
                     self.log(e)
                 if res.state in ("reached", "stopped"):
                     self.log(f"finished: {res.state} {res.reason}")
+                if res.state == "waiting_image" and time.time() - self._wait_log_t > 5.0:
+                    # 画像が古い (時計のずれ / カメラの遅れ). 5 秒ごとに理由を出す
+                    self.log(f"waiting for a recent image: {res.reason}")
+                    self._wait_log_t = time.time()
                 if self.on_result:
                     self.on_result(res)
             except Exception as e:  # 推論の例外でノードごと落ちないようにする
