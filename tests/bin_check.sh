@@ -141,6 +141,14 @@ if command -v docker > /dev/null && docker compose version > /dev/null 2>&1; the
     check "image: omnivla_real:latest" bash -c "cd '$ROOT' && docker compose -f docker-compose.replay.yml config policy"
 fi
 
+# --- 時刻合わせ ---
+check "+ write /etc/chrony/conf.d/atmobi.conf:" "$B/timesync.sh" orin
+check "server 192.168.0.100 iburst prefer trust" "$B/timesync.sh" orin
+check "append to /etc/chrony/chrony.conf: allow 192.168.0.0/24" "$B/timesync.sh" atmobi
+check "server 10.0.0.5 iburst prefer trust" env ATMOBI_IP=10.0.0.5 "$B/timesync.sh" orin
+check "+ sudo chronyc makestep" "$B/timesync.sh" now
+fails "bin/timesync.sh" "$B/timesync.sh" bogus
+
 # --- 使い方の表示 ---
 for f in "$B"/*.sh; do
     [ "$(basename "$f")" = _lib.sh ] && continue

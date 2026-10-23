@@ -9,6 +9,7 @@
 | `bin/to_jetson.sh user@jetson [--bag BAG] [--configs]` | 学習 PC | 重み・topomap (・評価用の bag・設定) を rsync で送る |
 | `bin/jetson.sh build\|up [--standalone]\|restart\|status\|logs\|plot\|down` | Jetson | `docker-compose.jetson.yml` (推論サーバ + ROS 1 ノード) |
 | `bin/jetson.sh shell [--standalone] [コマンド]` | Jetson | ROS 1 のコンテナで `rostopic list` / `hz` など |
+| `bin/timesync.sh orin\|atmobi\|now\|status` | Orin / ATMOBI PC | 時刻合わせ (chrony)。単体はネット、本番は ATMOBI PC に合わせる ([2-2](#2-2-時刻合わせ-単体はネット本番は-atmobi-pc)) |
 | `bin/desk_eval.sh` / `replay.sh` / `replay_video.sh` / `plot_nav_log.sh` など | Jetson | 学習 PC と同じ確認 ([1-3](#1-3-机上評価bag-で確認する)) |
 
 - 使い方は `-h` で表示します。`OMNIVLA_DRY_RUN=1` を付けると、実行せずに中のコマンドを表示します。
@@ -153,32 +154,25 @@ Orin の chrony には、ネットの時刻サーバと ATMOBI PC の両方を�
 | 単体 (ネットにつながっている) | ネットの時刻サーバ | ネット |
 | 本番 (192.168.0.x の 2 台だけ) | ATMOBI PC | ATMOBI PC |
 
-**ATMOBI PC** (本番の時刻の基準。ATMOBI PC 自身の時刻が正しいことも確認しておく):
+`bin/timesync.sh` で設定します (ホストの chrony を設定する。sudo のパスワードを聞かれます)。
 
 ```bash
-sudo apt install chrony
-# Orin からの問い合わせを許可し、外部の時刻サーバに届かなくても自分の時刻を配る
-printf 'allow 192.168.0.0/24\nlocal stratum 10\n' | sudo tee -a /etc/chrony/chrony.conf
-sudo systemctl restart chrony
+# ATMOBI PC (本番の時刻の基準): リポジトリが無ければ、このファイルだけ送って実行する
+scp bin/timesync.sh <ATMOBI PC>:   &&   ssh -t <ATMOBI PC> ./timesync.sh atmobi
+
+# Orin (ネットにつながっている間に. chrony が無ければ入れる)
+bin/timesync.sh orin          # ネットの時刻サーバ + ATMOBI PC (優先) を登録して、すぐ合わせる
+bin/timesync.sh status        # 行頭が ^* のサーバに合わせている (単体: ネット / 本番: 192.168.0.100)
+bin/timesync.sh now           # 時計が大きくずれていて、すぐ直したいとき
 ```
 
-**Orin**:
+| | `bin/timesync.sh` がすること |
+|---|---|
+| `atmobi` | `chrony.conf` に `allow 192.168.0.0/24` と `local stratum 10` (ネットに届かなくても自分の時刻を配る) |
+| `orin` | ネットの時刻サーバ (`pool` 行) は残し、`/etc/chrony/conf.d/atmobi.conf` に `server 192.168.0.100 iburst prefer trust` (届いていれば ATMOBI PC を優先し、正しいとみなす)。`makestep 1 -1` (ずれが 1 秒以上ならいつでも一気に合わせる) |
 
-```bash
-sudo apt install chrony          # systemd-timesyncd の代わりに入る (ネットにつながる間に入れておく)
-# ネットの時刻サーバ (pool 行) はそのまま. 前の手順で止めていたら戻し、chrony.conf に追記した行は消す
-sudo sed -i -E -e 's/^#((pool|server) )/\1/' -e '/^server 192\.168\.0\.100 /d' \
-    -e 's/^makestep .*/makestep 1 -1/' /etc/chrony/chrony.conf
-# ATMOBI PC を優先 (prefer) し、届いているときは常に正しいとみなす (trust)
-echo 'server 192.168.0.100 iburst prefer trust' | sudo tee /etc/chrony/conf.d/atmobi.conf
-sudo systemctl restart chrony
-
-chronyc sources                  # 行頭が ^* のものに合わせている (単体: ネットのサーバ / 本番: 192.168.0.100)
-chronyc tracking                 # "System time" のずれが数 ms 以下なら OK
-```
-
-- `makestep 1 -1`: ずれが 1 秒以上なら、起動直後に限らずいつでも一気に合わせます (単体と本番を行き来したとき用)。
-- 時計が大きくずれたままですぐ直したいときは `sudo chronyc makestep`。
+- ATMOBI PC 自身の時刻が正しいことも確認しておきます (本番では Orin はそれに合わせます)。
+- IP を変えるときは `ATMOBI_IP=... ROBOT_SUBNET=... bin/timesync.sh ...`。
 
 ### 2-3. ROS の設定と通信確認
 
