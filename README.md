@@ -36,7 +36,7 @@
 | 5 | サブゴール画像列 (topomap) を作る | `bin/make_topomap.sh` | 学習 PC |
 | 6 | 机上評価する | `bin/desk_eval.sh` | 学習 PC (Jetson でも可) |
 | 7 | bag をロボットの代わりにして、実機と同じ構成で動かす (ブラウザ / 動画) | `bin/replay.sh` / `bin/replay_video.sh` | 学習 PC (Jetson でも可) |
-| 8 | 重みと topomap を送って、Jetson で走らせる | `bin/to_jetson.sh` → `bin/jetson.sh up` | Jetson |
+| 8 | 重みと topomap を送り、Orin 単体で確認してから ATMOBI PC とつないで走らせる | `bin/to_jetson.sh` → `bin/jetson.sh up [--standalone]` | Jetson (Orin) |
 
 ## はじめかた
 
@@ -53,7 +53,8 @@ bin/to_jetson.sh user@jetson                 # Jetson に送る
 
 # Jetson
 bin/setup.sh none                            # .env + イメージ (重みは学習 PC から送る)
-bin/jetson.sh up                             # 走行. ブラウザで http://<Jetson の IP>:8080
+bin/jetson.sh up --standalone                # Orin 単体 (roscore も Orin). ブラウザで http://<Orin の IP>:8080
+bin/jetson.sh up                             # ATMOBI PC (roscore) とつないで走行. IP・時刻合わせは docs/jetson.md
 ```
 
 - コマンドはどれも `-h` で使い方を表示します。中で `docker compose` を呼ぶので、どこから実行しても構いません。

@@ -21,4 +21,7 @@ fi
 if [ -f $WS/devel/setup.bash ]; then
   source $WS/devel/setup.bash
 fi
+# 空の ROS_IP / ROS_HOSTNAME は ROS 1 が受け付けないので消す (.env で空のまま渡ってくる)
+if [ -z "${ROS_IP:-}" ]; then unset ROS_IP; fi
+if [ -z "${ROS_HOSTNAME:-}" ]; then unset ROS_HOSTNAME; fi
 exec "$@"

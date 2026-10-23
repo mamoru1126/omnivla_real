@@ -163,7 +163,7 @@ bin/desk_eval.sh run2.bag course_a     # モデルは .env の NAV_MODEL / FINET
 
 ## 7. bag をロボットの代わりにして、実機と同じ構成で動かす
 
-机上評価 (6) とは別に、走行時の構成そのものを学習 PC で動かして確かめます (Jetson の上でも同じコマンドで動きます: [jetson.md](jetson.md#jetson-で机上評価bag-での確認))。Jetson で使う `nav` コンテナ (`docker-compose.jetson.yml` の定義そのまま) と推論サーバを立て、別の走行の bag をロボットの代わりに流します。様子はブラウザのデバッグ画面で見ます。
+机上評価 (6) とは別に、走行時の構成そのものを学習 PC で動かして確かめます (Jetson の上でも同じコマンドで動きます: [jetson.md](jetson.md#1-3-机上評価bag-で確認する))。Jetson で使う `nav` コンテナ (`docker-compose.jetson.yml` の定義そのまま) と推論サーバを立て、別の走行の bag をロボットの代わりに流します。様子はブラウザのデバッグ画面で見ます。
 
 | コンテナ | 実機では | 中身 |
 |---|---|---|

@@ -104,6 +104,15 @@ check "configs/./robot.yaml configs/./navigator.yaml me@jet:omnivla_real/configs
 check "docker compose -f docker-compose.jetson.yml --profile standalone up -d" env TOPOMAP=/data/topomaps/course_a "$B/jetson.sh" up --standalone
 check "docker compose -f docker-compose.jetson.yml up -d" env TOPOMAP=/data/topomaps/course_a "$B/jetson.sh" up
 check "nav python3 tools/plot_nav_log.py /workspace/log/nav/latest" "$B/jetson.sh" plot
+check "docker compose -f docker-compose.jetson.yml --profile tools run --rm --no-deps -T shell rostopic hz /odom" \
+    env ROS_MASTER_URI=http://192.168.0.100:11311 ROS_IP=192.168.0.200 "$B/jetson.sh" shell rostopic hz /odom
+check "ROS master: http://192.168.0.100:11311  ROS_IP: 192.168.0.200" \
+    env ROS_MASTER_URI=http://192.168.0.100:11311 ROS_IP=192.168.0.200 "$B/jetson.sh" shell rostopic list
+check "ROS master: http://localhost:11311  ROS_IP: 127.0.0.1" \
+    env ROS_MASTER_URI=http://192.168.0.100:11311 ROS_IP=192.168.0.200 "$B/jetson.sh" shell --standalone rostopic list
+check "Jetson 単体 (ROS master: http://localhost:11311)" \
+    env TOPOMAP=/data/topomaps/course_a ROS_MASTER_URI=http://192.168.0.100:11311 "$B/jetson.sh" up --standalone
+check "run --rm --no-deps -T shell bash" "$B/jetson.sh" shell
 check "docker compose -f docker-compose.jetson.yml --profile standalone down" "$B/jetson.sh" down
 
 # --- Jetson の上で、学習 PC と同じ確認 (OMNIVLA_JETSON=1 で Jetson のつもりにする) ---
