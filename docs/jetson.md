@@ -28,7 +28,7 @@
 
 | JetPack | `JETSON_BASE_IMAGE` |
 |---|---|
-| 6.1 / 6.2 (L4T r36.4) | `dustynv/l4t-pytorch:r36.4.0` (既定) |
+| 6.1 / 6.2.x (L4T R36.4.x。今回の Orin は R36.4.7) | `dustynv/l4t-pytorch:r36.4.0` (既定) |
 | 6.0 (L4T r36.2) | `dustynv/l4t-pytorch:r36.2.0` |
 | 5.1.2 (L4T r35.4) | `dustynv/l4t-pytorch:2.2-r35.4.1` |
 
@@ -64,13 +64,16 @@ git clone https://github.com/mamoru1126/omnivla_real.git && cd omnivla_real
 bin/setup.sh none                  # .env を作り、Jetson 用のイメージ (推論サーバ・ROS 1) をビルド. 重みは学習 PC から送る
 ```
 
-`.env` には次を書きます (残りは 2 で書きます)。
+`.env` は `.env.jetson.example` から作られます (本番の値: OmniVLA 7B、`NAV_AUTOSTART=false`、ATMOBI PC の IP)。
 
-```bash
-JETSON_BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0   # JetPack に合わせる
-WITH_7B=1                                       # edge だけなら 0 (ビルドが軽くなる)
-NAV_AUTOSTART=false                             # ブラウザの「開始」で走り出す
-```
+| 項目 | 値 |
+|---|---|
+| `JETSON_BASE_IMAGE` / `WITH_7B` | `dustynv/l4t-pytorch:r36.4.0` / `1` (7B の依存を入れる) |
+| `NAV_MODEL` / `FINETUNED_DIR` | `7b` / 学習 PC の `bin/to_jetson.sh` が最後に表示する値 |
+| `NAV_AUTOSTART` | `false` (ブラウザの「開始」で走り出す) |
+| `ROS_MASTER_URI` / `ROS_IP` | `http://192.168.0.100:11311` / `192.168.0.200` (単体のときは `--standalone` で localhost になる) |
+
+- 7B は bf16 で約 15 GB の GPU メモリ (Orin は CPU と共有) を使います。64 GB の Orin なら余裕があります。
 
 ### 1-2. 学習 PC で学習して、Orin に送る
 

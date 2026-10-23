@@ -40,9 +40,11 @@ env_get() {
 }
 
 ensure_env() {
+    local src=.env.example
+    if on_jetson && [ -f "$ROOT/.env.jetson.example" ]; then src=.env.jetson.example; fi
     if [ ! -f "$ROOT/.env" ] && [ "${OMNIVLA_DRY_RUN:-0}" != 1 ]; then
-        cp "$ROOT/.env.example" "$ROOT/.env"
-        say ".env がなかったので .env.example から作りました (重み・topomap などはここに書きます)"
+        cp "$ROOT/$src" "$ROOT/.env"
+        say ".env がなかったので $src から作りました (重み・topomap などはここに書きます)"
     fi
 }
 
