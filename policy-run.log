@@ -1,0 +1,14 @@
+/opt/conda/lib/python3.10/site-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[policy_server] loading edge ...
+/opt/conda/lib/python3.10/site-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[edge] ready (device=cpu, metric_waypoint_spacing=0.1, context_stride=1)
+[policy_server] loaded in 1.8s
+  0%|                                               | 0.00/338M [00:00<?, ?iB/s]  8%|███▏                                   | 27.6M/338M [00:00<00:01, 289MiB/s] 17%|██████▍                                | 56.0M/338M [00:00<00:01, 293MiB/s] 25%|█████████▋                             | 84.0M/338M [00:00<00:00, 280MiB/s] 33%|█████████████                           | 111M/338M [00:00<00:00, 276MiB/s] 41%|████████████████▏                       | 137M/338M [00:00<00:00, 275MiB/s] 48%|███████████████████▎                    | 163M/338M [00:00<00:00, 258MiB/s] 56%|██████████████████████▍                 | 190M/338M [00:00<00:00, 263MiB/s] 64%|█████████████████████████▍              | 215M/338M [00:00<00:00, 259MiB/s] 71%|████████████████████████████▍           | 240M/338M [00:00<00:00, 257MiB/s] 78%|███████████████████████████████▎        | 264M/338M [00:01<00:00, 250MiB/s] 86%|██████████████████████████████████▎     | 290M/338M [00:01<00:00, 256MiB/s] 94%|█████████████████████████████████████▍  | 316M/338M [00:01<00:00, 260MiB/s]100%|████████████████████████████████████████| 338M/338M [00:01<00:00, 264MiB/s]
+[policy_server] warmup done (latency 131 ms)
+[policy_server] image preprocess (robot.yaml): crop=[0.0, 0.0, 0.0, 0.0] width=320 rotate180=False
+[policy_server] edge on http://127.0.0.1:8770
+[remote] edge at 127.0.0.1:8770 (history=True)
+waypoints (8, 4) latency 0.142
+desk_eval deps OK
