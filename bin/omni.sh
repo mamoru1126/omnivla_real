@@ -9,6 +9,7 @@
 #   bin/omni.sh topomap /data/topomaps/course_a   # コースを指定して開始 (/omnivla/topomap)
 #   bin/omni.sh ros2 topic list         # その他のコマンド (noetic なら rostopic list など)
 #   bin/omni.sh sh                      # nav コンテナに入る
+#   bin/omni.sh debug [--port 8090]     # デバッグ画面 (tools/debug_view.py. ROS 2) → http://<Orin の IP>:8090. Ctrl-C でまとめ
 # 短く打つなら: sudo ln -sf "$PWD/bin/omni.sh" /usr/local/bin/omni   → omni start
 source "$(dirname "$0")/_lib.sh"
 
@@ -53,5 +54,11 @@ case $CMD in
         ;;
     ros2 | rostopic | rosnode | ros) in_nav "$CMD $*" ;;
     sh) jetson exec nav bash ;;
+    debug)
+        [ "$DISTRO" = humble ] || die "debug は ROS 2 (humble) 用です (ROS 1 の C++ ノードはブラウザの画面つき: http://<IP>:8080)"
+        F=tools/debug_view.py
+        [ -f "$F" ] || F=log/debug_view.py   # ネットにつながらない Orin に貼り付けた場合
+        in_nav "python3 /workspace/$F $*"
+        ;;
     *) usage 1 ;;
 esac
