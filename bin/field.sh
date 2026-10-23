@@ -50,6 +50,12 @@ policy_info() {
 robot_yaml() { hpath "$(env_get ROBOT_CONFIG /workspace/configs/robot.yaml)"; }
 topic_of() { sed -n -E "s/^[[:space:]]+$1:[[:space:]]*\"?([^\" #]+)\"?.*/\\1/p" "$(robot_yaml)" | head -1; }
 mark() { printf '[%-2s] %s\n' "$1" "$2"; }
+# topomap のフォルダの画像 (0.jpg, 1.jpg, ...) の枚数
+count_nodes() {
+    local n=0 f
+    for f in "$1"/[0-9]*.jpg; do [ -e "$f" ] && n=$((n + 1)); done
+    echo "$n"
+}
 NG_COUNT=0
 ng() { mark NG "$1"; NG_COUNT=$((NG_COUNT + 1)); [ -z "${2:-}" ] || echo "        $2"; }
 ok() { mark OK "$1"; }
@@ -126,7 +132,7 @@ case $CMD in
         if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ]; then
             echo "+ $RY: topics.$1: $2"
         else
-            sed -i -E "s#^([[:space:]]+$1:[[:space:]]*)[^ #]*#\1$2#" "$RY"
+            sed -i -E "s|^([[:space:]]+$1:[[:space:]]*)[^ #]*|\1$2|" "$RY"
         fi
         say "$RY: topics.$1 = $(topic_of "$1")  (反映: bin/field.sh up)"
         ;;
@@ -154,7 +160,7 @@ case $CMD in
         if [ -z "$T" ]; then
             warn "TOPOMAP が空" "bin/field.sh up --topomap <名前> で指定 (data/topomaps: $(ls "$(host_dir data)/topomaps" 2> /dev/null | tr '\n' ' '))"
         elif [ -d "$(hpath "$T")" ]; then
-            ok "TOPOMAP=$T ($(ls "$(hpath "$T")" | grep -c '^[0-9]*\.jpg$') 枚)"
+            ok "TOPOMAP=$T ($(count_nodes "$(hpath "$T")") 枚)"
         else
             ng "TOPOMAP が無い: $T"
         fi
@@ -218,7 +224,8 @@ case $CMD in
         TOPO=$(topomap_path "$TOPO")
         # .env の NAV_OVERRIDES に、画像の古さの測り方と速度の上限を足す (同じキーは後ろが勝つので、ここで決めたものを優先)
         OV=""
-        for kv in $(env_get NAV_OVERRIDES ""); do
+        read -r -a KVS <<< "$(env_get NAV_OVERRIDES "")"
+        for kv in "${KVS[@]}"; do
             case ${kv%%=*} in engine.image_age_from | engine.max_image_age) ;; *) OV="$OV $kv" ;; esac
         done
         if [ "$STRICT" = 0 ]; then
@@ -228,7 +235,7 @@ case $CMD in
         fi
         OV=$(echo "$OV ${EXTRA[*]:-}" | xargs)
         export TOPOMAP=$TOPO NAV_AUTOSTART=false NAV_OVERRIDES=$OV
-        say "topomap: $TOPO ($(ls "$(hpath "$TOPO")" | grep -c '^[0-9]*\.jpg$') 枚)  モデル: $(env_get NAV_MODEL '') $(env_get FINETUNED_DIR '')"
+        say "topomap: $TOPO ($(count_nodes "$(hpath "$TOPO")") 枚)  モデル: $(env_get NAV_MODEL '') $(env_get FINETUNED_DIR '')"
         say "NAV_OVERRIDES: ${OV:-(なし)}"
         jetson up -d policy nav
         if [ "${OMNIVLA_DRY_RUN:-0}" != 1 ]; then
