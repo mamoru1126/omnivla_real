@@ -1,0 +1,45 @@
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'robot_config':
+        no description given
+        (default: '/workspace/configs/robot.yaml')
+
+    'nav_config':
+        no description given
+        (default: '/workspace/configs/navigator.yaml')
+
+    'topomap':
+        no description given
+        (default: '')
+
+    'autostart':
+        no description given
+        (default: 'true')
+
+    'model':
+        no description given
+        (default: '')
+
+    'weights':
+        no description given
+        (default: '')
+
+    'finetuned_dir':
+        no description given
+        (default: '')
+
+    'policy_url':
+        no description given
+        (default: '')
+
+    'device':
+        no description given
+        (default: '')
+
+    'log_dir':
+        no description given
+        (default: '')
+
+    'use_sim_time':
+        no description given
+        (default: 'false')

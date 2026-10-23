@@ -1,0 +1,400 @@
+#10 38.95 Setting up humanity-icon-theme (0.6.16) ...
+#10 39.24 Setting up ubuntu-mono (20.10-0ubuntu2) ...
+#10 39.36 Processing triggers for sgml-base (1.30) ...
+#10 39.38 Processing triggers for libglib2.0-0:amd64 (2.72.4-0ubuntu2.10) ...
+#10 39.42 Setting up libgtk-3-0:amd64 (3.24.33-1ubuntu2.2) ...
+#10 39.44 Processing triggers for libc-bin (2.35-0ubuntu3.15) ...
+#10 39.50 Setting up libgstreamer-plugins-base1.0-0:amd64 (1.20.1-1ubuntu0.7) ...
+#10 39.51 Setting up libopencv-highgui4.5d:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.53 Setting up libopencv-videoio4.5d:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.53 Setting up libopencv-contrib4.5d:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.54 Setting up libopencv-superres4.5d:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.55 Setting up libopencv-videoio-dev:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.56 Setting up python3-opencv:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.56 Setting up libopencv-videostab4.5d:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.57 Setting up libopencv-superres-dev:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.57 Setting up libopencv-highgui-dev:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.58 Setting up libopencv-features2d-dev:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.59 Setting up libopencv-calib3d-dev:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.59 Setting up libopencv-objdetect-dev:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.60 Setting up libopencv-videostab-dev:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.60 Setting up libopencv-stitching-dev:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.61 Setting up libopencv-contrib-dev:amd64 (4.5.4+dfsg-9ubuntu4) ...
+#10 39.61 Setting up libopencv-dev (4.5.4+dfsg-9ubuntu4) ...
+#10 39.62 Setting up ros-humble-cv-bridge (3.2.1-1jammy.20260907.220118) ...
+#10 39.62 Setting up ros-humble-rqt-image-view (1.2.0-2jammy.20260907.230654) ...
+#10 39.63 Processing triggers for ca-certificates (20260816ubuntu0.22.04.1) ...
+#10 39.63 Updating certificates in /etc/ssl/certs...
+#10 40.15 0 added, 0 removed; done.
+#10 40.15 Running hooks in /etc/ca-certificates/update.d...
+#10 40.15 done.
+#10 40.16 Processing triggers for libc-bin (2.35-0ubuntu3.15) ...
+#10 DONE 42.8s
+
+#11 [ 3/11] RUN python3 -m pip install -U "pip>=24,<26" "setuptools>=68,<70" wheel     && python3 -m pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu121
+#11 0.786 Collecting pip<26,>=24
+#11 0.917   Downloading pip-25.3-py3-none-any.whl (1.8 MB)
+#11 1.077      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 11.3 MB/s eta 0:00:00
+#11 1.434 Collecting setuptools<70,>=68
+#11 1.467   Downloading setuptools-69.5.1-py3-none-any.whl (894 kB)
+#11 1.475      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 894.6/894.6 KB 157.6 MB/s eta 0:00:00
+#11 1.480 Requirement already satisfied: wheel in /usr/lib/python3/dist-packages (0.37.1)
+#11 1.563 Collecting wheel
+#11 1.604   Downloading wheel-0.48.0-py3-none-any.whl (33 kB)
+#11 1.674 Collecting packaging>=24.0
+#11 1.706   Downloading packaging-26.3-py3-none-any.whl (129 kB)
+#11 1.708      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 130.0/130.0 KB 258.5 MB/s eta 0:00:00
+#11 1.903 Installing collected packages: setuptools, pip, packaging, wheel
+#11 1.904   Attempting uninstall: setuptools
+#11 1.904     Found existing installation: setuptools 59.6.0
+#11 1.906     Not uninstalling setuptools at /usr/lib/python3/dist-packages, outside environment /usr
+#11 1.906     Can't uninstall 'setuptools'. No files were found to uninstall.
+#11 2.318   Attempting uninstall: pip
+#11 2.318     Found existing installation: pip 22.0.2
+#11 2.320     Not uninstalling pip at /usr/lib/python3/dist-packages, outside environment /usr
+#11 2.320     Can't uninstall 'pip'. No files were found to uninstall.
+#11 2.979   Attempting uninstall: packaging
+#11 2.980     Found existing installation: packaging 21.3
+#11 2.982     Not uninstalling packaging at /usr/lib/python3/dist-packages, outside environment /usr
+#11 2.982     Can't uninstall 'packaging'. No files were found to uninstall.
+#11 3.042   Attempting uninstall: wheel
+#11 3.042     Found existing installation: wheel 0.37.1
+#11 3.043     Not uninstalling wheel at /usr/lib/python3/dist-packages, outside environment /usr
+#11 3.044     Can't uninstall 'wheel'. No files were found to uninstall.
+#11 3.067 Successfully installed packaging-26.3 pip-25.3 setuptools-69.5.1 wheel-0.48.0
+#11 3.067 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+#11 3.470 Looking in indexes: https://download.pytorch.org/whl/cu121
+#11 3.687 Collecting torch==2.2.0
+#11 3.777   Downloading https://download-r2.pytorch.org/whl/cu121/torch-2.2.0%2Bcu121-cp310-cp310-linux_x86_64.whl (757.3 MB)
+#11 6.855      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 757.3/757.3 MB 236.3 MB/s  0:00:03
+#11 7.499 Collecting torchvision==0.17.0
+#11 7.554   Downloading https://download-r2.pytorch.org/whl/cu121/torchvision-0.17.0%2Bcu121-cp310-cp310-linux_x86_64.whl (7.0 MB)
+#11 7.596      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7.0/7.0 MB 191.8 MB/s  0:00:00
+#11 7.634 Collecting filelock (from torch==2.2.0)
+#11 7.870   Downloading filelock-3.32.3-py3-none-any.whl.metadata (2.0 kB)
+#11 7.890 Collecting typing-extensions>=4.8.0 (from torch==2.2.0)
+#11 7.959   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#11 7.981 Collecting sympy (from torch==2.2.0)
+#11 8.050   Downloading sympy-1.14.0-py3-none-any.whl.metadata (12 kB)
+#11 8.087 Collecting networkx (from torch==2.2.0)
+#11 8.156   Downloading networkx-3.4.2-py3-none-any.whl.metadata (6.3 kB)
+#11 8.174 Collecting jinja2 (from torch==2.2.0)
+#11 8.178   Downloading https://download.pytorch.org/whl/jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+#11 8.204 Collecting fsspec (from torch==2.2.0)
+#11 8.273   Downloading fsspec-2026.7.0-py3-none-any.whl.metadata (10 kB)
+#11 8.327 Collecting nvidia-cuda-nvrtc-cu12==12.1.105 (from torch==2.2.0)
+#11 8.394   Downloading https://pypi.nvidia.com/nvidia-cuda-nvrtc-cu12/nvidia_cuda_nvrtc_cu12-12.1.105-py3-none-manylinux1_x86_64.whl (23.7 MB)
+#11 8.578      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 23.7/23.7 MB 149.8 MB/s  0:00:00
+#11 8.607 Collecting nvidia-cuda-runtime-cu12==12.1.105 (from torch==2.2.0)
+#11 8.627   Downloading https://pypi.nvidia.com/nvidia-cuda-runtime-cu12/nvidia_cuda_runtime_cu12-12.1.105-py3-none-manylinux1_x86_64.whl (823 kB)
+#11 8.630      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 823.6/823.6 kB 356.6 MB/s  0:00:00
+#11 8.644 Collecting nvidia-cuda-cupti-cu12==12.1.105 (from torch==2.2.0)
+#11 8.660   Downloading https://pypi.nvidia.com/nvidia-cuda-cupti-cu12/nvidia_cuda_cupti_cu12-12.1.105-py3-none-manylinux1_x86_64.whl (14.1 MB)
+#11 8.744      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 14.1/14.1 MB 169.7 MB/s  0:00:00
+#11 8.775 Collecting nvidia-cudnn-cu12==8.9.2.26 (from torch==2.2.0)
+#11 8.786   Downloading https://pypi.nvidia.com/nvidia-cudnn-cu12/nvidia_cudnn_cu12-8.9.2.26-py3-none-manylinux1_x86_64.whl (731.7 MB)
+#11 13.31      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 731.7/731.7 MB 164.8 MB/s  0:00:04
+#11 13.85 Collecting nvidia-cublas-cu12==12.1.3.1 (from torch==2.2.0)
+#11 13.87   Downloading https://pypi.nvidia.com/nvidia-cublas-cu12/nvidia_cublas_cu12-12.1.3.1-py3-none-manylinux1_x86_64.whl (410.6 MB)
+#11 16.46      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 410.6/410.6 MB 168.0 MB/s  0:00:02
+#11 16.77 Collecting nvidia-cufft-cu12==11.0.2.54 (from torch==2.2.0)
+#11 16.78   Downloading https://pypi.nvidia.com/nvidia-cufft-cu12/nvidia_cufft_cu12-11.0.2.54-py3-none-manylinux1_x86_64.whl (121.6 MB)
+#11 17.51      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 121.6/121.6 MB 166.6 MB/s  0:00:00
+#11 17.61 Collecting nvidia-curand-cu12==10.3.2.106 (from torch==2.2.0)
+#11 17.63   Downloading https://pypi.nvidia.com/nvidia-curand-cu12/nvidia_curand_cu12-10.3.2.106-py3-none-manylinux1_x86_64.whl (56.5 MB)
+#11 17.95      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 56.5/56.5 MB 178.4 MB/s  0:00:00
+#11 18.00 Collecting nvidia-cusolver-cu12==11.4.5.107 (from torch==2.2.0)
+#11 18.02   Downloading https://pypi.nvidia.com/nvidia-cusolver-cu12/nvidia_cusolver_cu12-11.4.5.107-py3-none-manylinux1_x86_64.whl (124.2 MB)
+#11 18.73      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 124.2/124.2 MB 175.7 MB/s  0:00:00
+#11 18.83 Collecting nvidia-cusparse-cu12==12.1.0.106 (from torch==2.2.0)
+#11 18.84   Downloading https://pypi.nvidia.com/nvidia-cusparse-cu12/nvidia_cusparse_cu12-12.1.0.106-py3-none-manylinux1_x86_64.whl (196.0 MB)
+#11 20.12      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 196.0/196.0 MB 152.9 MB/s  0:00:01
+#11 20.28 Collecting nvidia-nccl-cu12==2.19.3 (from torch==2.2.0)
+#11 20.30   Downloading https://pypi.nvidia.com/nvidia-nccl-cu12/nvidia_nccl_cu12-2.19.3-py3-none-manylinux1_x86_64.whl (158.7 MB)
+#11 21.23      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 158.7/158.7 MB 170.9 MB/s  0:00:00
+#11 21.36 Collecting nvidia-nvtx-cu12==12.1.105 (from torch==2.2.0)
+#11 21.37   Downloading https://pypi.nvidia.com/nvidia-nvtx-cu12/nvidia_nvtx_cu12-12.1.105-py3-none-manylinux1_x86_64.whl (99 kB)
+#11 21.39 Collecting triton==2.2.0 (from torch==2.2.0)
+#11 21.52   Downloading https://download-r2.pytorch.org/whl/triton-2.2.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (167.9 MB)
+#11 22.46      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 167.9/167.9 MB 187.9 MB/s  0:00:00
+#11 22.58 Requirement already satisfied: numpy in /usr/lib/python3/dist-packages (from torchvision==0.17.0) (1.21.5)
+#11 22.58 Collecting requests (from torchvision==0.17.0)
+#11 22.59   Downloading https://download.pytorch.org/whl/requests-2.28.1-py3-none-any.whl (62 kB)
+#11 22.91 Collecting pillow!=8.3.*,>=5.3.0 (from torchvision==0.17.0)
+#11 22.98   Downloading pillow-12.3.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.1 kB)
+#11 23.02 Collecting nvidia-nvjitlink-cu12 (from nvidia-cusolver-cu12==11.4.5.107->torch==2.2.0)
+#11 23.04   Downloading https://pypi.nvidia.com/nvidia-nvjitlink-cu12/nvidia_nvjitlink_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (39.7 MB)
+#11 23.28      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 39.7/39.7 MB 169.8 MB/s  0:00:00
+#11 23.33 Collecting MarkupSafe>=2.0 (from jinja2->torch==2.2.0)
+#11 23.34   Downloading https://download.pytorch.org/whl/markupsafe-3.0.3-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+#11 23.35 Collecting charset-normalizer<3,>=2 (from requests->torchvision==0.17.0)
+#11 23.36   Downloading https://download.pytorch.org/whl/charset_normalizer-2.1.1-py3-none-any.whl (39 kB)
+#11 23.37 Collecting idna<4,>=2.5 (from requests->torchvision==0.17.0)
+#11 23.38   Downloading https://download.pytorch.org/whl/idna-3.4-py3-none-any.whl (61 kB)
+#11 23.39 Collecting urllib3<1.27,>=1.21.1 (from requests->torchvision==0.17.0)
+#11 23.39   Downloading https://download.pytorch.org/whl/urllib3-1.26.13-py2.py3-none-any.whl (140 kB)
+#11 23.41 Collecting certifi>=2017.4.17 (from requests->torchvision==0.17.0)
+#11 23.41   Downloading https://download.pytorch.org/whl/certifi-2022.12.7-py3-none-any.whl (155 kB)
+#11 23.46 Collecting mpmath<1.4,>=1.1.0 (from sympy->torch==2.2.0)
+#11 23.53   Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+#11 23.61 Downloading pillow-12.3.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.9 MB)
+#11 24.09    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.9/6.9 MB 21.3 MB/s  0:00:00
+#11 24.16 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#11 24.23 Downloading filelock-3.32.3-py3-none-any.whl (98 kB)
+#11 24.31 Downloading fsspec-2026.7.0-py3-none-any.whl (206 kB)
+#11 24.31 Downloading https://download.pytorch.org/whl/jinja2-3.1.6-py3-none-any.whl (134 kB)
+#11 24.32 Downloading https://download.pytorch.org/whl/markupsafe-3.0.3-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (20 kB)
+#11 24.39 Downloading networkx-3.4.2-py3-none-any.whl (1.7 MB)
+#11 24.40    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.7/1.7 MB 230.0 MB/s  0:00:00
+#11 24.46 Downloading sympy-1.14.0-py3-none-any.whl (6.3 MB)
+#11 24.54    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.3/6.3 MB 81.1 MB/s  0:00:00
+#11 24.61 Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+#11 24.61    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 536.2/536.2 kB 499.4 MB/s  0:00:00
+#11 24.84 Installing collected packages: mpmath, urllib3, typing-extensions, sympy, pillow, nvidia-nvtx-cu12, nvidia-nvjitlink-cu12, nvidia-nccl-cu12, nvidia-curand-cu12, nvidia-cufft-cu12, nvidia-cuda-runtime-cu12, nvidia-cuda-nvrtc-cu12, nvidia-cuda-cupti-cu12, nvidia-cublas-cu12, networkx, MarkupSafe, idna, fsspec, filelock, charset-normalizer, certifi, triton, requests, nvidia-cusparse-cu12, nvidia-cudnn-cu12, jinja2, nvidia-cusolver-cu12, torch, torchvision
+#11 64.99 
+#11 65.00 Successfully installed MarkupSafe-3.0.3 certifi-2022.12.7 charset-normalizer-2.1.1 filelock-3.32.3 fsspec-2026.7.0 idna-3.4 jinja2-3.1.6 mpmath-1.3.0 networkx-3.4.2 nvidia-cublas-cu12-12.1.3.1 nvidia-cuda-cupti-cu12-12.1.105 nvidia-cuda-nvrtc-cu12-12.1.105 nvidia-cuda-runtime-cu12-12.1.105 nvidia-cudnn-cu12-8.9.2.26 nvidia-cufft-cu12-11.0.2.54 nvidia-curand-cu12-10.3.2.106 nvidia-cusolver-cu12-11.4.5.107 nvidia-cusparse-cu12-12.1.0.106 nvidia-nccl-cu12-2.19.3 nvidia-nvjitlink-cu12-12.9.86 nvidia-nvtx-cu12-12.1.105 pillow-12.3.0 requests-2.28.1 sympy-1.14.0 torch-2.2.0+cu121 torchvision-0.17.0+cu121 triton-2.2.0 typing-extensions-4.16.0 urllib3-1.26.13
+#11 65.00 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#11 DONE 65.9s
+
+#12 [ 4/11] COPY docker/requirements*.txt docker/install_omnivla.sh /tmp/
+#12 DONE 0.0s
+
+#13 [ 5/11] RUN echo -e "torch==2.2.0\ntorchvision==0.17.0" > /tmp/keep.txt     && python3 -m pip install -c /tmp/keep.txt -r /tmp/requirements.txt     && bash /tmp/install_omnivla.sh
+#13 0.522 Collecting transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab (from -r /tmp/requirements-7b.txt (line 4))
+#13 0.523   Cloning https://github.com/moojink/transformers-openvla-oft.git (to revision bc339d9ad707454c0c115970db43c260067c61ab) to /tmp/pip-install-4wxkum3t/transformers_0114434542f545af80c3ac2e9f328665
+#13 0.525   Running command git clone --filter=blob:none --quiet https://github.com/moojink/transformers-openvla-oft.git /tmp/pip-install-4wxkum3t/transformers_0114434542f545af80c3ac2e9f328665
+#13 6.378   Running command git rev-parse -q --verify 'sha^bc339d9ad707454c0c115970db43c260067c61ab'
+#13 6.380   Running command git fetch -q https://github.com/moojink/transformers-openvla-oft.git bc339d9ad707454c0c115970db43c260067c61ab
+#13 6.509   Resolved https://github.com/moojink/transformers-openvla-oft.git to commit bc339d9ad707454c0c115970db43c260067c61ab
+#13 6.513   Installing build dependencies: started
+#13 7.774   Installing build dependencies: finished with status 'done'
+#13 7.775   Getting requirements to build wheel: started
+#13 8.455   Getting requirements to build wheel: finished with status 'done'
+#13 8.457   Preparing metadata (pyproject.toml): started
+#13 9.000   Preparing metadata (pyproject.toml): finished with status 'done'
+#13 9.194 Collecting clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6 (from -r /tmp/requirements-edge.txt (line 5))
+#13 9.195   Cloning https://github.com/openai/CLIP.git (to revision d05afc436d78f1c48dc0dbf8e5980a9d471f35f6) to /tmp/pip-install-4wxkum3t/clip_0d758de5c02044f2b237a75e659950fa
+#13 9.197   Running command git clone --filter=blob:none --quiet https://github.com/openai/CLIP.git /tmp/pip-install-4wxkum3t/clip_0d758de5c02044f2b237a75e659950fa
+#13 9.695   Running command git rev-parse -q --verify 'sha^d05afc436d78f1c48dc0dbf8e5980a9d471f35f6'
+#13 9.697   Running command git fetch -q https://github.com/openai/CLIP.git d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
+#13 9.793   Resolved https://github.com/openai/CLIP.git to commit d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
+#13 9.796   Installing build dependencies: started
+#13 11.53   Installing build dependencies: finished with status 'done'
+#13 11.53   Getting requirements to build wheel: started
+#13 11.82   Getting requirements to build wheel: finished with status 'done'
+#13 11.82   Preparing metadata (pyproject.toml): started
+#13 11.98   Preparing metadata (pyproject.toml): finished with status 'done'
+#13 12.37 Collecting tokenizers==0.19.1 (from -r /tmp/requirements-7b.txt (line 5))
+#13 12.41   Downloading tokenizers-0.19.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.7 kB)
+#13 12.46 Collecting timm==0.9.10 (from -r /tmp/requirements-7b.txt (line 6))
+#13 12.46   Downloading timm-0.9.10-py3-none-any.whl.metadata (59 kB)
+#13 12.52 Collecting peft==0.11.1 (from -r /tmp/requirements-7b.txt (line 7))
+#13 12.54   Downloading peft-0.11.1-py3-none-any.whl.metadata (13 kB)
+#13 12.59 Collecting accelerate==0.34.2 (from -r /tmp/requirements-7b.txt (line 8))
+#13 12.59   Downloading accelerate-0.34.2-py3-none-any.whl.metadata (19 kB)
+#13 12.68 Collecting huggingface_hub==0.29.1 (from -r /tmp/requirements-7b.txt (line 9))
+#13 12.69   Downloading huggingface_hub-0.29.1-py3-none-any.whl.metadata (13 kB)
+#13 12.79 Collecting sentencepiece<0.3 (from -r /tmp/requirements-7b.txt (line 10))
+#13 12.79   Downloading sentencepiece-0.2.2-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (33 kB)
+#13 13.02 Collecting protobuf<5 (from -r /tmp/requirements-7b.txt (line 11))
+#13 13.02   Downloading protobuf-4.25.9-cp37-abi3-manylinux2014_x86_64.whl.metadata (541 bytes)
+#13 13.06 Collecting einops (from -r /tmp/requirements-7b.txt (line 12))
+#13 13.08   Downloading einops-0.8.2-py3-none-any.whl.metadata (13 kB)
+#13 13.12 Collecting json-numpy (from -r /tmp/requirements-7b.txt (line 13))
+#13 13.12   Downloading json_numpy-2.1.1-py3-none-any.whl.metadata (5.6 kB)
+#13 13.19 Collecting rich (from -r /tmp/requirements-7b.txt (line 14))
+#13 13.20   Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+#13 13.26 Collecting efficientnet_pytorch==0.7.1 (from -r /tmp/requirements-edge.txt (line 2))
+#13 13.27   Downloading efficientnet_pytorch-0.7.1.tar.gz (21 kB)
+#13 13.27   Installing build dependencies: started
+#13 14.58   Installing build dependencies: finished with status 'done'
+#13 14.58   Getting requirements to build wheel: started
+#13 14.87   Getting requirements to build wheel: finished with status 'done'
+#13 14.88   Preparing metadata (pyproject.toml): started
+#13 15.04   Preparing metadata (pyproject.toml): finished with status 'done'
+#13 15.08 Collecting ftfy (from -r /tmp/requirements-edge.txt (line 3))
+#13 15.08   Downloading ftfy-6.3.1-py3-none-any.whl.metadata (7.3 kB)
+#13 15.61 Collecting regex (from -r /tmp/requirements-edge.txt (line 4))
+#13 15.61   Downloading regex-2026.9.29-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+#13 15.62 Requirement already satisfied: numpy<2 in /usr/lib/python3/dist-packages (from -r /tmp/requirements-edge.txt (line 6)) (1.21.5)
+#13 15.62 Requirement already satisfied: pillow in /usr/local/lib/python3.10/dist-packages (from -r /tmp/requirements-edge.txt (line 7)) (12.3.0)
+#13 15.62 Requirement already satisfied: pyyaml in /usr/lib/python3/dist-packages (from -r /tmp/requirements-edge.txt (line 8)) (5.4.1)
+#13 15.66 Collecting rosbags<0.11,>=0.10.4 (from -r /tmp/requirements.txt (line 4))
+#13 15.66   Downloading rosbags-0.10.11-py3-none-any.whl.metadata (4.9 kB)
+#13 15.84 Collecting matplotlib (from -r /tmp/requirements.txt (line 5))
+#13 15.85   Downloading matplotlib-3.10.9-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (52 kB)
+#13 16.05 Collecting scipy (from -r /tmp/requirements.txt (line 6))
+#13 16.05   Downloading scipy-1.15.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (61 kB)
+#13 16.06 Requirement already satisfied: pytest in /usr/lib/python3/dist-packages (from -r /tmp/requirements.txt (line 7)) (6.2.5)
+#13 16.06 Requirement already satisfied: filelock in /usr/local/lib/python3.10/dist-packages (from transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4)) (3.32.3)
+#13 16.07 Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.10/dist-packages (from transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4)) (26.3)
+#13 16.09 Requirement already satisfied: requests in /usr/local/lib/python3.10/dist-packages (from transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4)) (2.28.1)
+#13 16.25 Collecting safetensors>=0.4.1 (from transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4))
+#13 16.26   Downloading safetensors-0.8.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.2 kB)
+#13 16.33 Collecting tqdm>=4.27 (from transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4))
+#13 16.33   Downloading tqdm-4.70.1-py3-none-any.whl.metadata (57 kB)
+#13 16.34 Requirement already satisfied: torch in /usr/local/lib/python3.10/dist-packages (from clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (2.2.0+cu121)
+#13 16.34 Requirement already satisfied: torchvision in /usr/local/lib/python3.10/dist-packages (from clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (0.17.0+cu121)
+#13 16.36 Requirement already satisfied: fsspec>=2023.5.0 in /usr/local/lib/python3.10/dist-packages (from huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (2026.7.0)
+#13 16.37 Requirement already satisfied: typing-extensions>=3.7.4.3 in /usr/local/lib/python3.10/dist-packages (from huggingface_hub==0.29.1->-r /tmp/requirements-7b.txt (line 9)) (4.16.0)
+#13 16.37 Requirement already satisfied: psutil in /usr/lib/python3/dist-packages (from peft==0.11.1->-r /tmp/requirements-7b.txt (line 7)) (5.9.0)
+#13 16.53 Collecting lz4 (from rosbags<0.11,>=0.10.4->-r /tmp/requirements.txt (line 4))
+#13 16.53   Downloading lz4-4.4.5-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+#13 16.74 Collecting ruamel.yaml (from rosbags<0.11,>=0.10.4->-r /tmp/requirements.txt (line 4))
+#13 16.74   Downloading ruamel_yaml-0.19.1-py3-none-any.whl.metadata (16 kB)
+#13 16.84 Collecting zstandard (from rosbags<0.11,>=0.10.4->-r /tmp/requirements.txt (line 4))
+#13 16.84   Downloading zstandard-0.25.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (3.3 kB)
+#13 16.89 Collecting markdown-it-py>=2.2.0 (from rich->-r /tmp/requirements-7b.txt (line 14))
+#13 16.89   Downloading markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+#13 16.94 Collecting pygments<3.0.0,>=2.13.0 (from rich->-r /tmp/requirements-7b.txt (line 14))
+#13 16.94   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+#13 16.99 Collecting wcwidth (from ftfy->-r /tmp/requirements-edge.txt (line 3))
+#13 17.02   Downloading wcwidth-0.9.3-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (23 kB)
+#13 17.12 Collecting contourpy>=1.0.1 (from matplotlib->-r /tmp/requirements.txt (line 5))
+#13 17.13   Downloading contourpy-1.3.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.5 kB)
+#13 17.17 Collecting cycler>=0.10 (from matplotlib->-r /tmp/requirements.txt (line 5))
+#13 17.17   Downloading cycler-0.12.1-py3-none-any.whl.metadata (3.8 kB)
+#13 17.39 Collecting fonttools>=4.22.0 (from matplotlib->-r /tmp/requirements.txt (line 5))
+#13 17.39   Downloading fonttools-4.65.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (125 kB)
+#13 17.56 Collecting kiwisolver>=1.3.1 (from matplotlib->-r /tmp/requirements.txt (line 5))
+#13 17.56   Downloading kiwisolver-1.5.1-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl.metadata (5.2 kB)
+#13 17.82 Collecting numpy<2 (from -r /tmp/requirements-edge.txt (line 6))
+#13 17.82   Downloading numpy-1.26.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (61 kB)
+#13 17.88 Collecting pyparsing>=3 (from matplotlib->-r /tmp/requirements.txt (line 5))
+#13 17.88   Downloading pyparsing-3.3.3-py3-none-any.whl.metadata (5.9 kB)
+#13 17.88 Requirement already satisfied: python-dateutil>=2.7 in /usr/lib/python3/dist-packages (from matplotlib->-r /tmp/requirements.txt (line 5)) (2.8.1)
+#13 17.96 Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich->-r /tmp/requirements-7b.txt (line 14))
+#13 17.97   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+#13 17.98 Requirement already satisfied: sympy in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (1.14.0)
+#13 17.98 Requirement already satisfied: networkx in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (3.4.2)
+#13 17.98 Requirement already satisfied: jinja2 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (3.1.6)
+#13 17.98 Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.1.105 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (12.1.105)
+#13 17.98 Requirement already satisfied: nvidia-cuda-runtime-cu12==12.1.105 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (12.1.105)
+#13 17.98 Requirement already satisfied: nvidia-cuda-cupti-cu12==12.1.105 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (12.1.105)
+#13 17.98 Requirement already satisfied: nvidia-cudnn-cu12==8.9.2.26 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (8.9.2.26)
+#13 17.98 Requirement already satisfied: nvidia-cublas-cu12==12.1.3.1 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (12.1.3.1)
+#13 17.98 Requirement already satisfied: nvidia-cufft-cu12==11.0.2.54 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (11.0.2.54)
+#13 17.98 Requirement already satisfied: nvidia-curand-cu12==10.3.2.106 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (10.3.2.106)
+#13 17.98 Requirement already satisfied: nvidia-cusolver-cu12==11.4.5.107 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (11.4.5.107)
+#13 17.99 Requirement already satisfied: nvidia-cusparse-cu12==12.1.0.106 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (12.1.0.106)
+#13 17.99 Requirement already satisfied: nvidia-nccl-cu12==2.19.3 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (2.19.3)
+#13 17.99 Requirement already satisfied: nvidia-nvtx-cu12==12.1.105 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (12.1.105)
+#13 17.99 Requirement already satisfied: triton==2.2.0 in /usr/local/lib/python3.10/dist-packages (from torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (2.2.0)
+#13 17.99 Requirement already satisfied: nvidia-nvjitlink-cu12 in /usr/local/lib/python3.10/dist-packages (from nvidia-cusolver-cu12==11.4.5.107->torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (12.9.86)
+#13 18.00 Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.10/dist-packages (from jinja2->torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (3.0.3)
+#13 18.02 Requirement already satisfied: charset-normalizer<3,>=2 in /usr/local/lib/python3.10/dist-packages (from requests->transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4)) (2.1.1)
+#13 18.02 Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.10/dist-packages (from requests->transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4)) (3.4)
+#13 18.02 Requirement already satisfied: urllib3<1.27,>=1.21.1 in /usr/local/lib/python3.10/dist-packages (from requests->transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4)) (1.26.13)
+#13 18.02 Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.10/dist-packages (from requests->transformers@ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab->-r /tmp/requirements-7b.txt (line 4)) (2022.12.7)
+#13 18.03 Requirement already satisfied: mpmath<1.4,>=1.1.0 in /usr/local/lib/python3.10/dist-packages (from sympy->torch->clip@ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6->-r /tmp/requirements-edge.txt (line 5)) (1.3.0)
+#13 18.04 Downloading tokenizers-0.19.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.6 MB)
+#13 18.05    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.6/3.6 MB 334.6 MB/s  0:00:00
+#13 18.06 Downloading huggingface_hub-0.29.1-py3-none-any.whl (468 kB)
+#13 18.07 Downloading timm-0.9.10-py3-none-any.whl (2.2 MB)
+#13 18.09    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 121.3 MB/s  0:00:00
+#13 18.09 Downloading peft-0.11.1-py3-none-any.whl (251 kB)
+#13 18.10 Downloading accelerate-0.34.2-py3-none-any.whl (324 kB)
+#13 18.10 Downloading sentencepiece-0.2.2-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (1.4 MB)
+#13 18.11    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 376.1 MB/s  0:00:00
+#13 18.11 Downloading protobuf-4.25.9-cp37-abi3-manylinux2014_x86_64.whl (295 kB)
+#13 18.12 Downloading rosbags-0.10.11-py3-none-any.whl (139 kB)
+#13 18.12 Downloading einops-0.8.2-py3-none-any.whl (65 kB)
+#13 18.13 Downloading json_numpy-2.1.1-py3-none-any.whl (5.5 kB)
+#13 18.13 Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+#13 18.13 Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+#13 18.14    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 617.3 MB/s  0:00:00
+#13 18.16 Downloading ftfy-6.3.1-py3-none-any.whl (44 kB)
+#13 18.17 Downloading regex-2026.9.29-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (797 kB)
+#13 18.17    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 797.6/797.6 kB 260.0 MB/s  0:00:00
+#13 18.18 Downloading matplotlib-3.10.9-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (8.8 MB)
+#13 18.20    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.8/8.8 MB 487.6 MB/s  0:00:00
+#13 18.20 Downloading numpy-1.26.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (18.2 MB)
+#13 18.29    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 18.2/18.2 MB 228.9 MB/s  0:00:00
+#13 18.29 Downloading scipy-1.15.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (37.7 MB)
+#13 18.36    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 37.7/37.7 MB 557.6 MB/s  0:00:00
+#13 18.36 Downloading contourpy-1.3.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (325 kB)
+#13 18.37 Downloading cycler-0.12.1-py3-none-any.whl (8.3 kB)
+#13 18.37 Downloading fonttools-4.65.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.3 MB)
+#13 18.38    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.3/5.3 MB 484.8 MB/s  0:00:00
+#13 18.39 Downloading kiwisolver-1.5.1-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl (1.6 MB)
+#13 18.39    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.6/1.6 MB 594.3 MB/s  0:00:00
+#13 18.39 Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+#13 18.40 Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+#13 18.40 Downloading pyparsing-3.3.3-py3-none-any.whl (126 kB)
+#13 18.41 Downloading safetensors-0.8.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (516 kB)
+#13 18.41 Downloading tqdm-4.70.1-py3-none-any.whl (80 kB)
+#13 18.41 Downloading lz4-4.4.5-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.4 MB)
+#13 18.42    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 425.3 MB/s  0:00:00
+#13 18.42 Downloading ruamel_yaml-0.19.1-py3-none-any.whl (118 kB)
+#13 18.43 Downloading wcwidth-0.9.3-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (770 kB)
+#13 18.43    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 770.0/770.0 kB 646.6 MB/s  0:00:00
+#13 18.43 Downloading zstandard-0.25.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.6 MB)
+#13 18.45    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.6/5.6 MB 375.2 MB/s  0:00:00
+#13 18.56 Building wheels for collected packages: transformers, clip, efficientnet_pytorch
+#13 18.56   Building wheel for transformers (pyproject.toml): started
+#13 21.66   Building wheel for transformers (pyproject.toml): finished with status 'done'
+#13 21.67   Created wheel for transformers: filename=transformers-4.40.1-py3-none-any.whl size=8999460 sha256=79693c717b07f16bf5e7c7f3690ff033177e27f56929dc2dbb33578a8239cc57
+#13 21.67   Stored in directory: /tmp/pip-ephem-wheel-cache-u2ck1bqn/wheels/72/23/76/e8852434eed2b25940e83204354ec25794d643938c92c24b01
+#13 21.69   Building wheel for clip (pyproject.toml): started
+#13 21.92   Building wheel for clip (pyproject.toml): finished with status 'done'
+#13 21.92   Created wheel for clip: filename=clip-1.0-py3-none-any.whl size=1369548 sha256=621c188c934f5d5fa89af2b96f5b755a48fca9ecb6d07aa5329a8b77dbb0d332
+#13 21.92   Stored in directory: /tmp/pip-ephem-wheel-cache-u2ck1bqn/wheels/65/88/3e/e08f1b8056760798afbfd69db48b1bc6a5ae6400c46abae36e
+#13 21.92   Building wheel for efficientnet_pytorch (pyproject.toml): started
+#13 22.11   Building wheel for efficientnet_pytorch (pyproject.toml): finished with status 'done'
+#13 22.11   Created wheel for efficientnet_pytorch: filename=efficientnet_pytorch-0.7.1-py3-none-any.whl size=16478 sha256=67f336612ae0d7bebdecb4ac1c1f7d81cafb10de44e59db8ba9d61727d5bade1
+#13 22.11   Stored in directory: /tmp/pip-ephem-wheel-cache-u2ck1bqn/wheels/03/3f/e9/911b1bc46869644912bda90a56bcf7b960f20b5187feea3baf
+#13 22.11 Successfully built transformers clip efficientnet_pytorch
+#13 22.46 Installing collected packages: zstandard, wcwidth, tqdm, sentencepiece, safetensors, ruamel.yaml, regex, pyparsing, pygments, protobuf, numpy, mdurl, lz4, kiwisolver, fonttools, einops, cycler, scipy, rosbags, markdown-it-py, json-numpy, huggingface_hub, ftfy, contourpy, tokenizers, rich, matplotlib, transformers, efficientnet_pytorch, accelerate, timm, peft, clip
+#13 22.98   Attempting uninstall: pyparsing
+#13 22.98     Found existing installation: pyparsing 2.4.7
+#13 22.98     Uninstalling pyparsing-2.4.7:
+#13 23.03       Successfully uninstalled pyparsing-2.4.7
+#13 23.09   Attempting uninstall: pygments
+#13 23.09     Found existing installation: Pygments 2.11.2
+#13 23.09     Uninstalling Pygments-2.11.2:
+#13 23.12       Successfully uninstalled Pygments-2.11.2
+#13 23.77   Attempting uninstall: numpy
+#13 23.77     Found existing installation: numpy 1.21.5
+#13 23.77     Uninstalling numpy-1.21.5:
+#13 23.80       Successfully uninstalled numpy-1.21.5
+#13 35.42 
+#13 35.43 Successfully installed accelerate-0.34.2 clip-1.0 contourpy-1.3.2 cycler-0.12.1 efficientnet_pytorch-0.7.1 einops-0.8.2 fonttools-4.65.0 ftfy-6.3.1 huggingface_hub-0.29.1 json-numpy-2.1.1 kiwisolver-1.5.1 lz4-4.4.5 markdown-it-py-4.2.0 matplotlib-3.10.9 mdurl-0.1.2 numpy-1.26.4 peft-0.11.1 protobuf-4.25.9 pygments-2.21.0 pyparsing-3.3.3 regex-2026.9.29 rich-15.0.0 rosbags-0.10.11 ruamel.yaml-0.19.1 safetensors-0.8.0 scipy-1.15.3 sentencepiece-0.2.2 timm-0.9.10 tokenizers-0.19.1 tqdm-4.70.1 transformers-4.40.1 wcwidth-0.9.3 zstandard-0.25.0
+#13 35.43 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#13 36.80 OmniVLA 5182600cb4a9ee07684e17cdd2a6cbafc56b8a68 -> /opt/OmniVLA (slim prismatic)
+#13 DONE 37.7s
+
+#14 [ 6/11] COPY . /workspace
+#14 DONE 0.3s
+
+#15 [ 7/11] WORKDIR /workspace
+#15 DONE 0.0s
+
+#16 [ 8/11] RUN source /opt/ros/humble/setup.bash && mkdir -p /opt/omnivla_ws     && colcon --log-base /opt/omnivla_ws/log build --symlink-install --base-paths /workspace/ros2         --build-base /opt/omnivla_ws/build --install-base /opt/omnivla_ws/install
+#16 0.561 Starting >>> omnivla_real_ros
+#16 2.018 Finished <<< omnivla_real_ros [1.46s]
+#16 2.018 
+#16 2.018 Summary: 1 package finished [1.58s]
+#16 DONE 2.1s
+
+#17 [ 9/11] RUN python3 -c "import torch, transformers, peft, rosbags, clip, efficientnet_pytorch; import omnivla_real.policy, omnivla_real.edge; print('torch', torch.__version__, 'transformers', transformers.__version__, 'peft', peft.__version__)"
+#17 2.884 Using OmniVLA constants:
+#17 2.884   NUM_ACTIONS_CHUNK = 8
+#17 2.884   ACTION_DIM = 4
+#17 2.884   POSE_DIM = 4
+#17 2.884   ACTION_PROPRIO_NORMALIZATION_TYPE = bounds_q99
+#17 2.884 If needed, manually set the correct constants in `prismatic/vla/constants.py`!
+#17 3.079 torch 2.2.0+cu121 transformers 4.40.1 peft 0.11.1
+#17 DONE 3.5s
+
+#18 [10/11] COPY docker/entrypoint.sh /entrypoint.sh
+#18 DONE 0.0s
+
+#19 [11/11] RUN chmod +x /entrypoint.sh
+#19 DONE 0.1s
+
+#20 exporting to image
+#20 exporting layers
+#20 exporting layers 23.1s done
+#20 writing image sha256:81d7ea589907ce55e3e9e6eb8bf54fc7159abb80fa197aa3caa9a159d4488f85 done
+#20 naming to docker.io/library/omnivla_real:ci done
+#20 DONE 23.1s
