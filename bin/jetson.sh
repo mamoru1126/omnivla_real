@@ -3,12 +3,13 @@
 #
 #   bin/jetson.sh build               # イメージを作る (JetPack に合わせた JETSON_BASE_IMAGE は .env)
 #   bin/jetson.sh up                  # 推論サーバとナビゲーションを起動してログを表示 (Ctrl-C でログの表示だけ止まる)
-#   bin/jetson.sh up --standalone     # Jetson 単体: roscore もここで立てる (.env の ROS_MASTER_URI / ROS_IP は使わず localhost)
+#   bin/jetson.sh up --standalone     # Jetson 単体: ROS 1 は roscore もここで立てる / ROS 2 は ROS_LOCALHOST_ONLY=1 (この PC の中だけ)
 #   bin/jetson.sh restart             # ナビゲーションだけ起動し直す (推論サーバはそのまま)
 #   bin/jetson.sh status              # コンテナの状態と推論サーバの応答
 #   bin/jetson.sh logs [サービス]      # ログ (policy, nav, roscore)
 #   bin/jetson.sh plot [ログ]          # 走行ログを図にする (既定: 一番新しい走行)
-#   bin/jetson.sh shell [--standalone] [コマンド]   # ROS 1 のコンテナでコマンド (例 rostopic hz /odom). 無しなら bash
+#   bin/jetson.sh shell [--standalone] [コマンド]   # ROS のコンテナでコマンド (例 rostopic hz /odom / ros2 topic hz /odom). 無しなら bash
+# ROS 1 / ROS 2 は .env.jetson の JETSON_ROS (ros1 | ros2). どちらも C++ のノードでブラウザのデバッグ画面つき
 #   bin/jetson.sh down                # 止める
 # ブラウザ: http://<Jetson の IP>:8080   重みと topomap は学習 PC から bin/to_jetson.sh で送る
 source "$(dirname "$0")/_lib.sh"
@@ -21,10 +22,21 @@ follow() {
     jetson logs -f --tail 50 policy nav
 }
 
-# Jetson 単体 (roscore も Jetson): .env の ROS_MASTER_URI / ROS_IP (ロボットの PC 向け) を使わない
+# Jetson 単体: .env の ROS_MASTER_URI / ROS_IP (ロボットの PC 向け) を使わず、この PC の中だけで通信する
 standalone() {
-    export ROS_MASTER_URI=http://localhost:11311 ROS_IP=127.0.0.1 ROS_HOSTNAME=
-    say "Jetson 単体 (ROS master: $ROS_MASTER_URI)"
+    export ROS_MASTER_URI=http://localhost:11311 ROS_IP=127.0.0.1 ROS_HOSTNAME= ROS_LOCALHOST_ONLY=1
+    if [ "$(jetson_ros)" = ros2 ]; then
+        say "Jetson 単体 (ROS 2, ROS_LOCALHOST_ONLY=1)"
+    else
+        say "Jetson 単体 (ROS master: $ROS_MASTER_URI)"
+    fi
+}
+ros_info() {
+    if [ "$(jetson_ros)" = ros2 ]; then
+        echo "ROS 2  ROS_DOMAIN_ID: $(env_get ROS_DOMAIN_ID 0)  ROS_LOCALHOST_ONLY: $(env_get ROS_LOCALHOST_ONLY 0)"
+    else
+        echo "ROS master: $(env_get ROS_MASTER_URI http://localhost:11311)  ROS_IP: $(env_get ROS_IP '(なし)')"
+    fi
 }
 
 CMD=${1:-}
@@ -39,16 +51,18 @@ case $CMD in
         ensure_env
         PROFILE=()
         if [ "${1:-}" = --standalone ]; then
-            PROFILE=(--profile standalone)
             standalone
-            export ROSLAUNCH_ARGS=--wait   # roscore コンテナの master を待つ
+            if [ "$(jetson_ros)" = ros1 ]; then
+                PROFILE=(--profile standalone)   # roscore も立てる
+                export ROSLAUNCH_ARGS=--wait     # roscore コンテナの master を待つ
+            fi
         fi
         T=$(env_get TOPOMAP "")
         [ -n "$T" ] || say "注意: $ENV_FILE の TOPOMAP が空です (ブラウザや /omnivla/topomap で指定するまで走りません)"
         [ -z "$T" ] || [ -e "$(hpath "$T")" ] || die "TOPOMAP が見つかりません: $T (ホストでは $(hpath "$T"))"
         say "モデル: $(env_get NAV_MODEL '(navigator.yaml)') $(env_get FINETUNED_DIR '')$(env_get NAV_WEIGHTS '')  topomap: $T"
-        say "ROS master: $(env_get ROS_MASTER_URI http://localhost:11311)"
-        ensure_image omnivla_real:ros1 jetson build nav
+        say "$(ros_info)"
+        ensure_image "omnivla_real:$(jetson_ros)" jetson build nav
         jetson "${PROFILE[@]}" up -d
         follow
         ;;
@@ -78,7 +92,7 @@ case $CMD in
             standalone
             shift
         fi
-        say "ROS master: $(env_get ROS_MASTER_URI http://localhost:11311)  ROS_IP: $(env_get ROS_IP '(なし)')"
+        say "$(ros_info)"
         if [ $# -eq 0 ]; then set -- bash; fi
         jetson --profile tools run --rm --no-deps "${TTY[@]}" shell "$@"
         ;;

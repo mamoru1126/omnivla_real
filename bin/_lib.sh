@@ -202,7 +202,17 @@ if ! { [ -t 0 ] && [ -t 1 ]; }; then TTY=(-T); fi
 on_jetson() { _jetson_host; }
 if on_jetson; then export REPLAY_POLICY_COMPOSE=docker-compose.jetson.yml; fi  # docker-compose.replay.yml の推論サーバ
 pc() { docker compose "${COMPOSE_ENV[@]}" "$@"; }                                 # 学習 PC (docker-compose.yml)
-jetson() { docker compose -f docker-compose.jetson.yml "${COMPOSE_ENV[@]}" "$@"; }  # Jetson
+# Jetson. JETSON_ROS=ros2 なら ROS 2 Humble のナビゲーションノード (docker-compose.jetson-ros2.yml を重ねる)
+jetson_ros() { env_get JETSON_ROS ros1; }
+jetson() {
+    local f=(-f docker-compose.jetson.yml)
+    case $(jetson_ros) in
+        ros1) ;;
+        ros2) f+=(-f docker-compose.jetson-ros2.yml) ;;
+        *) die "JETSON_ROS は ros1 か ros2 ($ENV_FILE)" ;;
+    esac
+    docker compose "${f[@]}" "${COMPOSE_ENV[@]}" "$@"
+}
 replay() { docker compose -f docker-compose.replay.yml "${COMPOSE_ENV[@]}" "$@"; }  # bag をロボットの代わりにして実機と同じ構成
 # 1 コマンド動かす: 学習 PC は学習用コンテナ、Jetson は推論サーバのイメージ (torch + bag の読み込み)
 in_shell() {

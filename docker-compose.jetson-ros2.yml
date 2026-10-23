@@ -1,0 +1,30 @@
+# Jetson を ROS 2 Humble で動かす (docker-compose.jetson.yml に重ねる). bin/jetson.sh が .env.jetson の JETSON_ROS=ros2 のとき自動で付ける.
+#   docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-ros2.yml --env-file .env.jetson up -d
+#
+# 推論サーバ (policy) は ROS 1 と同じ. ナビゲーションノード (nav) と ROS のコマンド用 (shell) だけ ROS 2 のイメージにする.
+# nav は C++ のノード (ros2/omnivla_real_ros2). 中身とブラウザのデバッグ画面は ROS 1 の C++ ノードと同じ.
+# ROS master は無い. ATMOBI PC とは ROS_DOMAIN_ID が同じなら DDS で自動でつながる (network_mode: host).
+# Jetson 単体 (bin/jetson.sh up --standalone) のときは ROS_LOCALHOST_ONLY=1 (この PC の中だけ).
+x-ros2-env: &ros2_env
+  ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
+  ROS_LOCALHOST_ONLY: ${ROS_LOCALHOST_ONLY:-}
+  RMW_IMPLEMENTATION: ${RMW_IMPLEMENTATION:-}
+  # 使うネットワークを絞るなど、Fast DDS の設定ファイル (例 /workspace/docker/fastdds_robot_lan.xml). 空なら既定
+  FASTRTPS_DEFAULT_PROFILES_FILE: ${FASTRTPS_DEFAULT_PROFILES_FILE:-}
+
+services:
+  nav:
+    image: omnivla_real:ros2
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ros2
+    environment:
+      <<: *ros2_env
+      CMD_VEL_TOPIC: ${CMD_VEL_TOPIC:-}   # 指示値を出すトピック (空なら navigator.yaml の io.cmd_vel)
+    command: bash scripts/nav_ros2.sh
+
+  shell:
+    image: omnivla_real:ros2
+    environment:
+      <<: *ros2_env
+    command: bash        # bin/jetson.sh shell [--standalone] ros2 topic hz /odom など

@@ -117,20 +117,28 @@ check "docker compose -f docker-compose.jetson.yml --profile standalone down" "$
 
 # --- Jetson の上で、学習 PC と同じ確認 (OMNIVLA_JETSON=1 で Jetson のつもりにする) ---
 J=(env OMNIVLA_JETSON=1)
-check "docker compose -f docker-compose.jetson.yml --env-file .env.jetson up -d policy" "${J[@]}" "$B/desk_eval.sh" run1.bag course_a
-check "docker compose -f docker-compose.jetson.yml --env-file .env.jetson run --rm --no-deps -T policy python3 tools/desk_eval.py --bag /bags/run1.bag" \
+check "docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-ros2.yml --env-file .env.jetson up -d policy" "${J[@]}" "$B/desk_eval.sh" run1.bag course_a
+check "docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-ros2.yml --env-file .env.jetson run --rm --no-deps -T policy python3 tools/desk_eval.py --bag /bags/run1.bag" \
     "${J[@]}" "$B/desk_eval.sh" run1.bag course_a
 check "--topomap /data/topomaps/course_a --model remote --url http://127.0.0.1:8765" \
     "${J[@]}" NAV_MODEL=edge FINETUNED_DIR=/runs/r1/checkpoints/step_000010 "$B/desk_eval.sh" run1.bag course_a
 check "--model 7b --finetuned_dir /runs/omnivla7b_20261009_134144/checkpoints/step_005000 --policy oracle" "${J[@]}" "$B/desk_eval.sh" run1.bag course_a --policy oracle
-check "jetson.yml --env-file .env.jetson run --rm --no-deps -T policy python3 tools/bag_info.py /bags/run1.bag" "${J[@]}" "$B/bag_info.sh" run1.bag
-check "jetson.yml --env-file .env.jetson run --rm --no-deps -T policy python3 tools/make_topomap.py --out /data/topomaps/course_b" \
+check "jetson-ros2.yml --env-file .env.jetson run --rm --no-deps -T policy python3 tools/bag_info.py /bags/run1.bag" "${J[@]}" "$B/bag_info.sh" run1.bag
+check "jetson-ros2.yml --env-file .env.jetson run --rm --no-deps -T policy python3 tools/make_topomap.py --out /data/topomaps/course_b" \
     "${J[@]}" "$B/make_topomap.sh" course_b run1.bag
 check "Jetson で bag を流します" "${J[@]}" "$B/replay.sh" run1.bag course_a
 check "up -d --force-recreate --no-deps nav record robot" "${J[@]}" "$B/replay_video.sh" run1.bag course_a
 check "docker-compose.jetson.yml" "${J[@]}" bash -c "source '$B/_lib.sh'; echo \$REPLAY_POLICY_COMPOSE"
-check "ROS master: http://192.168.0.100:11311" "${J[@]}" "$B/jetson.sh" shell rostopic list   # .env.jetson を読む
-check "docker compose -f docker-compose.jetson.yml --env-file .env.jetson build" "${J[@]}" "$B/setup.sh" none
+check "ROS 2  ROS_DOMAIN_ID: 42" "${J[@]}" "$B/jetson.sh" shell ros2 topic list   # .env.jetson を読む (JETSON_ROS=ros2)
+check "docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-ros2.yml --env-file .env.jetson --profile tools run --rm --no-deps -T shell ros2 topic hz /odom" \
+    "${J[@]}" "$B/jetson.sh" shell ros2 topic hz /odom
+check "Jetson 単体 (ROS 2, ROS_LOCALHOST_ONLY=1)" "${J[@]}" env TOPOMAP=/data/topomaps/course_a "$B/jetson.sh" up --standalone
+check "docker-compose.jetson-ros2.yml --env-file .env.jetson up -d" "${J[@]}" env TOPOMAP=/data/topomaps/course_a "$B/jetson.sh" up --standalone
+check "ROS master: http://192.168.0.100:11311" "${J[@]}" JETSON_ROS=ros1 "$B/jetson.sh" shell rostopic list
+check "docker compose -f docker-compose.jetson.yml --env-file .env.jetson --profile standalone up -d" \
+    "${J[@]}" JETSON_ROS=ros1 TOPOMAP=/data/topomaps/course_a "$B/jetson.sh" up --standalone
+fails "JETSON_ROS は ros1 か ros2" "${J[@]}" JETSON_ROS=ros3 "$B/jetson.sh" status
+check "docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-ros2.yml --env-file .env.jetson build" "${J[@]}" "$B/setup.sh" none
 fails "学習 PC で" "${J[@]}" "$B/train.sh" 7b
 fails "学習 PC で" "${J[@]}" "$B/make_dataset.sh" run1.bag
 check "rsync -aR --info=progress2 $T/bags/./run1.bag me@jet:omnivla_real/bags/" \

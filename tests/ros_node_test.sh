@@ -6,7 +6,7 @@
 #   bash tests/ros_node_test.sh ros1 E2E_DIR     # ROS 1 Noetic
 # E2E_DIR は tests/e2e_cli.sh の出力 (bags/, topomap/, runs/edge_ci/checkpoints/step_*).
 # POLICY_URL=http://127.0.0.1:8765 を付けると、ノードの中では推論せず推論サーバを呼ぶ (実機の構成).
-# ROS 1 は NODE_IMPL=cpp (既定. C++ ノード + デバッグ画面の確認. POLICY_URL が必要) | py (Python ノード)
+# NODE_IMPL=cpp: C++ ノード + デバッグ画面の確認 (POLICY_URL が必要. ROS 1 の既定) | py: Python ノード (ROS 2 の既定)
 set -uo pipefail
 WHICH=$1
 E2E=$(cd "$2" && pwd)
@@ -22,14 +22,19 @@ cleanup() { for p in "${PIDS[@]}"; do kill "$p" 2>/dev/null; done; sleep 1; }
 trap cleanup EXIT
 
 POLICY_URL=${POLICY_URL:-}
+if [ "$WHICH" = ros2 ]; then NODE_IMPL=${NODE_IMPL:-py}; else NODE_IMPL=${NODE_IMPL:-cpp}; fi
 EXTRA2=()
 if [ -n "$POLICY_URL" ]; then EXTRA2=(-p policy_url:="$POLICY_URL"); fi
-if [ "$WHICH" = ros2 ]; then
+if [ "$WHICH" = ros2 ] && [ "$NODE_IMPL" = cpp ]; then
+    ros2 run omnivla_real_ros2 navigator --ros-args -p repo_root:="$ROOT" -p topomap:="$E2E/topomap" \
+        -p policy_url:="${POLICY_URL:-http://127.0.0.1:8765}" -p log_dir:="$OUT/nav" -p web_port:=8090 \
+        -p use_sim_time:=true > "$OUT/node.log" 2>&1 &
+    PIDS+=($!)
+elif [ "$WHICH" = ros2 ]; then
     ros2 run omnivla_real_ros navigator --ros-args -p topomap:="$E2E/topomap" -p model:=edge -p weights:="$CKPT" \
         -p device:=cpu -p log_dir:="$OUT/nav" "${EXTRA2[@]}" -p use_sim_time:=true > "$OUT/node.log" 2>&1 &
     PIDS+=($!)
 else
-    NODE_IMPL=${NODE_IMPL:-cpp}
     roscore > "$OUT/roscore.log" 2>&1 &
     PIDS+=($!)
     for _ in $(seq 30); do rostopic list > /dev/null 2>&1 && break; sleep 1; done
@@ -55,7 +60,7 @@ echo "node ready"
 python3 "$ROOT/tests/ros_check.py" "$WHICH" 50 > "$OUT/check.txt" 2>&1 &
 CHECK=$!
 WEB=""
-if [ "$WHICH" = ros1 ] && [ "${NODE_IMPL:-cpp}" = cpp ]; then
+if [ "$NODE_IMPL" = cpp ]; then
     python3 "$ROOT/tests/web_check.py" http://127.0.0.1:8090 45 > "$OUT/web_check.txt" 2>&1 &
     WEB=$!
 fi

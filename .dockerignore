@@ -1,0 +1,14 @@
+# イメージには code だけを入れる. 重み・bag・データ・結果は実行時にマウントする (docker-compose の volumes).
+# (これが無いと Jetson で checkpoints/ の 7B (十数 GB) などが毎回ビルドに送られ、イメージにもコピーされる)
+.git
+.env
+checkpoints/
+bags/
+data/
+runs/
+log/
+debug_log/
+tests/.build_cpp/
+**/__pycache__/
+**/*.pyc
+.vscode/

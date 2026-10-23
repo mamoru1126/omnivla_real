@@ -94,11 +94,13 @@ jobs:
           apt-get update && apt-get install -y --no-install-recommends python3-pip git
           pip3 install torch==2.2.2 torchvision==0.17.2 --index-url $TORCH_INDEX
           pip3 install "numpy<2" pillow pyyaml matplotlib efficientnet_pytorch==0.7.1
-      - name: colcon build
+      - name: colcon build (Python node + C++ node)
         run: |
           source /opt/ros/humble/setup.bash
-          mkdir -p /tmp/ws/src && cp -r ros2/omnivla_real_ros /tmp/ws/src/
-          cd /tmp/ws && colcon build --symlink-install
+          # リンクにする (C++ のノードは ../../ros1/omnivla_real_ros1 の core を使う)
+          mkdir -p /tmp/ws/src && ln -s "$PWD/ros2/omnivla_real_ros" "$PWD/ros2/omnivla_real_ros2" /tmp/ws/src/
+          cd /tmp/ws && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -30
+          test -x /tmp/ws/install/omnivla_real_ros2/lib/omnivla_real_ros2/navigator
       - name: Node test (ros2 bag play -> /cmd_vel, /omnivla/path)
         run: |
           set -o pipefail
@@ -107,17 +109,31 @@ jobs:
           bash tests/ros_node_test.sh ros2 /tmp/e2e 2>&1 | tee /tmp/ros2_node.log
       - name: Analyze the navigation log (tools/plot_nav_log.py)
         run: python3 tools/plot_nav_log.py /tmp/e2e/ros2_node/nav/latest
-      - name: Launch file parses
+      - name: C++ node test (policy server + ros2 bag play -> /cmd_vel, /omnivla/path, debug page)
+        run: |
+          set -o pipefail
+          source /opt/ros/humble/setup.bash && source /tmp/ws/install/setup.bash
+          mv /tmp/e2e/ros2_node /tmp/e2e/ros2_node_py
+          CKPT=$(ls -d /tmp/e2e/runs/edge_ci/checkpoints/step_* | tail -1)
+          nohup python3 tools/policy_server.py --model edge --weights "$CKPT" --device cpu --port 8765 > /tmp/policy_server.log 2>&1 &
+          for i in $(seq 120); do python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/info')" 2>/dev/null && break; sleep 1; done
+          NODE_IMPL=cpp POLICY_URL=http://127.0.0.1:8765 bash tests/ros_node_test.sh ros2 /tmp/e2e 2>&1 | tee /tmp/ros2_node_cpp.log
+          python3 tools/plot_nav_log.py /tmp/e2e/ros2_node/nav/latest | tail -5
+      - name: Launch files parse
         run: |
           source /opt/ros/humble/setup.bash && source /tmp/ws/install/setup.bash
           OMNIVLA_REAL_ROOT=$PWD ros2 launch omnivla_real_ros navigator.launch.py --show-args
+          OMNIVLA_REAL_ROOT=$PWD ros2 launch omnivla_real_ros2 navigator.launch.py --show-args
       - name: Publish log to ci-logs-ros2 branch
         if: always()
         run: |
           git config --global --add safe.directory '*'
           D=/tmp/cilog; rm -rf $D; mkdir -p $D
           cp /tmp/ros2_node.log $D/ 2>/dev/null || echo "not run" > $D/ros2_node.log
+          cp /tmp/ros2_node_cpp.log /tmp/policy_server.log $D/ 2>/dev/null || true
           cp -r /tmp/e2e/ros2_node $D/ 2>/dev/null || true
+          cp -r /tmp/e2e/ros2_node_py $D/ 2>/dev/null || true
+          rm -rf $D/ros2_node/nav/*/raw $D/ros2_node_py/nav/*/raw
           find $D -name "*.jpg" -size +200k -delete
           echo "run=${{ github.run_id }} sha=${{ github.sha }} status=${{ job.status }}" > $D/info.txt
           cd $D && git init -q && git add . \
@@ -150,6 +166,15 @@ jobs:
           set -o pipefail
           mkdir -p ci
           docker build -f docker/Dockerfile.ros1 -t omnivla_real:ros1 . 2>&1 | tee ci/ros1-build.log | tail -20
+      - name: Build ROS 2 image (docker/Dockerfile.ros2, Jetson で JETSON_ROS=ros2 のとき)
+        run: |
+          set -o pipefail
+          docker build -f docker/Dockerfile.ros2 -t omnivla_real:ros2 . 2>&1 | tee ci/ros2-build.log | tail -20
+          docker run --rm -v "$PWD":/workspace omnivla_real:ros2 bash -c \
+            'ros2 pkg executables omnivla_real_ros2 && ros2 pkg executables omnivla_real_ros' 2>&1 | tee ci/ros2-image.log
+          grep -q "omnivla_real_ros2 navigator" ci/ros2-image.log
+          ! grep -q "C++ sources changed" ci/ros2-image.log   # イメージの中のビルドがそのまま使える
+          docker compose -f docker-compose.jetson.yml -f docker-compose.jetson-ros2.yml --env-file .env.jetson config nav | grep -q "omnivla_real:ros2"
       - name: Start policy server
         run: |
           CKPT=$(ls -d /tmp/e2e/runs/edge_ci/checkpoints/step_* | tail -1)

@@ -1,0 +1,35 @@
+# syntax=docker/dockerfile:1
+# =============================================================================
+# ROS 2 Humble のナビゲーションノード (ros2/omnivla_real_ros2: C++ のノード + ブラウザのデバッグ画面).
+# 中身は ROS 1 の C++ ノードと同じ (ros1/omnivla_real_ros1/src/core). 推論は推論サーバに任せるので PyTorch も GPU も不要.
+# Jetson (arm64) でも x86 PC でも同じ Dockerfile で作れる (公式 ros:humble は両対応).
+# Python のノード (ros2/omnivla_real_ros) も入れる (設定の読み込み tools/nav_config_json.py にも Python を使う).
+# =============================================================================
+ARG BASE_IMAGE=ros:humble-ros-base
+FROM ${BASE_IMAGE}
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    OMNIVLA_REAL_ROOT=/workspace PYTHONPATH=/workspace \
+    RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{name}]: {message}"
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN apt-get update && apt-get install -y --no-install-recommends python3-pip python3-yaml \
+    && rm -rf /var/lib/apt/lists/*
+COPY docker/requirements-ros1.txt /tmp/
+RUN python3 -m pip install -r /tmp/requirements-ros1.txt
+
+COPY . /workspace
+WORKDIR /workspace
+# colcon ワークスペースは /opt/ros2_ws. ソースは /workspace/ros2 (マウントしたソースが変わっていれば entrypoint でビルドし直す)
+RUN source /opt/ros/humble/setup.bash \
+    && colcon --log-base /opt/ros2_ws/log build --base-paths /workspace/ros2 --build-base /opt/ros2_ws/build \
+       --install-base /opt/ros2_ws/install --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    && bash /workspace/docker/entrypoint-ros2.sh --hash > /opt/ros2_ws/.src_hash \
+    && python3 -c "import omnivla_real.ros_common, omnivla_real.remote; print('ros2 node deps OK')" \
+    && python3 /workspace/tools/nav_config_json.py > /dev/null && ls /opt/ros2_ws/install/omnivla_real_ros2/lib/omnivla_real_ros2/
+
+COPY docker/entrypoint-ros2.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

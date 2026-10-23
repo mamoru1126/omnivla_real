@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Fast DDS の設定 (任意): ROS 2 の通信を ロボットの 2 台だけのネットワーク (Orin 192.168.0.200) と この PC の中 (127.0.0.1) に絞る.
+  社内 LAN など他のネットワークにつながっていても、そちらには探索のパケットを出さない.
+  使うとき: .env.jetson に FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/docker/fastdds_robot_lan.xml
+  注意: 192.168.0.200 が付いていない (ケーブルが抜けている) と、この PC の中だけになる. Orin 単体のときは使わない.
+-->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>robot_lan_udp</transport_id>
+      <type>UDPv4</type>
+      <interfaceWhiteList>
+        <address>127.0.0.1</address>
+        <address>192.168.0.200</address>
+      </interfaceWhiteList>
+    </transport_descriptor>
+  </transport_descriptors>
+  <participant profile_name="robot_lan" is_default_profile="true">
+    <rtps>
+      <userTransports>
+        <transport_id>robot_lan_udp</transport_id>
+      </userTransports>
+      <useBuiltinTransports>false</useBuiltinTransports>
+    </rtps>
+  </participant>
+</profiles>
