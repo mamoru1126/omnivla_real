@@ -37,6 +37,9 @@ class EngineConfig:
     controller: ControllerConfig = field(default_factory=lambda: ControllerConfig(mode="trajectory"))
     tracker: TrackerConfig = field(default_factory=TrackerConfig)
     max_image_age: float = 0.5         # これより古い画像しか無ければ止まる [s]
+    # 画像の古さの測り方: stamp = 画像の時刻 (header.stamp) から (カメラの遅れ込み. 2 台の時計が合っている必要がある)
+    #                     receive = この PC が受け取ってから (時計のずれ・カメラの時刻の付け方に左右されない. 遅れは見えない)
+    image_age_from: str = "stamp"
     stuck_timeout: float = 0.0         # 前進指令中にこの秒数動かなければ止める (オドメトリがある場合. 0 で無効)
     stop_at_goal: bool = True
     debug_image: bool = True
@@ -76,6 +79,8 @@ class NavEngine:
         self.stuck = StuckDetector(timeout=cfg.stuck_timeout) if cfg.stuck_timeout > 0 else None
         # 入力
         self._img_t: Optional[float] = None
+        self._img_recv: Optional[float] = None   # 受け取った時刻 (この PC の時計)
+        self.image_stamp_offset: Optional[float] = None   # 受け取った時刻 - 画像の時刻 (= カメラ・通信の遅れ + 時計のずれ)
         self._img_src: Optional[ImageSource] = None
         self._img_cache: Optional[Image.Image] = None
         self._next_hist: Optional[float] = None
@@ -94,6 +99,8 @@ class NavEngine:
     def on_image(self, t: float, image: ImageSource) -> None:
         """カメラ画像 (ndarray / PIL / デコードする関数). 観測履歴 (edge) は sample_rate ごとに積む."""
         self._img_t, self._img_src, self._img_cache = t, image, None
+        self._img_recv = time.time()
+        self.image_stamp_offset = self._img_recv - t
         self._img_seq += 1
         if self._next_hist is None or t + 1e-6 >= self._next_hist:
             period = 1.0 / self.sample_rate
@@ -164,10 +171,17 @@ class NavEngine:
         events: List[str] = []
         if self.state != "running" or self.tracker is None:
             return self._result(0.0, 0.0, None, self.state, events=events)
-        self.image_age = None if self._img_t is None else t - self._img_t
+        if self._img_t is None:
+            self.image_age = None
+        elif self.cfg.image_age_from == "receive":
+            self.image_age = time.time() - self._img_recv
+        else:
+            self.image_age = t - self._img_t
         if self._img_t is None or self.image_age > self.cfg.max_image_age:
             self.step_state = "waiting_image"
-            age = "no image" if self._img_t is None else f"image age {self.image_age:.2f}s > max_image_age {self.cfg.max_image_age}s"
+            age = "no image" if self._img_t is None else \
+                (f"image age {self.image_age:.2f}s > max_image_age {self.cfg.max_image_age}s "
+                 f"(image_age_from={self.cfg.image_age_from}; received - stamp = {self.image_stamp_offset:.2f}s)")
             return self._result(0.0, 0.0, None, "waiting_image", reason=f"no recent image ({age})", events=events)
         self.step_state = "running"
         self._used_seq = self._img_seq
@@ -244,4 +258,5 @@ class NavEngine:
                 "distance": tr.last_distance if tr else None, "travel_m": self.travel,
                 "v": self.last.v if self.last else 0.0, "w": self.last.w if self.last else 0.0,
                 "latency": self.last.latency if self.last else None, "time": time.time(),
-                "step_state": self.step_state, "image_age": self.image_age, "max_image_age": self.cfg.max_image_age}
+                "step_state": self.step_state, "image_age": self.image_age, "max_image_age": self.cfg.max_image_age,
+                "image_age_from": self.cfg.image_age_from, "image_stamp_offset": self.image_stamp_offset}

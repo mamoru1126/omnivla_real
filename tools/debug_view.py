@@ -112,15 +112,36 @@ def compose(st: State, robot: RobotConfig, cam, now: float):
         f"cmd v={fmt(cmd[0] if cmd else None)} w={fmt(cmd[1] if cmd else None)}   latency {fmt(lat * 1000 if lat else None, '{:.0f}')} ms",
         f"image {fmt(info['image_hz'], '{:.1f}')} Hz  age {fmt(info['image_age_s'])} s   odom {fmt(info['odom_hz'], '{:.1f}')} Hz",
     ]
+    if status.get("last_error"):
+        lines.append(f"ERROR {str(status['last_error'])[:60]}")
     frame = render_debug(cur if cur is not None else Image.new("RGB", (320, 240), (60, 0, 0)),
                          goal, path, cam=cam, lines=lines)
     row = {"time": now, "state": status.get("state"), "step_state": status.get("step_state"),
+           "last_error": status.get("last_error") or None,
            "node_image_age_s": status.get("image_age"), "subgoal": sg, "num_nodes": status.get("num_nodes"),
            "similarity": status.get("similarity"), "latency": lat, "travel_m": status.get("travel_m"),
            "v": cmd[0] if cmd else None, "w": cmd[1] if cmd else None, **info,
            "path_end_x": float(path[-1, 0]) if path is not None else None,
            "path_end_y": float(path[-1, 1]) if path is not None else None}
     return frame, row
+
+
+def read_rows(path: str) -> list:
+    """steps.csv -> [dict] (数値は float, 空は None)."""
+    out = []
+    with open(path) as f:
+        for r in csv.DictReader(f):
+            d = {}
+            for k, v in r.items():
+                if v in ("", "None"):
+                    d[k] = None
+                else:
+                    try:
+                        d[k] = float(v)
+                    except ValueError:
+                        d[k] = v
+            out.append(d)
+    return out
 
 
 def summarize(rows: list, topics: dict) -> str:
@@ -142,7 +163,9 @@ def summarize(rows: list, topics: dict) -> str:
         steps[r.get("step_state")] = steps.get(r.get("step_state"), 0) + 1
     L.append(f"推論の結果 (step_state): {steps}   ノードが見た画像の遅れ [s]: {stat('node_image_age_s')}")
     sg = vals("subgoal")
-    L.append(f"サブゴール: {sg[0] if sg else '-'} -> {sg[-1] if sg else '-'} / {rows[-1].get('num_nodes') if rows else '-'}")
+    nn = rows[-1].get("num_nodes") if rows else None
+    L.append(f"サブゴール: {int(sg[0]) if sg else '-'} -> {int(sg[-1]) if sg else '-'} / "
+             f"{int(nn) - 1 if isinstance(nn, (int, float)) else '-'}")
     L.append(f"類似度: {stat('similarity', f='{:.3f}')}")
     L.append(f"推論時間 [ms]: {stat('latency', 1000, '{:.0f}')}")
     L.append(f"v [m/s]: {stat('v')}   w [rad/s]: {stat('w')}")
@@ -152,6 +175,9 @@ def summarize(rows: list, topics: dict) -> str:
     L.append(f"予測軌跡の終点 y (左 +) [m]: {stat('path_end_y')}   x [m]: {stat('path_end_x')}")
     L.append(f"画像: {stat('image_hz', f='{:.1f}')} Hz   遅れ (今 - 画像の時刻) [s]: {stat('image_age_s')}")
     L.append(f"オドメトリ: {stat('odom_hz', f='{:.1f}')} Hz")
+    perr = [r["last_error"] for r in rows if r.get("last_error")]
+    if perr:
+        L.append(f"推論・判定のエラー (最後): {perr[-1]}")
     errs = {r['image_error'] for r in rows if r.get('image_error')}
     if errs:
         L.append(f"画像のエラー: {errs}")
@@ -166,7 +192,11 @@ def main():
     ap.add_argument("--out", default=os.path.join(ROOT, "log/debug_view", time.strftime("%Y%m%d_%H%M%S")))
     ap.add_argument("--every", type=float, default=1.0, help="画面の更新と保存の間隔 [s]")
     ap.add_argument("--no_save", action="store_true", help="画像を保存しない (steps.csv と summary.txt は保存)")
+    ap.add_argument("--summarize", default="", help="保存したフォルダ (steps.csv) のまとめを表示するだけ (ROS 不要)")
     args = ap.parse_args()
+    if args.summarize:
+        print(summarize(read_rows(os.path.join(args.summarize, "steps.csv")), {}))
+        return
 
     import rclpy
     from geometry_msgs.msg import Twist
@@ -182,6 +212,13 @@ def main():
     topics = {"image": tp.image, "odom": tp.odom, "cmd": args.cmd, "path": "/omnivla/path", "status": "/omnivla/status"}
     st = State()
     os.makedirs(os.path.join(args.out, "frames"), exist_ok=True)
+    try:   # log/debug_view/latest -> 今回のフォルダ
+        link = os.path.join(os.path.dirname(args.out.rstrip("/")), "latest")
+        if os.path.islink(link):
+            os.remove(link)
+        os.symlink(os.path.basename(args.out.rstrip("/")), link)
+    except OSError:
+        pass
 
     rclpy.init()
     node = rclpy.create_node("omnivla_debug_view")
@@ -255,6 +292,9 @@ def main():
             writer.writeheader()
         writer.writerow(row)
         fcsv.flush()
+        if len(rows) % 30 == 0:   # 途中で止められても (コンテナごと止めた等) まとめが残るように
+            with open(os.path.join(args.out, "summary.txt"), "w") as f:
+                f.write(summarize(rows, topics) + "\n")
 
     node.create_timer(args.every, tick)
 

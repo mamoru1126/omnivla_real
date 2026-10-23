@@ -620,3 +620,24 @@ def test_nav_overrides_env_nested():
     assert o == {"engine.max_image_age": 1.5, "engine.tracker.image_threshold": 0.93, "io.log_images": False}
     c = load_nav_config(os.path.join(CONFIGS, "navigator.yaml"), o)
     assert c.engine.max_image_age == 1.5 and c.engine.tracker.image_threshold == 0.93 and c.io.log_images is False
+
+
+def test_image_age_from_receive():
+    """image_age_from=receive: 画像の時刻 (別の PC の時計・カメラの時刻) が大きくずれていても、受け取ってすぐなら使う."""
+    tm = Topomap([GoalNode(render(0, 0, 0)), GoalNode(render(2, 0, 0))], start=None)
+    nav = load_nav_config(os.path.join(CONFIGS, "navigator.yaml"))
+    nav.io.log_dir = tempfile.mkdtemp()
+    eng = NavEngine(_FakePolicy(), tm, nav.engine, robot_cfg())
+    eng.start()
+    eng.on_image(1000.0, lambda: np.asarray(render(0.5, 0, 0.1)))     # 画像の時刻が今 (t=5000) より 4000 秒前
+    assert eng.step(5000.0).state == "waiting_image"                  # stamp: 古いと判定
+    assert eng.status()["step_state"] == "waiting_image" and eng.status()["image_age"] > 3000
+    nav2 = load_nav_config(os.path.join(CONFIGS, "navigator.yaml"), {"engine.image_age_from": "receive"})
+    nav2.io.log_dir = tempfile.mkdtemp()
+    eng = NavEngine(_FakePolicy(), tm, nav2.engine, robot_cfg())
+    eng.start()
+    eng.on_image(1000.0, lambda: np.asarray(render(0.5, 0, 0.1)))
+    r = eng.step(5000.0)
+    st = eng.status()
+    assert r.state == "running" and st["step_state"] == "running" and st["image_age"] < 1.0
+    assert st["similarity"] is not None and st["image_age_from"] == "receive" and st["image_stamp_offset"] > 1e6

@@ -131,6 +131,34 @@ if command -v docker > /dev/null && docker compose version > /dev/null 2>&1; the
     check "image: omnivla_real:latest" bash -c "cd '$ROOT' && docker compose -f docker-compose.replay.yml config policy"
 fi
 
+# --- 実機での走行 (bin/field.sh, ROS 2) と作業 PC から Orin (bin/orin.sh) ---
+H=(env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES=)
+check "NAV_OVERRIDES: engine.image_age_from=receive engine.max_image_age=1.0 engine.controller.track_max_v=0.3" \
+    "${H[@]}" "$B/field.sh" up --topomap course_a --max-v 0.3
+check "-f docker-compose.jetson-humble.yml up -d policy nav" "${H[@]}" "$B/field.sh" up --topomap course_a
+check "NAV_OVERRIDES: engine.image_age_from=stamp" "${H[@]}" "$B/field.sh" up --topomap course_a --strict-time
+fails "topomap を指定" "${H[@]}" "$B/field.sh" up
+fails "見つかりません" "${H[@]}" "$B/field.sh" up --topomap course_zzz
+check "tools/field_probe.py --sec 2 --where --topomap /data/topomaps/course_a" "${H[@]}" "$B/field.sh" where course_a
+check "tools/field_probe.py --sec 2 --where" "${H[@]}" "$B/field.sh" where
+check "tools/field_probe.py --enable true" "${H[@]}" "$B/field.sh" start
+check "tools/field_probe.py --enable false" "${H[@]}" "$B/field.sh" stop
+check "tools/field_probe.py --status" "${H[@]}" "$B/field.sh" status
+check "-f docker-compose.jetson-humble.yml stop nav" "${H[@]}" "$B/field.sh" down
+fails "ROS 2" env JETSON_ROS_DISTRO=noetic "$B/field.sh" start
+check "NAV_OVERRIDES: engine.tracker.image_threshold=0.93 engine.image_age_from=stamp" \
+    "${H[@]}" NAV_OVERRIDES="engine.tracker.image_threshold=0.93 engine.image_age_from=receive" "$B/field.sh" up --topomap course_a --strict-time
+check "+ .env: NAV_OVERRIDES=\"engine.image_age_from=receive engine.max_image_age=1.0\"" "${H[@]}" "$B/field.sh" setup
+check "+ .env: TOPOMAP=/data/topomaps/course_a" "${H[@]}" "$B/field.sh" setup --topomap course_a
+check "topics.image: /usb_cam/compressed" "${H[@]}" "$B/field.sh" topic image /usb_cam/compressed
+check "+ sudo chronyd -Q -t 15 server 192.168.0.100 iburst" "$B/timesync.sh" check
+check "+ sudo chronyd -q -t 20 server 192.168.0.100 iburst" "$B/timesync.sh" step
+check "+ scp -P 4003" env ORIN_PORT=4003 "$B/orin.sh" sync
+check "git merge --ff-only FETCH_HEAD" env ORIN_HOST=me@orin "$B/orin.sh" sync
+check "+ ssh -t me@orin cd omnivla_real && bin/field.sh check --where" env ORIN_HOST=me@orin "$B/orin.sh" field check --where
+check "--exclude *.db3" env ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/fetch" "$B/orin.sh" fetch
+check "+ git bundle create $T/x.bundle" "$B/orin.sh" bundle "$T/x.bundle"
+
 # --- 使い方の表示 ---
 for f in "$B"/*.sh; do
     [ "$(basename "$f")" = _lib.sh ] && continue

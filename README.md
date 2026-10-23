@@ -23,6 +23,7 @@
 |---|---|
 | [docs/training_pc.md](docs/training_pc.md) | 学習 PC (x86_64 + NVIDIA GPU): 準備、bag の確認、学習、topomap、机上評価、bag での確認 (1〜7)、設定ファイル、テスト |
 | [docs/jetson.md](docs/jetson.md) | Jetson AGX Orin: 準備、走行、トピック、デバッグ画面、Jetson での机上評価・bag での確認 (8) |
+| [docs/field.md](docs/field.md) | **実機の日の手順** (Orin: ROS 2 Humble, ネットなし): `bin/field.sh` (Orin) と `bin/orin.sh` (作業 PC) を打つだけ |
 
 ## 流れ
 

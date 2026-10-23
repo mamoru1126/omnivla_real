@@ -1,0 +1,13 @@
+# イメージには code だけを入れる. 重み・bag・データ・結果は実行時にマウントする (docker-compose の volumes).
+.git
+.env
+checkpoints/
+bags/
+data/
+runs/
+log/
+debug_log/
+tests/.build_cpp/
+**/__pycache__/
+**/*.pyc
+.vscode/

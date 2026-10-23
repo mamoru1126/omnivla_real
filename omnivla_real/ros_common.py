@@ -62,6 +62,7 @@ class NavRunner:
         self._thread: Optional[threading.Thread] = None
         self._alive = True
         self._wait_log_t = -1e9
+        self.last_error = ""      # 推論・判定で起きた最後の例外 (状態に出す)
         self.on_result: Optional[Callable[[StepResult], None]] = None
         log(f"ready: model={self.cfg.model.model}, sample_rate={self.engine.sample_rate} Hz, "
             f"topomap={topomap or '(none)'} ({len(tm)} subgoals)")
@@ -142,7 +143,7 @@ class NavRunner:
                     self.log(e)
                 if res.state in ("reached", "stopped"):
                     self.log(f"finished: {res.state} {res.reason}")
-                if res.state == "waiting_image" and time.time() - self._wait_log_t > 5.0:
+                if res.state == "waiting_image" and time.time() - getattr(self, "_wait_log_t", -1e9) > 5.0:
                     # 画像が古い (時計のずれ / カメラの遅れ). 5 秒ごとに理由を出す
                     self.log(f"waiting for a recent image: {res.reason}")
                     self._wait_log_t = time.time()
@@ -150,6 +151,8 @@ class NavRunner:
                     self.on_result(res)
             except Exception as e:  # 推論の例外でノードごと落ちないようにする
                 self.log(f"ERROR in step: {e!r}")
+                self.last_error = f"{time.strftime('%H:%M:%S')} {e!r}"[:300]
+                self.engine.step_state = "error"
                 self.cmd = (0.0, 0.0)
                 time.sleep(0.5)
             wait = period - (time.time() - t0)
@@ -173,6 +176,7 @@ class NavRunner:
     def status_json(self) -> str:
         st = self.engine.status()
         st["topomap"] = self.topomap_path
+        st["last_error"] = getattr(self, "last_error", "")
         return json.dumps(st, default=lambda o: float(o) if isinstance(o, np.floating) else str(o))
 
 
