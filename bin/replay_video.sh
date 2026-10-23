@@ -67,7 +67,7 @@ fi
 ensure_env
 BAG=$(cbags "${POS[0]}")
 TOPO=${POS[1]:-$(env_get TOPOMAP "")}
-[ -n "$TOPO" ] || die "topomap を指定してください (引数か .env の TOPOMAP)"
+[ -n "$TOPO" ] || die "topomap を指定してください (引数か $ENV_FILE の TOPOMAP)"
 TOPO=$(topomap_path "$TOPO")
 [ -z "$OUT" ] || cpath_new "$OUT" > /dev/null   # 出力先を先に確かめる (走らせてから失敗しない)
 export REPLAY_BAG=$BAG TOPOMAP=$TOPO NAV_AUTOSTART=true

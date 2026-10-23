@@ -24,7 +24,7 @@
 
 分けている理由: ROS 1 Noetic は Ubuntu 20.04 用ですが、Jetson で GPU を使える PyTorch は JetPack ごとに Ubuntu が決まっています (JetPack 6 は 22.04)。分けておけば、JetPack が決まっていなくても ROS 1 側はそのまま使えます。
 
-推論サーバのベースイメージは、JetPack に合わせて `.env` の `JETSON_BASE_IMAGE` で選びます。
+推論サーバのベースイメージは、JetPack に合わせて `.env.jetson` の `JETSON_BASE_IMAGE` で選びます。
 
 | JetPack | `JETSON_BASE_IMAGE` |
 |---|---|
@@ -61,10 +61,10 @@ sudo nvpmodel -m 0 && sudo jetson_clocks   # 最大性能 (推論時間に効く
 df -h /                            # イメージは 7B 込みで数十 GB. 空きを確認
 
 git clone https://github.com/mamoru1126/omnivla_real.git && cd omnivla_real
-bin/setup.sh none                  # .env を作り、Jetson 用のイメージ (推論サーバ・ROS 1) をビルド. 重みは学習 PC から送る
+bin/setup.sh none                  # Jetson 用のイメージ (推論サーバ・ROS 1) をビルド. 重みは学習 PC から送る
 ```
 
-`.env` は `.env.jetson.example` から作られます (本番の値: OmniVLA 7B、`NAV_AUTOSTART=false`、ATMOBI PC の IP)。
+Orin では `.env` ではなく、リポジトリに入っている **`.env.jetson`** を使います (`bin/*.sh` が自動で切り替えます。Orin に `.env` があっても使いません)。本番の値が入っています。
 
 | 項目 | 値 |
 |---|---|
@@ -73,7 +73,8 @@ bin/setup.sh none                  # .env を作り、Jetson 用のイメージ 
 | `NAV_AUTOSTART` | `false` (ブラウザの「開始」で走り出す) |
 | `ROS_MASTER_URI` / `ROS_IP` | `http://192.168.0.100:11311` / `192.168.0.200` (単体のときは `--standalone` で localhost になる) |
 
-- 7B は bf16 で約 15 GB の GPU メモリ (Orin は CPU と共有) を使います。64 GB の Orin なら余裕があります。
+- `docker compose` を直接打つときは `--env-file .env.jetson` を付けます。
+- 7B は bf16 で約 15 GB のメモリ (Orin は CPU と GPU で共有) を使います。
 
 ### 1-2. 学習 PC で学習して、Orin に送る
 
@@ -85,7 +86,7 @@ bin/to_jetson.sh user@<Orin の IP> --bag 20260919_150554.bag --configs
 ```
 
 - 重み (7B は元のモデルも)、topomap、評価用の bag、`configs/robot.yaml` / `navigator.yaml` が送られます。rsync なので 2 回目からは変わった分だけです。
-- 最後に表示される `NAV_MODEL=...` などの行を、Orin の `.env` に書きます。
+- 最後に表示される `NAV_MODEL=...` などの行が Orin の `.env.jetson` と違っていれば、合わせます。
 - 学習 PC から Orin に ssh できるネットワークで行います (ATMOBI PC との 2 台のネットワークとは別。Orin を一時的に社内のネットワークにつなぐなど)。
 
 ### 1-3. 机上評価・bag で確認する
@@ -98,7 +99,7 @@ bin/replay.sh 20260919_150554.bag course_a         # bag をロボットの代�
 bin/replay.sh down                                 # 片付け
 ```
 
-- 推論時間の中央値が waypoint の間隔 (約 333 ms) より大きく遅い場合は、`.env` の `NAV_HALF=1` (半精度) か edge にします。
+- 推論時間の中央値が waypoint の間隔 (約 333 ms) より大きく遅い場合は、`.env.jetson` で edge にします (`NAV_MODEL=edge`、`NAV_HALF=1` で半精度)。
 - ADE やサブゴールのずれが学習 PC の結果とほぼ同じなら、Orin でも同じように動いています。
 
 | コマンド | 学習 PC | Orin |
@@ -120,7 +121,7 @@ bin/jetson.sh shell --standalone rostopic list   # /omnivla/status などが見�
 bin/jetson.sh down
 ```
 
-- `--standalone` のときは `.env` の `ROS_MASTER_URI` / `ROS_IP` を使わず、`localhost` で動きます (2 の設定を書いたままでよい)。
+- `--standalone` のときは `.env.jetson` の `ROS_MASTER_URI` / `ROS_IP` を使わず、`localhost` で動きます (2 の設定を書いたままでよい)。
 - ブラウザ (http://&lt;Orin の IP&gt;:8080) でデバッグ画面が開けば OK です。カメラ画像が来ていないので「画像待ち」のままになります。
 - Orin にカメラを直接つないで試す場合は、カメラのドライバも同じ master (`http://localhost:11311`) につなぎます。
 
@@ -179,7 +180,7 @@ export ROS_MASTER_URI=http://192.168.0.100:11311
 export ROS_IP=192.168.0.100
 ```
 
-**Orin** の `.env`:
+**Orin** の `.env.jetson` (最初から入っています):
 
 ```bash
 ROS_MASTER_URI=http://192.168.0.100:11311

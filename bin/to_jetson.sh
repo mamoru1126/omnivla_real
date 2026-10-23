@@ -87,7 +87,7 @@ if [ "$CONFIGS" = 1 ]; then
     say "configs/robot.yaml configs/navigator.yaml"
     "${RSYNC[@]}" configs/./robot.yaml configs/./navigator.yaml "$HOST:$DEST/configs/"
 fi
-say "送りました. Jetson の $DEST/.env に次を書いて bin/jetson.sh up:"
+say "送りました. Jetson の $DEST/.env.jetson と違っていれば合わせて bin/jetson.sh up:"
 echo "NAV_MODEL=$MODEL"
 [ -n "$F" ] && echo "FINETUNED_DIR=$F"
 [ -n "$W" ] && echo "NAV_WEIGHTS=$W"

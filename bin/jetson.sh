@@ -44,7 +44,7 @@ case $CMD in
             export ROSLAUNCH_ARGS=--wait   # roscore コンテナの master を待つ
         fi
         T=$(env_get TOPOMAP "")
-        [ -n "$T" ] || say "注意: .env の TOPOMAP が空です (ブラウザや /omnivla/topomap で指定するまで走りません)"
+        [ -n "$T" ] || say "注意: $ENV_FILE の TOPOMAP が空です (ブラウザや /omnivla/topomap で指定するまで走りません)"
         [ -z "$T" ] || [ -e "$(hpath "$T")" ] || die "TOPOMAP が見つかりません: $T (ホストでは $(hpath "$T"))"
         say "モデル: $(env_get NAV_MODEL '(navigator.yaml)') $(env_get FINETUNED_DIR '')$(env_get NAV_WEIGHTS '')  topomap: $T"
         say "ROS master: $(env_get ROS_MASTER_URI http://localhost:11311)"

@@ -5,7 +5,7 @@
 # - bag や topomap は「名前」「ホストのパス」「コンテナの中のパス」のどれで指定してもよい。
 #     run1.bag / ./bags/run1.bag / /bags/run1.bag  →  /bags/run1.bag
 #     course_a / ./data/topomaps/course_a          →  /data/topomaps/course_a
-# - 値は 環境変数 → .env → 既定値 の順に見る。
+# - 値は 環境変数 → .env → 既定値 の順に見る。Jetson では .env の代わりに .env.jetson (リポジトリに入っている本番の値)。
 # - OMNIVLA_DRY_RUN=1 にすると docker を実行せず、実行するコマンドを表示するだけ (確認・テスト用)。
 set -euo pipefail
 CALLER_PWD=$PWD
@@ -24,15 +24,27 @@ usage() {
 }
 case "${1:-}" in -h | --help | help) usage ;; esac
 
-# 環境変数 → .env → 既定値
+# 設定ファイル: 学習 PC は .env、Jetson は .env.jetson (docker compose にも --env-file で渡す)
+ENV_FILE=.env
+COMPOSE_ENV=()
+_jetson_host() {
+    case ${OMNIVLA_JETSON:-} in 1 | true) return 0 ;; 0 | false) return 1 ;; esac
+    [ -f /etc/nv_tegra_release ]
+}
+if _jetson_host; then
+    ENV_FILE=.env.jetson
+    COMPOSE_ENV=(--env-file "$ENV_FILE")
+fi
+
+# 環境変数 → 設定ファイル (.env / .env.jetson) → 既定値
 env_get() {
     local k=$1 d=${2:-} v=""
     if [ -n "${!k:-}" ]; then
         printf '%s\n' "${!k}"
         return
     fi
-    if [ -f "$ROOT/.env" ]; then
-        v=$(sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?$k=(.*)$/\2/p" "$ROOT/.env" | tail -1 | sed -E 's/[[:space:]]+#.*$//')
+    if [ -f "$ROOT/$ENV_FILE" ]; then
+        v=$(sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?$k=(.*)$/\2/p" "$ROOT/$ENV_FILE" | tail -1 | sed -E 's/[[:space:]]+#.*$//')
         v=${v%$'\r'}
         case $v in \"*\") v=${v:1:${#v}-2} ;; \'*\') v=${v:1:${#v}-2} ;; esac
     fi
@@ -40,11 +52,10 @@ env_get() {
 }
 
 ensure_env() {
-    local src=.env.example
-    if on_jetson && [ -f "$ROOT/.env.jetson.example" ]; then src=.env.jetson.example; fi
+    [ "$ENV_FILE" = .env ] || return 0   # Jetson: .env.jetson はリポジトリに入っている
     if [ ! -f "$ROOT/.env" ] && [ "${OMNIVLA_DRY_RUN:-0}" != 1 ]; then
-        cp "$ROOT/$src" "$ROOT/.env"
-        say ".env がなかったので $src から作りました (重み・topomap などはここに書きます)"
+        cp "$ROOT/.env.example" "$ROOT/.env"
+        say ".env がなかったので .env.example から作りました (重み・topomap などはここに書きます)"
     fi
 }
 
@@ -188,17 +199,11 @@ TTY=()
 if ! { [ -t 0 ] && [ -t 1 ]; }; then TTY=(-T); fi
 
 # Jetson の上か (OMNIVLA_JETSON=1 / 0 で決め打ちもできる). Jetson では学習用イメージの代わりに推論サーバのイメージを使う
-on_jetson() {
-    case ${OMNIVLA_JETSON:-} in
-        1 | true) return 0 ;;
-        0 | false) return 1 ;;
-    esac
-    [ -f /etc/nv_tegra_release ]
-}
+on_jetson() { _jetson_host; }
 if on_jetson; then export REPLAY_POLICY_COMPOSE=docker-compose.jetson.yml; fi  # docker-compose.replay.yml の推論サーバ
-pc() { docker compose "$@"; }                                 # 学習 PC (docker-compose.yml)
-jetson() { docker compose -f docker-compose.jetson.yml "$@"; }  # Jetson
-replay() { docker compose -f docker-compose.replay.yml "$@"; }  # bag をロボットの代わりにして実機と同じ構成
+pc() { docker compose "${COMPOSE_ENV[@]}" "$@"; }                                 # 学習 PC (docker-compose.yml)
+jetson() { docker compose -f docker-compose.jetson.yml "${COMPOSE_ENV[@]}" "$@"; }  # Jetson
+replay() { docker compose -f docker-compose.replay.yml "${COMPOSE_ENV[@]}" "$@"; }  # bag をロボットの代わりにして実機と同じ構成
 # 1 コマンド動かす: 学習 PC は学習用コンテナ、Jetson は推論サーバのイメージ (torch + bag の読み込み)
 in_shell() {
     if on_jetson; then

@@ -48,7 +48,7 @@ if [ $# -gt 0 ] && [[ $1 != -* ]]; then
     TOPO=$1
     shift
 fi
-[ -n "$TOPO" ] || die "topomap を指定してください (引数か .env の TOPOMAP)"
+[ -n "$TOPO" ] || die "topomap を指定してください (引数か $ENV_FILE の TOPOMAP)"
 TOPO=$(topomap_path "$TOPO")
 while [ $# -gt 0 ]; do
     case $1 in

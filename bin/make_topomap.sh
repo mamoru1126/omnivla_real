@@ -10,4 +10,4 @@ OUT=$(cpath data topomaps "$1")
 BAG=$(cbags "$2")
 shift 2
 in_shell python3 tools/make_topomap.py --out "$OUT" "$BAG" "$@"
-say "topomap: $(hpath "$OUT")  (走行で使うには .env に TOPOMAP=$OUT)"
+say "topomap: $(hpath "$OUT")  (走行で使うには $ENV_FILE に TOPOMAP=$OUT)"
