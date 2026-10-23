@@ -147,6 +147,8 @@ check "server 192.168.0.100 iburst prefer trust" "$B/timesync.sh" orin
 check "append to /etc/chrony/chrony.conf: allow 192.168.0.0/24" "$B/timesync.sh" atmobi
 check "server 10.0.0.5 iburst prefer trust" env ATMOBI_IP=10.0.0.5 "$B/timesync.sh" orin
 check "+ sudo chronyc makestep" "$B/timesync.sh" now
+check "sudo date -s <HTTPS の Date>" "$B/timesync.sh" now
+check "append to /etc/chrony/chrony.conf: pool ntp.ubuntu.com iburst maxsources 4" "$B/timesync.sh" orin
 fails "bin/timesync.sh" "$B/timesync.sh" bogus
 
 # --- 使い方の表示 ---

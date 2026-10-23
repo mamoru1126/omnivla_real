@@ -5,11 +5,12 @@
 #
 #   bin/timesync.sh orin       # Orin: ネットの時刻サーバ + ATMOBI PC (優先) を登録して、すぐ合わせる
 #   bin/timesync.sh atmobi     # ATMOBI PC: 192.168.0.0/24 に時刻を配る (ネットに届かなくても配る)
-#   bin/timesync.sh now        # すぐ合わせる (chronyc makestep)
+#   bin/timesync.sh now        # すぐ合わせる (chronyc makestep. NTP に届かないときは HTTPS の応答の時刻で合わせる)
 #   bin/timesync.sh status     # 今どこに合わせているか、ずれ
 #
 #   ATMOBI_IP=192.168.0.100  ROBOT_SUBNET=192.168.0.0/24  (環境変数で変えられる)
 #   chrony が入っていなければ apt で入れる (ネットにつながっているときに)
+#   社内ネットワークなどで NTP (UDP 123) が通らないときは、HTTPS (プロキシ経由でも可) の Date ヘッダで合わせる
 set -euo pipefail
 ME=$(basename "$0" .sh)
 ATMOBI_IP=${ATMOBI_IP:-192.168.0.100}
@@ -60,6 +61,29 @@ restart() {
     run sudo systemctl restart chrony
     if [ "${OMNIVLA_DRY_RUN:-0}" != 1 ]; then sleep 3; fi
 }
+synced() { chronyc tracking 2> /dev/null | grep -q '^Leap status *: Normal'; }
+# HTTPS の応答の Date ヘッダ (秒単位) で時計を合わせる. curl は https_proxy を使う
+http_time() {
+    local url d=""
+    for url in https://www.google.com https://www.cloudflare.com https://github.com; do
+        d=$(curl -sfI --max-time 10 "$url" 2> /dev/null | tr -d '\r' | sed -n 's/^[Dd]ate: //p' | head -1) || true
+        [ -n "$d" ] && break
+    done
+    [ -n "$d" ] || return 1
+    say "HTTPS の時刻 ($url): $d"
+    run sudo date -s "$d" > /dev/null
+}
+# すぐ合わせる: chrony で合わせられなければ HTTPS で
+step_now() {
+    run sudo chronyc makestep || true
+    if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ]; then
+        echo "+ (NTP で同期できていなければ) sudo date -s <HTTPS の Date>"
+        return 0
+    fi
+    for _ in 1 2 3 4 5 6 7 8 9 10; do synced && return 0; sleep 1; done
+    say "NTP の時刻サーバに届きません (ネットの NTP が通らない / ATMOBI PC につながっていない). HTTPS の時刻で合わせます"
+    http_time || say "HTTPS にも届きません. 手で合わせてください: sudo date -s '2026-10-23 18:00:00'"
+}
 status() {
     run chronyc sources
     run chronyc tracking
@@ -75,6 +99,10 @@ case "${1:-}" in
         run sudo sed -i -E -e 's/^#((pool|server) )/\1/' -e "/^server ${ATMOBI_IP//./\\.} /d" \
             -e 's/^makestep .*/makestep 1 -1/' "$CONF"
         if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ] || ! grep -q '^makestep ' "$CONF"; then append_root "$CONF" "makestep 1 -1"; fi
+        # ネットの時刻サーバが 1 つも書かれていなければ足す
+        if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ] || ! grep -qE '^(pool|server) ' "$CONF"; then
+            append_root "$CONF" "pool ntp.ubuntu.com iburst maxsources 4"
+        fi
         # conf.d を読まない古い chrony.conf なら読むようにする
         if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ] || ! grep -qE "^(confdir|include) .*conf\.d" "$CONF"; then
             append_root "$CONF" "include $CONF_D/*.conf"
@@ -83,7 +111,7 @@ case "${1:-}" in
         # prefer: 届いているときは ATMOBI PC を優先. trust: ネットの時刻と食い違っても ATMOBI PC を正しいとみなす
         write_root "$CONF_D/atmobi.conf" "server $ATMOBI_IP iburst prefer trust"
         restart
-        run sudo chronyc makestep
+        step_now
         status
         say "行頭が ^* のサーバに合わせています (単体: ネットのサーバ / 本番: $ATMOBI_IP)"
         ;;
@@ -97,7 +125,7 @@ case "${1:-}" in
         say "この PC の時刻が正しいか確認してください (Orin はこの時刻に合わせます): $(date)"
         ;;
     now)
-        run sudo chronyc makestep
+        step_now
         status
         ;;
     status)
