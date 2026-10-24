@@ -1,0 +1,70 @@
+{
+ "horizon_s": 2.6666666666666665,
+ "cmd_to_odom_delay_s": {
+  "angular": 0.14,
+  "angular_corr": 0.9999873168603164,
+  "linear": 0.12,
+  "linear_corr": 1.0
+ },
+ "cmd_delay_used_s": 0.14,
+ "pairs": {
+  "odom vs odom_twist": {
+   "n": 153,
+   "pos_err_median_m": 0.003956070951666271,
+   "pos_err_p90_m": 0.01783829493370757,
+   "yaw_err_median_deg": 0.030063550395362085,
+   "yaw_err_p90_deg": 0.5353789761090367,
+   "distance_ratio_b_over_a": 1.0000000000677285,
+   "mean_distance_a_m": 1.2322480679206873
+  },
+  "odom vs cmd": {
+   "n": 153,
+   "pos_err_median_m": 0.0037705837221853893,
+   "pos_err_p90_m": 0.004266663295247677,
+   "yaw_err_median_deg": 0.30557749068770473,
+   "yaw_err_p90_deg": 0.3055774911032022,
+   "distance_ratio_b_over_a": 1.0000014977440048,
+   "mean_distance_a_m": 1.2322480679206873
+  },
+  "odom vs localization": {
+   "n": 153,
+   "pos_err_median_m": 0.042351392355367126,
+   "pos_err_p90_m": 0.048181699993182524,
+   "yaw_err_median_deg": 0.3048314400309613,
+   "yaw_err_p90_deg": 0.31249912795084933,
+   "distance_ratio_b_over_a": 0.9700011497865697,
+   "mean_distance_a_m": 1.2322480679206873
+  },
+  "odom_twist vs cmd": {
+   "n": 153,
+   "pos_err_median_m": 0.004279889375927823,
+   "pos_err_p90_m": 0.017868430774292378,
+   "yaw_err_median_deg": 0.28931100782770697,
+   "yaw_err_p90_deg": 0.736429043372483,
+   "distance_ratio_b_over_a": 1.0000011852139838,
+   "mean_distance_a_m": 1.232246895806215
+  },
+  "odom_twist vs localization": {
+   "n": 153,
+   "pos_err_median_m": 0.0447697036075475,
+   "pos_err_p90_m": 0.04823366686147093,
+   "yaw_err_median_deg": 0.29017544336544193,
+   "yaw_err_p90_deg": 0.722184884151364,
+   "distance_ratio_b_over_a": 0.9700011496566592,
+   "mean_distance_a_m": 1.232246895806215
+  },
+  "cmd vs localization": {
+   "n": 153,
+   "pos_err_median_m": 0.04253983864292836,
+   "pos_err_p90_m": 0.04800000000145852,
+   "yaw_err_median_deg": 0.000748884783500658,
+   "yaw_err_p90_deg": 0.015251639381568562,
+   "distance_ratio_b_over_a": 0.9699986383692326,
+   "mean_distance_a_m": 1.2323940842455914
+  }
+ },
+ "odom_over_cmd": {
+  "linear_median": 1.0,
+  "angular_median": 1.001351490692398
+ }
+}

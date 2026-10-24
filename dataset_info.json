@@ -1,0 +1,19 @@
+{
+ "trajectories": 5,
+ "frames": 433,
+ "path_length_m": 71.8831817186802,
+ "bags": [
+  "course_ros1_0",
+  "course_sqlite3",
+  "lap2"
+ ],
+ "sample_rate": [
+  3.0
+ ],
+ "pose_source": [
+  "odom"
+ ],
+ "metric_waypoint_spacing": 0.1803149800959821,
+ "turn_fraction": 0.21247113163972287,
+ "updated_at": "2026-10-24 15:50:40"
+}

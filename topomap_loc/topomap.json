@@ -1,0 +1,43 @@
+{
+ "bag": "/home/runner/work/_temp/e2e/bags/course_mcap",
+ "robot": {
+  "name": "my_robot",
+  "topics": {
+   "image": "/camera/image_raw/compressed",
+   "odom": "/odom",
+   "cmd": "/cmd_vel",
+   "localization": "/localization",
+   "localization_frame": "map",
+   "localization_child_frame": "base_link",
+   "eval_localization": "",
+   "cmd_v_field": "",
+   "cmd_w_field": ""
+  },
+  "image": {
+   "crop": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "width": 320,
+   "rotate180": false,
+   "jpeg_quality": 95
+  },
+  "camera": {
+   "hfov_deg": 90.0,
+   "height": 0.5,
+   "x_offset": 0.2,
+   "pitch_deg": 0.0
+  },
+  "time_source": "auto"
+ },
+ "spacing_m": 1.0,
+ "pose_source": "localization",
+ "t_start": 2.199999999999932,
+ "t_end": 50.999999999999886,
+ "course_length_m": 23.091663249872003,
+ "num_nodes": 24,
+ "frame": "map",
+ "created_at": "2026-10-24 15:50:45"
+}

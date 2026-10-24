@@ -1,0 +1,43 @@
+{
+ "streams": {
+  "duration_s": 57.35000000100001,
+  "images_total": 861,
+  "image_rate_hz": 14.99825601674226,
+  "images_saved": 173,
+  "image_size": [
+   320,
+   240
+  ],
+  "cmd_msgs": 1148,
+  "cmd_rate_hz": 19.999999999999993,
+  "odom_msgs": 2868,
+  "odom_rate_hz": 50.00000000000007,
+  "loc_msgs": 0,
+  "loc_rate_hz": 0.0,
+  "clock_offsets_s": {
+   "/odom": -0.002000000000066393,
+   "/camera/image_raw/compressed": -0.009999999999990905
+  }
+ },
+ "frame_period": {
+  "median_s": 0.3300000000001546,
+  "max_s": 0.34000000000003183,
+  "n_gaps_over_1s": 0
+ },
+ "clock_warnings": [],
+ "bag": "lap2",
+ "frames": 173,
+ "valid_frames": 173,
+ "moving_frames": 158,
+ "used_frames": 161,
+ "segments": 1,
+ "segments_time": [
+  [
+   1.9999999999998863,
+   55.339999999999804
+  ]
+ ],
+ "trajectories": [
+  "lap2_000_00"
+ ]
+}
