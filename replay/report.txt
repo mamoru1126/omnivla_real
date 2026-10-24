@@ -1,0 +1,32 @@
+run: /runs/replay/nav/20261024_155716
+topomap: /data/topomap (24 subgoals)  modality: image  controller: trajectory  reach_check: auto
+model: {'device': 'cuda:0', 'finetuned_dir': '', 'half': False, 'metric_waypoint_spacing': 0.0, 'model': 'edge', 'server_model': 'edge', 'timeout': 10.0, 'url': 'http://127.0.0.1:8765', 'weights': ''}
+summary: reason=shutdown, reached=False, steps=433, final_dist_to_goal=0.0, min_dist_to_goal=0.0, path_length_m=23.8061968792668
+
+== サブゴールごとの区間 ==
+subgoal  0: steps 1-19 (19 steps)  goal_bearing +0 -> +180 deg  dist 0.00 -> -0.06 m
+subgoal  2: steps 20-25 (6 steps)  goal_bearing +0 -> +0 deg  dist -0.13 -> 1.58 m
+subgoal  3: steps 26-46 (21 steps)  goal_bearing +0 -> +0 deg  dist 1.51 -> 0.94 m
+subgoal  5: steps 47-73 (27 steps)  goal_bearing +0 -> +0 deg  dist 0.86 -> 0.92 m
+subgoal  7: steps 74-132 (59 steps)  goal_bearing +2 -> +161 deg  dist 0.85 -> -0.99 m
+subgoal  8: steps 133-135 (3 steps)  goal_bearing +4 -> +1 deg  dist -1.05 -> -0.16 m
+subgoal 11: steps 136-151 (16 steps)  goal_bearing +20 -> -0 deg  dist -0.23 -> 1.78 m
+subgoal 12: steps 152-225 (74 steps)  goal_bearing +8 -> +21 deg  dist 1.71 -> 1.03 m
+subgoal 14: steps 226-235 (10 steps)  goal_bearing +59 -> +52 deg  dist 0.96 -> 2.37 m
+subgoal 15: steps 236-300 (65 steps)  goal_bearing +56 -> +180 deg  dist 2.32 -> -0.93 m
+subgoal 16: steps 301-309 (9 steps)  goal_bearing +0 -> +180 deg  dist -1.00 -> -0.52 m
+subgoal 17: steps 310-323 (14 steps)  goal_bearing +0 -> +180 deg  dist -0.59 -> -0.28 m
+subgoal 18: steps 324-352 (29 steps)  goal_bearing +0 -> +159 deg  dist -0.35 -> -0.97 m
+subgoal 19: steps 353-366 (14 steps)  goal_bearing +178 -> +161 deg  dist -1.02 -> -0.77 m
+subgoal 21: steps 367-370 (4 steps)  goal_bearing +12 -> +6 deg  dist -0.83 -> 0.95 m
+subgoal 22: steps 371-403 (33 steps)  goal_bearing +5 -> +180 deg  dist 0.88 -> -0.31 m
+subgoal 23: steps 404-433 (30 steps)  goal_bearing +0 -> +0 deg  dist -0.36 -> 0.05 m
+
+== 予測軌跡がサブゴールと逆側を向いたステップ (0/433) ==
+   (サブゴールが |bearing|>15deg の横にあるのに, 予測の 5 点目が反対側) -> モデル側の問題
+
+== 旋回指令が予測軌跡と逆のステップ (0/433) ==
+   -> 制御 (軌跡 -> v, w の変換) 側の問題。0 であるべき
+
+== 予測した旋回を実行できていない区間 (0/433 steps) ==
+   (予測 8 点が |w|>=0.15rad/s の旋回を表すのに, 指令 w がその 50% 未満) -> 制御側の問題。0 に近いべき
