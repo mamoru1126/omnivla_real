@@ -3,7 +3,9 @@
   * ゴール画像は同じ軌跡の未来フレーム (hindsight relabeling), ゴール姿勢は位置の時系列から計算
   * 正解はこの先 8 フレームの位置と向き (metric_waypoint_spacing で正規化)
   * 途中で止まっているフレーム (traj_data.pkl の exclude) は学習の起点にしない
-  * 軌跡末尾は最終姿勢でパディング (= ゴール付近では「止まる」ことを学習)
+  * 軌跡末尾は最終姿勢でパディング (= ゴール付近では「止まる」ことを学習). ただし走行の途中で chunk_sec ごとに
+    区切っただけの末尾 (その先も走っている) はパディングがウソになるので、正解がはみ出すフレームは起点にしない
+  * label_smooth_sec > 0 なら位置と向きを時間方向にならしてから正解を作る (手動操作のカクカクした曲がりを均す)
 OmniVLADataset (7B) は prismatic に、EdgeDataset は OmniVLA-edge の入力形式に合わせる。
 """
 from __future__ import annotations
@@ -23,10 +25,12 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
 
-from omnivla_real.data_utils import (AugmentConfig, GoalSamplingConfig, augment_pair, balanced_weights,  # noqa: E402
-                                     build_sample_index, color_jitter, flip_left_right, label_valid_mask,
-                                     make_targets, modality_id, random_crop_box, reweight, turn_flags)
-from omnivla_real.trajectory_io import image_path, load_meta, load_trajectory  # noqa: E402
+from omnivla_real.data_utils import (AugmentConfig, GoalSamplingConfig, arc_length, augment_pair,  # noqa: E402
+                                     balanced_weights, build_sample_index, color_jitter, cut_end_mask,
+                                     flip_left_right, label_valid_mask, make_targets, modality_id,
+                                     random_crop_box, reweight, rotate_labels, smooth_trajectory, turn_flags,
+                                     yaw_shift_boxes)
+from omnivla_real.trajectory_io import image_path, load_meta, load_trajectory, trajectory_cut_end  # noqa: E402
 
 
 @dataclass
@@ -40,10 +44,31 @@ class NavDatasetConfig:
     turn_threshold_deg: float = 45.0       #   何度以上曲がるか
     context_size: int = 5                  # edge: 過去何フレームを入れるか
     context_stride: int = 1                # edge: 過去フレームの間隔 (フレーム数)
+    label_smooth_sec: float = 0.0          # >0: 位置と向きをこの秒数 (ガウスの sigma) でならしてから正解を作る
 
 
 def parse_modality_weights(weights: Dict) -> Dict[int, float]:
     return {modality_id(k): float(v) for k, v in weights.items()}
+
+
+def goal_dist(value) -> Optional[tuple]:
+    """設定の image_goal_dist_m ([lo, hi] [m] / 空) -> (lo, hi) / None."""
+    if not value:
+        return None
+    if len(value) != 2 or float(value[0]) < 0 or float(value[1]) < float(value[0]):
+        raise ValueError(f"image_goal_dist_m must be [lo, hi] with 0 <= lo <= hi, got {value}")
+    return float(value[0]), float(value[1])
+
+
+def describe_data_options(cfg, ds: "BaseNavDataset") -> str:
+    """学習ログ用: 正解・ゴール・水増しの設定と、区切りで外したサンプル数."""
+    parts = [f"label_smooth_sec={getattr(cfg, 'label_smooth_sec', 0.0):g}",
+             "image goal: " + (f"{cfg.image_goal_dist_m[0]:g}-{cfg.image_goal_dist_m[1]:g} m ahead"
+                               if getattr(cfg, "image_goal_dist_m", None)
+                               else f"{cfg.image_goal_offset[0]}-{cfg.image_goal_offset[1]} frames ahead"),
+             f"yaw_aug_deg={getattr(cfg, 'yaw_aug_deg', 0.0):g} (hfov {getattr(cfg, 'yaw_aug_hfov_deg', 90.0):g}deg)",
+             f"{ds.num_cut_dropped} samples dropped (labels ran past a chunk cut)"]
+    return "data: " + ", ".join(parts)
 
 
 class BaseNavDataset(Dataset):
@@ -58,17 +83,26 @@ class BaseNavDataset(Dataset):
         self.force_modality = force_modality
         self.seed = seed
         self.trajs: List[dict] = []
+        self.num_cut_dropped = 0
         for d in traj_dirs:
             data = load_trajectory(d)
             n = len(data["position"])
             if n < 2 or not os.path.exists(image_path(d, n - 1)):
                 print(f"[dataset] skip {d} (frames={n})")
                 continue
+            meta = load_meta(d)
+            pos, yaw = data["position"], data["yaw"]
+            if cfg.label_smooth_sec > 0:
+                rate = float(meta.get("sample_rate") or 3.0)
+                pos, yaw = smooth_trajectory(pos, yaw, cfg.label_smooth_sec * rate)
             valid = label_valid_mask(data["perturbed"], 8, cfg.waypoint_spacing) & ~data["exclude"]
-            self.trajs.append({"dir": d, "name": os.path.basename(d), "position": data["position"],
-                               "yaw": data["yaw"], "n": n,
-                               "turn": turn_flags(data["position"], data["yaw"], cfg.turn_horizon,
-                                                  cfg.turn_threshold_deg),
+            if trajectory_cut_end(d, meta):
+                cut = cut_end_mask(n, 8, cfg.waypoint_spacing)
+                self.num_cut_dropped += int((valid & cut)[:n - 1].sum())
+                valid &= ~cut
+            self.trajs.append({"dir": d, "name": os.path.basename(d), "position": pos,
+                               "yaw": yaw, "n": n, "arc": arc_length(pos),
+                               "turn": turn_flags(pos, yaw, cfg.turn_horizon, cfg.turn_threshold_deg),
                                "perturbed": data["perturbed"], "valid": valid})
         self.index = [(ti, t) for ti, t in build_sample_index([t["n"] for t in self.trajs])
                       if self.trajs[ti]["valid"][t]]
@@ -114,7 +148,7 @@ class BaseNavDataset(Dataset):
         rng = self._rng(i)
         mod, goal_t, actions, goal_pose = make_targets(
             rng, tr["position"], tr["yaw"], t, self.cfg.goal, self.cfg.metric_waypoint_spacing,
-            self.cfg.waypoint_spacing, self.cfg.max_goal_dist, self.force_modality)
+            self.cfg.waypoint_spacing, self.cfg.max_goal_dist, self.force_modality, arc=tr["arc"])
         return tr, t, rng, mod, goal_t, actions, goal_pose
 
     def meta(self, i: int, tr: dict, t: int, goal_t: int, mod: int) -> dict:
@@ -160,8 +194,19 @@ class EdgeDataset(BaseNavDataset):
         if self.train and c.aug.enabled:
             u = (rng.random(), rng.random())
             box = lambda im: random_crop_box(None, im.width, im.height, c.aug.crop_v, c.aug.crop_h, u)  # noqa: E731
-            obs = [im.crop(box(im)) for im in obs]
-            goal = goal.crop(box(goal))
+            obs_boxes = [box(im) for im in obs]
+            goal_box = box(goal)
+            if c.aug.yaw_deg > 0:   # 現在 (と履歴) の画像だけずらし、正解を回す (data_utils.augment_pair と同じ)
+                want = np.radians(float(rng.uniform(-c.aug.yaw_deg, c.aug.yaw_deg)))
+                cur = obs[-1]
+                cb, gb, applied = yaw_shift_boxes(cur.width, cur.height, obs_boxes[-1], want,
+                                                  np.radians(c.aug.hfov_deg))
+                obs_boxes = [cb if im.size == cur.size else b for im, b in zip(obs, obs_boxes)]
+                if goal.size == cur.size:
+                    goal_box = gb
+                actions, goal_pose = rotate_labels(actions, goal_pose, applied)
+            obs = [im.crop(b) for im, b in zip(obs, obs_boxes)]
+            goal = goal.crop(goal_box)
             if rng.random() < c.aug.flip_prob:
                 obs = [im.transpose(Image.FLIP_LEFT_RIGHT) for im in obs]
                 goal = goal.transpose(Image.FLIP_LEFT_RIGHT)

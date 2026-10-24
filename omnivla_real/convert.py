@@ -227,7 +227,9 @@ def _link_or_copy(src: str, dst: str) -> None:
         shutil.copyfile(src, dst)
 
 
-def write_trajectory(ft: FrameTable, a: int, b: int, out_dir: str, meta: dict, keep_tail: int) -> str:
+def write_trajectory(ft: FrameTable, a: int, b: int, out_dir: str, meta: dict, keep_tail: int,
+                     cut_end: bool = False) -> str:
+    """cut_end: 走行の途中で chunk_sec ごとに区切った塊 (末尾の先にも走行が続いている)."""
     os.makedirs(out_dir, exist_ok=False)
     for k, i in enumerate(range(a, b)):
         _link_or_copy(ft.image_paths[i], os.path.join(out_dir, f"{k}.jpg"))
@@ -253,6 +255,7 @@ def write_trajectory(ft: FrameTable, a: int, b: int, out_dir: str, meta: dict, k
         "path_length_m": float(np.sum(np.linalg.norm(np.diff(pos, axis=0), axis=1))),
         "spacing_m": summarize_spacing(pos),
         "excluded_frames": int(data["exclude"].sum()),
+        "cut_end": bool(cut_end),
         "turn_fraction": float(turn_flags(pos, yaw, 10, 45.0).mean()),
         "t_start": float(ft.t[a]), "t_end": float(ft.t[b - 1]),
         "saved_at": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -281,7 +284,7 @@ def convert_streams(s: Streams, cfg: ConvertConfig, out_root: str, name: str, ex
                     raise FileExistsError(f"{d} exists (use --overwrite)")
                 shutil.rmtree(d)
             m = dict(meta, segment=si, chunk=ci)
-            written.append(write_trajectory(ft, ca, cb, d, m, keep_tail if cb == b else 0))
+            written.append(write_trajectory(ft, ca, cb, d, m, keep_tail if cb == b else 0, cut_end=cb != b))
     used = sum(b - a for a, b in segs)
     moving, _ = motion_flags(ft, cfg)
     return {

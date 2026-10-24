@@ -236,6 +236,30 @@ def run_desk_eval(ft: FrameTable, policy, robot: RobotConfig, engine_cfg: Engine
     return rec, summarize(rec, ft, cfg, engine)
 
 
+def turn_gain(gt_deg, pred_deg, min_deg: float = 10.0, max_lag: int = 6) -> dict:
+    """予測した曲がる量 (8 点目の向き) が実際の何倍か (10 度以上曲がる所で, 原点を通る回帰の傾き) と、
+    予測が何フレーム遅れているか (相互相関が最大になるずれ. 負 = 予測が遅い).
+    1 に近いほどよい. 0.7 なら「曲がり不足 3 割」."""
+    g = np.array([np.nan if v is None else v for v in gt_deg], dtype=float)
+    p = np.array([np.nan if v is None else v for v in pred_deg], dtype=float)
+    ok = np.isfinite(g) & np.isfinite(p)
+    big = ok & (np.abs(g) > min_deg)
+    out = {"turn_gain": None, "turn_gain_n": int(big.sum()), "turn_lag_frames": None}
+    if big.sum() >= 5:
+        out["turn_gain"] = float(np.dot(g[big], p[big]) / np.dot(g[big], g[big]))
+    if ok.sum() > 4 * max_lag and np.std(g[ok]) > 1e-6 and np.std(p[ok]) > 1e-6:
+        best, best_c = 0, -2.0
+        for lag in range(-max_lag, max_lag + 1):   # corr(pred[t], gt[t + lag])
+            a, b = (p[:len(p) - lag], g[lag:]) if lag >= 0 else (p[-lag:], g[:len(g) + lag])
+            m = np.isfinite(a) & np.isfinite(b)
+            if m.sum() > 10 and np.std(a[m]) > 1e-9 and np.std(b[m]) > 1e-9:
+                c = float(np.corrcoef(a[m], b[m])[0, 1])
+                if c > best_c:
+                    best, best_c = lag, c
+        out["turn_lag_frames"] = int(best)
+    return out
+
+
 def summarize(rec: List[dict], ft: FrameTable, cfg: DeskEvalConfig, engine: NavEngine) -> dict:
     used = [r for r in rec if "ade" in r]
     out: dict = {"frames": len(rec), "frames_evaluated": len(used),
@@ -256,6 +280,7 @@ def summarize(rec: List[dict], ft: FrameTable, cfg: DeskEvalConfig, engine: NavE
         "turn": {"n": int(turn.sum()), "ade_m": float(ade[turn].mean()) if turn.any() else None,
                  "heading_err_deg": float(yerr[turn].mean()) if turn.any() else None},
         "straight": {"n": int((~turn).sum()), "ade_m": float(ade[~turn].mean()) if (~turn).any() else None},
+        **turn_gain([r.get("gt_turn_deg") for r in used], [r.get("pred_turn_deg") for r in used]),
     }
     ev = np.array(["v" in r and "ade" in r for r in rec])
     moving = ev & (np.abs(cv) + np.abs(cw) > 1e-3)

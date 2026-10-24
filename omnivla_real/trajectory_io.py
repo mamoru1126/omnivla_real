@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import pickle
+import re
 import shutil
 import time
 from typing import Dict, List, Optional, Sequence, Tuple, Union
@@ -130,6 +131,30 @@ def load_meta(traj_dir: str) -> dict:
 
 def image_path(traj_dir: str, t: int) -> str:
     return os.path.join(traj_dir, f"{t}.jpg")
+
+
+_CHUNK_NAME = re.compile(r"^(?P<bag>.+)_(?P<seg>\d{3})_(?P<chunk>\d{2})$")
+
+
+def trajectory_cut_end(traj_dir: str, meta: Optional[dict] = None) -> bool:
+    """この軌跡の終わりが「走行の途中で chunk_sec ごとに区切っただけ」か (本当に止まった/途切れた所ではない).
+
+    区切っただけの所では、その先のフレームが次の塊に入っていてこの軌跡には無い。末尾を最終姿勢で埋めた正解は
+    「その先で止まる」というウソになるので、学習の起点に使わない (BaseNavDataset)。
+    meta.json の cut_end (新しい変換) か、同じ区間の次の塊 (<bag>_<区間>_<塊+1>) があるかで判断する。
+    """
+    meta = load_meta(traj_dir) if meta is None else meta
+    if "cut_end" in meta:
+        return bool(meta["cut_end"])
+    name = os.path.basename(os.path.normpath(traj_dir))
+    bag, seg, chunk = meta.get("bag"), meta.get("segment"), meta.get("chunk")
+    m = _CHUNK_NAME.match(name)
+    if bag is None or seg is None or chunk is None:
+        if not m:
+            return False
+        bag, seg, chunk = m.group("bag"), int(m.group("seg")), int(m.group("chunk"))
+    nxt = os.path.join(os.path.dirname(os.path.normpath(traj_dir)), f"{bag}_{int(seg):03d}_{int(chunk) + 1:02d}")
+    return os.path.isdir(nxt)
 
 
 def find_trajectories(roots: Union[str, Sequence[str]], max_depth: int = 3) -> List[str]:

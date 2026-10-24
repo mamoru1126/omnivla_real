@@ -8,12 +8,16 @@ val_ratio: 0.1
 val_bags: []                       # 例 [run3]. 数字の名前は引用符で ["20260919_150554"]
 metric_waypoint_spacing: 0.0           # 0 = dataset_info.json の値
 image_goal_offset: [2, 30]
+image_goal_dist_m: [0.5, 2.5]          # ゴール画像は道のりで 0.5〜2.5 m 先 (configs/finetune_7b.yaml と同じ)
 pose_goal_offset: [2, 300]
 modality_weights:
   image: 1.0
+label_smooth_sec: 0.5                  # 正解をならす (configs/finetune_7b.yaml と同じ)
 context_stride: 1                      # 観測履歴の間隔 [フレーム] (3Hz なら 1/3 秒おきの過去 5 枚)
 turn_sample_ratio: 0.5
 augment: true
+yaw_aug_deg: 5.0                       # 向きのずれの水増し (configs/finetune_7b.yaml と同じ)
+yaw_aug_hfov_deg: 90.0
 num_workers: 6
 
 batch_size: 32

@@ -44,7 +44,8 @@ from omnivla_real.viz import render_debug  # noqa: E402
 
 from common import parse_dataclass, trajectory_errors  # noqa: E402
 from nav_dataset import (EdgeDataset, NavDatasetConfig, WeightedEpochSampler, data_summary,  # noqa: E402
-                         edge_collate, parse_modality_weights, resolve_metric_spacing, split_trajectories)
+                         describe_data_options, edge_collate, goal_dist, parse_modality_weights,
+                         resolve_metric_spacing, split_trajectories)
 
 
 @dataclass
@@ -61,8 +62,10 @@ class EdgeFinetuneConfig:
     waypoint_spacing: int = 1
     max_goal_dist: float = 30.0
     image_goal_offset: List[int] = field(default_factory=lambda: [2, 30])
+    image_goal_dist_m: List[float] = field(default_factory=list)   # 画像ゴールを道のり [m] で選ぶ (7B と同じ)
     pose_goal_offset: List[int] = field(default_factory=lambda: [2, 300])
     modality_weights: Dict[str, float] = field(default_factory=lambda: {"image": 1.0})
+    label_smooth_sec: float = 0.0                 # 正解をならす (7B と同じ)
     context_stride: int = 1                       # 観測履歴の間隔 [フレーム] (sample_rate 3Hz なら 1/3 秒おき)
     turn_sample_ratio: float = 0.5
     turn_threshold_deg: float = 45.0
@@ -73,6 +76,8 @@ class EdgeFinetuneConfig:
     crop_h: float = 0.05
     flip_prob: float = 0.5
     color_jitter: float = 0.2
+    yaw_aug_deg: float = 0.0                      # 向きのずれの水増し (7B と同じ)
+    yaw_aug_hfov_deg: float = 90.0
     num_workers: int = 6
     # --- optimization ---
     batch_size: int = 32
@@ -239,16 +244,18 @@ def main(argv=None):
         max_goal_dist=cfg.max_goal_dist,
         goal=GoalSamplingConfig(image_goal_offset=tuple(cfg.image_goal_offset),
                                 pose_goal_offset=tuple(cfg.pose_goal_offset),
-                                modality_weights=parse_modality_weights(cfg.modality_weights)),
+                                modality_weights=parse_modality_weights(cfg.modality_weights),
+                                image_goal_dist_m=goal_dist(cfg.image_goal_dist_m)),
         aug=AugmentConfig(enabled=cfg.augment, crop_v=cfg.crop_v, crop_h=cfg.crop_h, flip_prob=cfg.flip_prob,
-                          color_jitter=cfg.color_jitter),
+                          color_jitter=cfg.color_jitter, yaw_deg=cfg.yaw_aug_deg, hfov_deg=cfg.yaw_aug_hfov_deg),
         turn_horizon=cfg.turn_horizon, turn_threshold_deg=cfg.turn_threshold_deg,
-        context_stride=cfg.context_stride)
+        context_stride=cfg.context_stride, label_smooth_sec=cfg.label_smooth_sec)
     train_ds = EdgeDataset(train_dirs, ds_cfg, text_features, train=True, seed=cfg.seed)
     val_ds = EdgeDataset(val_dirs, ds_cfg, text_features, train=False, seed=cfg.seed,
                          max_samples=cfg.val_batches * cfg.batch_size, turn_ratio=cfg.val_turn_ratio) if val_dirs else None
     say(f"samples: train={len(train_ds)} val={len(val_ds) if val_ds else 0}, "
         f"turning {train_ds.turn_fraction() * 100:.1f}% -> sampled at {cfg.turn_sample_ratio * 100:.0f}%")
+    say(describe_data_options(cfg, train_ds))
     sampler = WeightedEpochSampler(train_ds.sample_weights(cfg.turn_sample_ratio), len(train_ds), cfg.seed) \
         if cfg.turn_sample_ratio > 0 else None
     train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, sampler=sampler, shuffle=sampler is None,

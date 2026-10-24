@@ -130,6 +130,8 @@ def parse_dataclass(cls, argv=None, doc: str = ""):
         tstr = str(f.type)  # "from __future__ import annotations" なので型は文字列
         if "List[int]" in tstr:
             ap.add_argument(name, nargs="+", type=int, default=default)
+        elif "List[float]" in tstr:
+            ap.add_argument(name, nargs="*", type=float, default=default)
         elif "List[str]" in tstr:
             ap.add_argument(name, nargs="*", type=str, default=default)
         elif "Dict" in tstr:

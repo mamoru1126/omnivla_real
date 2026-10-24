@@ -38,7 +38,7 @@ from omnivla_real.robot_config import ImageConfig, RobotConfig, preprocess_image
 from omnivla_real.topomap import (GoalNode, SubgoalTracker, Topomap, TrackerConfig, align_to_start,  # noqa: E402
                                   load_topomap, resolve_mode)
 from omnivla_real.topomap_build import build_topomap  # noqa: E402
-from omnivla_real.trajectory_io import find_trajectories, load_meta, load_trajectory  # noqa: E402
+from omnivla_real.trajectory_io import find_trajectories, load_meta, load_trajectory, trajectory_cut_end  # noqa: E402
 from synthetic import header, jpeg_bytes, quat, render, simulate_course, stamp  # noqa: E402
 
 CONFIGS = os.path.join(REPO, "tests", "configs")   # configs/ はロボットに合わせて書き換えるので、テストは固定の写しを使う
@@ -165,6 +165,159 @@ def test_extract_and_convert_course_run():
         assert max(yaws) > 40 and min(yaws) > -5
     finally:
         shutil.rmtree(tmp)
+
+
+def _convert_chunked(tmp: str, chunk_sec: float = 6.0):
+    s = read_streams(ListSource(course()), robot_cfg(), os.path.join(tmp, "_frames", "r"), 3.0, name="r")
+    convert_streams(s, ConvertConfig(chunk_sec=chunk_sec), os.path.join(tmp, "ds"), "r")
+    return find_trajectories(os.path.join(tmp, "ds"))
+
+
+def test_chunk_cut_end_is_marked():
+    tmp = tempfile.mkdtemp()
+    try:
+        dirs = _convert_chunked(tmp)
+        by_seg = {}
+        for d in dirs:
+            m = load_meta(d)
+            by_seg.setdefault(m["segment"], []).append((m["chunk"], m["cut_end"], d))
+        assert max(len(v) for v in by_seg.values()) >= 2
+        for items in by_seg.values():
+            items.sort()
+            # 区間の最後の塊だけが本当の終わり (止まった所). それ以外は区切っただけ
+            assert [c for _, c, _ in items] == [True] * (len(items) - 1) + [False]
+            for _, cut, d in items:   # 古い変換 (meta に cut_end が無い) でも次の塊があるかで分かる
+                m = load_meta(d)
+                m.pop("cut_end")
+                assert trajectory_cut_end(d, m) == cut
+        mask = data_utils.cut_end_mask(20, 8, 1)
+        assert not mask[:12].any() and mask[12:].all()
+        assert data_utils.cut_end_mask(20, 8, 2)[4:].all() and not data_utils.cut_end_mask(20, 8, 2)[:4].any()
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_smooth_trajectory_spreads_tapped_turns():
+    # 0.25 m/フレームで直進しながら、スティックを 3 回だけ短く倒して 45 度曲がる (手動操作)
+    n = 60
+    w = np.zeros(n)
+    w[[20, 24, 28]] = math.radians(15)
+    yaw = np.cumsum(w)
+    pos = np.zeros((n, 2))
+    for k in range(1, n):
+        pos[k] = pos[k - 1] + 0.25 * np.array([math.cos(yaw[k - 1]), math.sin(yaw[k - 1])])
+    p, yw = data_utils.smooth_trajectory(pos, yaw, 2.0)
+    assert abs((yw[-1] - yw[0]) - (yaw[-1] - yaw[0])) < 1e-6           # 曲がる量の合計は同じ
+    assert np.abs(np.diff(yw)).max() < 0.5 * np.abs(np.diff(yaw)).max()  # 1 フレームあたりは均される
+    assert np.linalg.norm(p[-1] - pos[-1]) < 0.3
+    line = np.stack([np.arange(n) * 0.25, np.zeros(n)], axis=1)          # 直線はそのまま (端も)
+    p2, y2 = data_utils.smooth_trajectory(line, np.zeros(n), 2.0)
+    assert np.allclose(p2, line, atol=1e-9) and np.allclose(y2, 0)
+    p3, y3 = data_utils.smooth_trajectory(pos, yaw, 0.0)
+    assert np.allclose(p3, pos) and np.allclose(y3, yaw)
+    # 正解 (この先 8 点) で見ると、ならした方が曲がり始めの手前から少しずつ曲がる
+    raw = data_utils.compute_action_targets(pos, yaw, 14, metric_spacing=0.25)
+    smo = data_utils.compute_action_targets(p, yw, 14, metric_spacing=0.25)
+    assert abs(raw[2, 3]) < 1e-9 < smo[2, 3]
+
+
+def test_goal_sampling_by_distance():
+    pos = np.stack([np.arange(40) * 0.1, np.zeros(40)], axis=1)          # 0.1 m/フレーム (ゆっくり)
+    arc = data_utils.arc_length(pos)
+    assert abs(arc[-1] - 3.9) < 1e-9
+    cfg = data_utils.GoalSamplingConfig(image_goal_dist_m=(0.45, 2.05), modality_weights={6: 1.0})
+    rng = np.random.default_rng(0)
+    offs = [data_utils.sample_goal_offset(rng, 0, 40, 6, cfg, arc) for _ in range(300)]
+    assert min(offs) == 5 and max(offs) == 20                           # 0.5〜2.0 m 先
+    assert data_utils.sample_goal_offset(rng, 37, 40, 6, cfg, arc) == 2   # 終わり近く: 届く所で一番先
+    mod, goal_t, a, gp = data_utils.make_targets(rng, pos, np.zeros(40), 0, cfg, 0.1)
+    assert mod == 6 and 5 <= goal_t <= 20 and a.shape == (8, 4)
+    frames = data_utils.GoalSamplingConfig(modality_weights={6: 1.0})    # 指定なしは今までどおりフレーム数
+    assert all(2 <= data_utils.sample_goal_offset(rng, 0, 40, 6, frames, arc) <= 30 for _ in range(50))
+
+
+def test_yaw_shift_augmentation_turns_back_to_the_path():
+    line = np.stack([np.arange(12) * 0.2, np.zeros(12)], axis=1)
+    a = data_utils.compute_action_targets(line, np.zeros(12), 0, metric_spacing=0.2)   # 真っ直ぐ進む
+    gp = np.array([5.0, 0.0, 1.0, 0.0], np.float32)
+    a2, g2 = data_utils.rotate_labels(*data_utils.rotate_labels(a, gp, 0.2), -0.2)
+    assert np.allclose(a2, a, atol=1e-5) and np.allclose(g2, gp, atol=1e-5)
+    a3, g3 = data_utils.rotate_labels(a, gp, 0.2)          # 左を向いたロボットから見ると、元の経路は右
+    assert a3[-1, 1] < 0 and a3[-1, 3] < 0 and g3[1] < 0
+    assert abs(math.atan2(a3[-1, 1], a3[-1, 0]) + 0.2) < 1e-5
+    # 切り抜き: 5 度左を向く = 窓を 160*tan(5deg) = 14px 左へ. ゴールは同じ大きさで中央
+    cb, gb, applied = data_utils.yaw_shift_boxes(320, 240, (16, 0, 304, 240), math.radians(5), math.radians(90))
+    assert cb == (2, 0, 290, 240) and gb == (16, 0, 304, 240) and abs(math.degrees(applied) - 5.0) < 0.05
+    cb, gb, _ = data_utils.yaw_shift_boxes(320, 240, (5, 0, 315, 240), math.radians(-5), math.radians(90))
+    assert cb == (28, 0, 320, 240) and gb == (14, 0, 306, 240)   # 余白が足りない: 窓を細くしてずらす
+    # 画像の中央の縦線 (= 元の進む先) が右に見えたら、正解も右へ曲がる
+    img = np.zeros((240, 320, 3), np.uint8)
+    img[:, 158:162] = 255
+    cur = goal = Image.fromarray(img)
+    aug = data_utils.AugmentConfig(crop_v=0.0, crop_h=0.05, flip_prob=0.0, color_jitter=0.0, yaw_deg=8.0)
+    seen = 0
+    for seed in range(30):
+        c, g, a4, gp4 = data_utils.augment_pair(np.random.default_rng(seed), cur, goal, a, gp, aug, True)
+        shift = int(np.argmax(np.asarray(c.convert("L"), float).mean(axis=0))) - (c.width - 1) / 2
+        assert abs(int(np.argmax(np.asarray(g.convert("L"), float).mean(axis=0))) - (g.width - 1) / 2) <= 2
+        if abs(shift) > 3:
+            seen += 1
+            assert np.sign(shift) == -np.sign(a4[-1, 1]) == -np.sign(gp4[1])
+    assert seen > 10
+    off = data_utils.AugmentConfig(crop_v=0.0, crop_h=0.05, flip_prob=0.0, color_jitter=0.0)   # 既定は回さない
+    _, _, a5, _ = data_utils.augment_pair(np.random.default_rng(0), cur, goal, a, gp, off, True)
+    assert np.allclose(a5, a)
+
+
+def test_nav_dataset_cut_ends_smoothing_and_goal_distance():
+    try:
+        import torch  # noqa: F401
+    except ImportError:
+        print("  (skip: torch not installed)")
+        return
+    sys.path.insert(0, os.path.join(REPO, "training"))
+    from nav_dataset import BaseNavDataset, NavDatasetConfig
+    tmp = tempfile.mkdtemp()
+    try:
+        dirs = _convert_chunked(tmp)
+        ds = BaseNavDataset(dirs, NavDatasetConfig(metric_waypoint_spacing=0.2), train=False)
+        assert ds.num_cut_dropped > 0
+        for ti, t in ds.index:   # 区切っただけの塊では、正解 8 点が全部その塊の中にある
+            tr = ds.trajs[ti]
+            if trajectory_cut_end(tr["dir"]):
+                assert t + 8 <= tr["n"] - 1
+        cfg = NavDatasetConfig(metric_waypoint_spacing=0.2, label_smooth_sec=0.7,
+                               goal=data_utils.GoalSamplingConfig(image_goal_dist_m=(0.5, 2.0),
+                                                                 modality_weights={6: 1.0}))
+        ds2 = BaseNavDataset(dirs, cfg, train=False)
+        for i in range(0, len(ds2), 7):
+            tr, t, _, mod, goal_t, actions, _ = ds2.targets(i)
+            assert np.isfinite(actions).all() and mod == 6
+            d = tr["arc"][goal_t] - tr["arc"][t]
+            assert d <= 2.0 + 1e-6 and (d >= 0.5 - 1e-6 or tr["arc"][-1] - tr["arc"][t] < 0.5
+                                         or goal_t == tr["n"] - 1)
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_turn_gain_and_driving_style():
+    from omnivla_real.desk_eval import turn_gain
+    t = np.arange(300)
+    gt = 30 * np.sin(t / 15.0)
+    pred = 0.7 * np.roll(gt, 1)          # 曲がり 3 割不足, 1 フレーム遅れ
+    r = turn_gain(gt.tolist(), pred.tolist())
+    assert abs(r["turn_gain"] - 0.7) < 0.03 and r["turn_lag_frames"] == -1 and r["turn_gain_n"] > 100
+    assert turn_gain([None, 1.0], [0.0, None])["turn_gain"] is None
+    sys.path.insert(0, os.path.join(REPO, "tools"))
+    from turn_stats import driving_style
+    v = np.full(100, 0.8)
+    taps = np.zeros(100)
+    taps[::10] = 1.24                     # 0 か倒し切り
+    s = driving_style([v], [taps], [v], [np.zeros(100)])
+    assert abs(s["speed_median"] - 0.8) < 1e-9 and abs(s["steer_ratio"] - 0.1) < 1e-9
+    assert s["full_stick_ratio"] == 1.0
+    smooth = 0.3 * np.sin(np.arange(100) / 5.0)
+    assert driving_style([v], [smooth], [v], [smooth])["full_stick_ratio"] < 0.5
 
 
 def test_pose_sources_agree_short_term():
