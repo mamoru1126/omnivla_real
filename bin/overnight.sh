@@ -185,9 +185,9 @@ if [ "$HAVE_VAL" = 1 ]; then
     [ -n "$NEW" ] && desk "a_held_out_new_model" "/bags/$VAL_BAG.bag" "$VAL_TOPO" --finetuned_dir "$NEW"
     [ -n "$CUR" ] && desk "a_held_out_current_model" "/bags/$VAL_BAG.bag" "$VAL_TOPO" --finetuned_dir "$CUR"
 fi
-[ -n "$NEW" ] && desk "b_new_course_new_model" "$BAG" "$COURSE" --finetuned_dir "$NEW"
-[ -n "$CUR" ] && desk "b_new_course_current_model" "$BAG" "$COURSE" --finetuned_dir "$CUR"
-desk "b_new_course_original_model" "$BAG" "$COURSE" --finetuned_dir ""
+[ -n "$NEW" ] && desk "b_new_course_new_model" "$BAG" "$COURSE" --pose_source odom --finetuned_dir "$NEW"
+[ -n "$CUR" ] && desk "b_new_course_current_model" "$BAG" "$COURSE" --pose_source odom --finetuned_dir "$CUR"
+desk "b_new_course_original_model" "$BAG" "$COURSE" --pose_source odom --finetuned_dir ""
 
 if [ "$EDGE" = 1 ]; then
     stage "edge の学習: /runs/$EDGE_RUN"

@@ -35,6 +35,8 @@ bin/setup.sh          # .env を作る + イメージのビルド + 公式の重
 | 6 | `bin/desk_eval.sh BAG [topomap]` | `tools/desk_eval.py` |
 | | `bin/run_eval.sh BAG topomap` | 実走の評価: 自律走行の自己位置をコースと比べる (`tools/run_eval.py`, 自己位置は評価だけ) |
 | | `bin/overnight.sh BAG [--loc トピック]` | 夜に一式: 新しい bag をデータに追加 → topomap → 7B の学習 → 新旧モデルの机上評価 → まとめ (裏で動く) |
+| | `bin/turn_check.sh BAG [--new モデル]` | 曲がりが足りない原因の切り分け: ゴールを理想にした時 / サブゴールの切り替えを変えた時の机上評価を並べる (裏で動く) |
+| | `python3 tools/desk_eval_table.py --root DIR` | 机上評価の結果 (report.json) を表に並べる |
 | 7 | `bin/replay.sh BAG [topomap]` / `again` / `down` | `docker-compose.replay.yml` |
 | 7 | `bin/replay_video.sh BAG [topomap]` / `--log ログ` | 同じ構成で bag を流し、デバッグ画面と同じ内容を動画に (`tools/nav_video.py`) |
 | | `bin/plot_nav_log.sh [ログ]` | `tools/plot_nav_log.py` |
