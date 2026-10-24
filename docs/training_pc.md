@@ -33,6 +33,7 @@ bin/setup.sh          # .env を作る + イメージのビルド + 公式の重
 | 4 | `bin/train.sh 7b\|edge [-d]` | `training/finetune_omnivla.py` / `finetune_edge.py` |
 | 5 | `bin/make_topomap.sh 名前 BAG` | `tools/make_topomap.py` |
 | 6 | `bin/desk_eval.sh BAG [topomap]` | `tools/desk_eval.py` |
+| | `bin/run_eval.sh BAG topomap` | 実走の評価: 自律走行の自己位置をコースと比べる (`tools/run_eval.py`, 自己位置は評価だけ) |
 | 7 | `bin/replay.sh BAG [topomap]` / `again` / `down` | `docker-compose.replay.yml` |
 | 7 | `bin/replay_video.sh BAG [topomap]` / `--log ログ` | 同じ構成で bag を流し、デバッグ画面と同じ内容を動画に (`tools/nav_video.py`) |
 | | `bin/plot_nav_log.sh [ログ]` | `tools/plot_nav_log.py` |
@@ -198,6 +199,31 @@ bin/desk_eval.sh run2.bag course_a     # モデルは .env の NAV_MODEL / FINET
 | 自己位置がない | 画像の類似度 + オドメトリの道のり (走った距離) で判定 (`image_odom`)。道のりで先すぎるサブゴールは候補にしない。画像で判定できないまま道のりで通り過ぎたら進める。オドメトリの位置 (x, y) は長いコースだと向きのドリフトで大きくずれるので使わない |
 
 画像の類似度のしきい値 (`image_threshold`) は、机上評価の `report.json` の `similarity_threshold` を見て決めます。
+
+## 自己位置を評価だけに使う
+
+bag に自己位置 (PoseStamped) が入っていれば、学習と走行には使わずに、評価の答え合わせに使えます。`configs/robot.yaml` に書きます (`topics.localization` は空のまま)。
+
+```yaml
+topics:
+  eval_localization: /<自己位置のトピック>
+```
+
+- `bin/make_topomap.sh` で作る topomap が地図の座標になります (`poses.yaml` の `frame: map`)。走行のサブゴールの判定は今までどおり画像 + 道のりです。
+- 机上評価の「正解のサブゴール番号」と正解の軌跡が、自己位置から求まります (道のりより正確)。
+- 実走の評価: 自律走行した bag の自己位置をコースと比べます。
+
+```bash
+bin/run_eval.sh <自律走行の bag> course_b
+```
+
+| 出力 | 中身 |
+|---|---|
+| `report.txt` | どこまで進んだか、コースからの横ずれ (中央値・95%・最大)、カーブごとに外へ膨らんだ量 / 内側へ切り込んだ量。bag に `/omnivla/status` があれば自律で走っていた間だけの集計も |
+| `overview.png` | コースと走った所 (横ずれの大きさで色分け)、カーブの番号 |
+| `xtrack.png` | コースの道のりに対する横ずれ |
+
+- トピックを一時的に変えるなら `--loc_topic /<トピック>`。Orin で録った bag も、Orin の上でそのまま評価できます。
 
 ## 7. bag をロボットの代わりにして、実機と同じ構成で動かす
 

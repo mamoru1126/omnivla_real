@@ -70,6 +70,7 @@ class FrameTable:
     odom_w: np.ndarray
     loc: Optional[np.ndarray] = None  # (N, 3) 自己位置 (無ければ None)
     loc_valid: Optional[np.ndarray] = None
+    loc_eval_only: bool = False        # 自己位置は答え合わせだけに使う (topics.eval_localization)
 
     def __len__(self) -> int:
         return len(self.t)
@@ -126,7 +127,8 @@ def build_frames(s: Streams, cfg: ConvertConfig, track: Optional[PoseTrack] = No
     if len(s.loc_t) >= 2:
         lx, ly, lyaw, loc_valid = s.loc_track().at(t, cfg.max_pose_gap)
         loc = np.stack([lx, ly, lyaw], axis=1)
-    return FrameTable(t, list(s.image_paths), x, y, yaw, valid, cmd_v, cmd_w, odom_v, odom_w, loc, loc_valid)
+    return FrameTable(t, list(s.image_paths), x, y, yaw, valid, cmd_v, cmd_w, odom_v, odom_w, loc, loc_valid,
+                      loc_eval_only=bool(getattr(s, "loc_eval_only", False)))
 
 
 # ---------------------------------------------------------------------------

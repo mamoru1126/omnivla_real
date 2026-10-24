@@ -531,6 +531,82 @@ def test_desk_eval_oracle_follows_course():
         shutil.rmtree(tmp)
 
 
+def test_eval_localization_is_truth_only():
+    """topics.eval_localization: 自己位置は答え合わせだけ (topomap は地図の座標, ナビは実機と同じく画像 + 道のり)."""
+    tmp = tempfile.mkdtemp()
+    try:
+        robot = RobotConfig.load(os.path.join(CONFIGS, "robot.yaml"),
+                                 {"topics": {"localization": "", "eval_localization": "/localization"}})
+        sa = read_streams(ListSource(course(stop_at=None)), robot, os.path.join(tmp, "a"), 10.0)
+        assert sa.loc_eval_only and len(sa.loc_t) > 10
+        build_topomap(sa, os.path.join(tmp, "topo"), 1.0)
+        tm = load_topomap(os.path.join(tmp, "topo"))
+        assert tm.frame == "map"
+        nav = load_nav_config(os.path.join(CONFIGS, "navigator.yaml"))
+        nav.engine.tracker.image_threshold = 0.9
+        nav.engine.tracker.goal_image_threshold = 0.92
+        run_b = course(stop_at=12.0, stop_len=2.0, slip=0.95, delay=0.2)
+        sb = read_streams(ListSource(run_b), robot, os.path.join(tmp, "b"), 3.0)
+        ft, odom_xyz, src, _ = prepare_frames(sb, 3.0)
+        assert src == "localization" and ft.loc_eval_only
+        rec, s = run_desk_eval(ft, OraclePolicy(ft, 3.0), robot, nav.engine, DeskEvalConfig(), tm, odom_xyz)
+        g = s["subgoals"]
+        assert g["reach_check"] == "image_odom" and g["reached_goal"]       # ナビには自己位置を渡さない
+        assert g["index_minus_truth_abs_p90"] is not None and g["index_minus_truth_abs_p90"] <= 3
+        # 自己位置をナビにも使う構成 (topics.localization) は今までどおり pose で判定
+        robot2 = RobotConfig.load(os.path.join(CONFIGS, "robot.yaml"), {"topics": {"localization": "/localization"}})
+        sb2 = read_streams(ListSource(run_b), robot2, os.path.join(tmp, "c"), 3.0)
+        ft2, odom2, _, _ = prepare_frames(sb2, 3.0)
+        assert not ft2.loc_eval_only
+        _, s2 = run_desk_eval(ft2, OraclePolicy(ft2, 3.0), robot2, nav.engine, DeskEvalConfig(), tm, odom2)
+        assert s2["subgoals"]["reach_check"] == "pose"
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_run_eval_cross_track_and_corners():
+    from omnivla_real.run_eval import CoursePath, evaluate_run, report_text, running_mask
+    # コース: 10 m 直進 -> 半径 2 m で左へ 90 度 -> 10 m
+    a = [(0.25 * k, 0.0) for k in range(41)]
+    arc = [(10 + 2 * math.sin(q), 2 - 2 * math.cos(q)) for q in np.linspace(0, math.pi / 2, 20)[1:]]
+    b = [(12.0, 2 + 0.25 * k) for k in range(1, 41)]
+    path = CoursePath.from_points(np.array(a + arc + b))
+    cs = path.corners(20.0)
+    assert len(cs) == 1 and 80 < cs[0]["turn_deg"] < 100 and cs[0]["s0"] < 11 < 13 < cs[0]["s1"]
+    # 走行: いつもはコースの 0.3 m 右, カーブでは 0.8 m 外 (= 右) に膨らむ
+    ss = np.arange(0.0, path.length, 0.05)
+    hh = path.heading_at(ss)
+    px = np.interp(ss, path.s, path.x)
+    py = np.interp(ss, path.s, path.y)
+    in_curve = (ss > 10.5) & (ss < 12.6)
+    off = np.where(in_curve, -0.8, -0.3)
+    x, y = px - off * np.sin(hh), py + off * np.cos(hh)
+    t = ss / 0.3
+    run = np.ones(len(t), bool)
+    run[:20] = False                                    # 最初の 1 m は手で動かした
+    summary, per = evaluate_run(path, t, x, y, hh, running=run, speed_cap=0.3)
+    assert summary["progress"]["completion"] > 0.98
+    xs = per["xtrack"][~in_curve & run]
+    assert np.allclose(np.median(xs), -0.3, atol=0.02)
+    c = summary["corners"][0]
+    assert abs(c["max_outward_m"] - 0.8) < 0.05 and c["reached_end"]
+    assert summary["running"]["samples"] == run.sum() and summary["all"]["samples"] == len(t)
+    txt = report_text(summary, "t")
+    assert "外 +0.8" in txt and "進んだ割合 10" in txt
+    # 行って戻るコース (2 本が 0.6 m 離れて並ぶ): 戻りの区間を走っても行きの区間に飛ばない
+    out_back = np.array([(0.25 * k, 0.0) for k in range(41)] + [(10.0, 0.3)] + [(10 - 0.25 * k, 0.6) for k in range(41)])
+    p2 = CoursePath.from_points(out_back)
+    xr = np.concatenate([np.linspace(0, 10, 101), np.linspace(10, 0, 101)])
+    yr = np.concatenate([np.full(101, 0.1), np.full(101, 0.5)])
+    yawr = np.concatenate([np.zeros(101), np.full(101, math.pi)])
+    _, per2 = evaluate_run(p2, np.arange(202) * 0.3, xr, yr, yawr)
+    assert per2["s"][-1] > 19.0 and np.all(np.diff(per2["s"]) > -0.5)
+    # /omnivla/status の running
+    m = running_mask(np.array([0.5, 1.5, 2.5, 10.0]), [(0.0, "idle"), (1.0, "running"), (2.0, "running")])
+    assert m.tolist() == [False, True, True, False]
+    assert running_mask(np.array([1.0]), []) is None
+
+
 class _FakePolicy:
     """常に 0.4m/s で左へ緩く曲がる軌跡を返す."""
     meta = {"sample_rate": 3.0}

@@ -20,9 +20,11 @@ SQL="$OUT/bags/course_sqlite3"
 MCAP="$OUT/bags/course_mcap"
 EVAL="$OUT/bags_lap2/course_mcap"
 
-# 自己位置あり / なし の robot.yaml
+# 自己位置あり / なし / 評価だけ の robot.yaml
 sed 's#^  localization: ""#  localization: /localization#' $C/robot.yaml > "$OUT/robot_loc.yaml"
 grep -q "localization: /localization" "$OUT/robot_loc.yaml"
+sed 's#^  localization: ""#  localization: ""\n  eval_localization: /localization#' $C/robot.yaml > "$OUT/robot_evalloc.yaml"
+grep -q "eval_localization: /localization" "$OUT/robot_evalloc.yaml"
 
 step "bag_info"
 for b in "$ROS1" "$SQL" "$MCAP"; do python3 tools/bag_info.py "$b"; done
@@ -52,6 +54,26 @@ python3 tools/desk_eval.py --nav $C/navigator.yaml --robot $C/robot.yaml --bag "
     --policy oracle --out "$OUT/desk_eval_oracle"
 python3 tools/desk_eval.py --nav $C/navigator.yaml --robot "$OUT/robot_loc.yaml" --bag "$EVAL" --topomap "$OUT/topomap_loc" \
     --policy oracle --out "$OUT/desk_eval_oracle_loc"
+
+step "評価だけに使う自己位置 (eval_localization): topomap は地図の座標, 机上評価のナビは image_odom, 実走の評価"
+python3 tools/make_topomap.py --robot "$OUT/robot_evalloc.yaml" --out "$OUT/topomap_evalloc" --spacing 1.0 "$MCAP"
+python3 tools/desk_eval.py --nav $C/navigator.yaml --robot "$OUT/robot_evalloc.yaml" --bag "$EVAL" \
+    --topomap "$OUT/topomap_evalloc" --policy oracle --out "$OUT/desk_eval_oracle_evalloc"
+python3 tools/run_eval.py --robot "$OUT/robot_evalloc.yaml" --bag "$EVAL" --topomap "$OUT/topomap_evalloc" \
+    --out "$OUT/run_eval"
+python3 - "$OUT" <<'PY'
+import json, sys
+o = sys.argv[1]
+d = json.load(open(f"{o}/desk_eval_oracle_evalloc/report.json"))["subgoals"]
+print("desk_eval (eval_localization) reach_check", d["reach_check"], "reached", d["reached_goal"],
+      "|index - truth| p90", d["index_minus_truth_abs_p90"])
+assert d["reach_check"] == "image_odom" and d["reached_goal"]
+r = json.load(open(f"{o}/run_eval/report.json"))
+print("run_eval completion", r["progress"]["completion"], "|xtrack| p95", r["all"]["abs_xtrack_m"]["p95"],
+      "corners", len(r["corners"]))
+assert r["progress"]["completion"] > 0.9 and r["all"]["abs_xtrack_m"]["p95"] < 0.5 and len(r["corners"]) >= 2
+PY
+ls "$OUT/run_eval"
 python3 - "$OUT" <<'EOF'
 import json, sys
 for d, mode in (("desk_eval_oracle", "image_odom"), ("desk_eval_oracle_loc", "pose")):

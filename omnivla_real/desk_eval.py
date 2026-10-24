@@ -146,6 +146,28 @@ def nearest_node_ahead(nodes: Sequence[GoalNode], pose) -> Optional[int]:
     return k if rel[0] > 0 or k == len(nodes) - 1 else k + 1
 
 
+class TruthNode:
+    """自己位置 (topomap と同じ地図の座標) から正解のサブゴール番号 (まだ通り過ぎていない最初のノード).
+    前回の近く (back 個前〜ahead 個先) だけを探すので、コースが近くを 2 回通る所でも別の所へ飛ばない."""
+
+    def __init__(self, nodes: Sequence[GoalNode], back: int = 3, ahead: int = 30):
+        self.nodes = list(nodes)
+        self.P = np.array([[n.pose[0], n.pose[1]] for n in self.nodes], dtype=np.float64)
+        self.back, self.ahead = back, ahead
+        self.last: Optional[int] = None
+
+    def __call__(self, pose) -> Optional[int]:
+        if pose is None or not np.all(np.isfinite(pose)):
+            return None
+        lo, hi = (0, len(self.P)) if self.last is None else \
+            (max(0, self.last - self.back), min(len(self.P), self.last + self.ahead + 1))
+        d = np.hypot(self.P[lo:hi, 0] - pose[0], self.P[lo:hi, 1] - pose[1])
+        k = lo + int(np.argmin(d))
+        self.last = k
+        rel = relative_pose(tuple(pose), self.nodes[k].pose)
+        return k if rel[0] > 0 or k == len(self.nodes) - 1 else k + 1
+
+
 def truth_subgoal(engine) -> Optional[int]:
     """正解のサブゴール番号の目安. 自己位置があれば位置から、オドメトリだけなら道のり (走った距離) から.
     (オドメトリの位置 x, y は長いコースだと向きのドリフトで大きくずれるので使わない)"""
@@ -165,13 +187,19 @@ def run_desk_eval(ft: FrameTable, policy, robot: RobotConfig, engine_cfg: Engine
     """ft: 評価する bag のフレーム (正解の位置は ft.x/y/yaw). odom_xyz: 各フレームのオドメトリ (サブゴール判定用).
     戻り値: (フレームごとの記録 list[dict], まとめ dict)."""
     rec: List[dict] = []
+    # 自己位置: topics.localization ならナビにも渡す (実機で自己位置を使う構成). topics.eval_localization なら
+    # 答え合わせ (正解のサブゴール番号) だけに使い、ナビは実機と同じく画像 + オドメトリで判定する
+    loc_to_engine = ft.loc is not None and not ft.loc_eval_only
+    truth = None
+    if topomap is not None and ft.loc is not None and topomap.frame == "map" and topomap.has_poses():
+        truth = TruthNode(topomap.nodes)
     if cfg.goal_mode == "topomap":
         if topomap is None:
             raise ValueError("goal_mode=topomap needs a topomap")
         engine = NavEngine(policy, topomap, engine_cfg, robot)
         if odom_xyz is not None:
             engine.on_odom(ft.t[0], tuple(odom_xyz[0]))
-        if ft.loc is not None and ft.loc_valid[0]:
+        if loc_to_engine and ft.loc_valid[0]:
             engine.on_localization(ft.t[0], tuple(ft.loc[0]))
         engine.start()
     else:
@@ -185,7 +213,7 @@ def run_desk_eval(ft: FrameTable, policy, robot: RobotConfig, engine_cfg: Engine
         engine.on_image(ft.t[i], lambda p=img_path: Image.open(p).convert("RGB"))
         if odom_xyz is not None:
             engine.on_odom(ft.t[i], tuple(odom_xyz[i]))
-        if ft.loc is not None and ft.loc_valid[i]:
+        if loc_to_engine and ft.loc_valid[i]:
             engine.on_localization(ft.t[i], tuple(ft.loc[i]))
         r = {"i": i, "t": float(ft.t[i]), "x": float(ft.x[i]), "y": float(ft.y[i]), "yaw": float(ft.yaw[i]),
              "cmd_v": float(ft.cmd_v[i]), "cmd_w": float(ft.cmd_w[i])}
@@ -198,7 +226,10 @@ def run_desk_eval(ft: FrameTable, policy, robot: RobotConfig, engine_cfg: Engine
             wps, v, w = res.waypoints, res.v, res.w
             r.update(state=res.state, subgoal=res.subgoal, similarity=res.similarity, latency=res.latency,
                      course_pose=engine.course_pose())
-            gt_node = truth_subgoal(engine)
+            if truth is not None and ft.loc_valid[i]:
+                gt_node = truth(ft.loc[i])
+            else:
+                gt_node = truth_subgoal(engine)
             r["subgoal_gt"] = gt_node
             if res.debug is not None and debug_cb and cfg.debug_every and i % cfg.debug_every == 0:
                 debug_cb(i, res.debug)
