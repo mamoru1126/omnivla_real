@@ -641,3 +641,26 @@ def test_image_age_from_receive():
     st = eng.status()
     assert r.state == "running" and st["step_state"] == "running" and st["image_age"] < 1.0
     assert st["similarity"] is not None and st["image_age_from"] == "receive" and st["image_stamp_offset"] > 1e6
+
+
+def test_trajectory_turn_gain_and_keep_w():
+    from omnivla_real.controller import ControllerConfig, trajectory_command
+    # 0.45 m/s, 0.6 rad/s の円弧
+    v0, w0, dt = 0.45, 0.6, 1.0 / 3.0
+    wps = []
+    for k in range(8):
+        t = (k + 1) * dt
+        th = w0 * t
+        r = v0 / w0
+        wps.append([r * np.sin(th), r * (1 - np.cos(th)), np.cos(th), np.sin(th)])
+    wps = np.array(wps)
+    base = ControllerConfig(track_max_v=0.3, track_max_w=1.0)
+    v, w = trajectory_command(wps, base)
+    assert abs(v - 0.3) < 0.02 and abs(w - 0.4) < 0.03          # 曲率を保って両方落ちる
+    v, w = trajectory_command(wps, ControllerConfig(track_max_v=0.3, track_max_w=1.0, track_keep_w=True))
+    assert abs(v - 0.3) < 0.02 and abs(w - 0.6) < 0.03          # w は落とさない
+    v, w = trajectory_command(wps, ControllerConfig(track_max_v=0.6, track_max_w=1.0, track_w_gain=1.5))
+    assert abs(w - 0.9) < 0.04
+    v, w = trajectory_command(wps, ControllerConfig(track_max_v=0.6, track_max_w=0.7, track_w_gain=1.5,
+                                                    track_keep_w=True))
+    assert abs(w - 0.7) < 1e-6

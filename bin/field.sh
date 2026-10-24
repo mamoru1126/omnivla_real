@@ -6,7 +6,7 @@
 #   bin/field.sh topic image|odom <名前> # robot.yaml のトピック名を変える (check で NG になった時)
 #   bin/field.sh check [--where]        # 走らせる前の確認 (時計・ネットワーク・重み・topomap・トピック・ノード). OK / 注意 / NG
 #   bin/field.sh time                   # ATMOBI PC との時計のずれを測り、ずれていれば合わせる (sudo)
-#   bin/field.sh up [--topomap 名前] [--max-v 0.3] [--max-w 0.6] [--strict-time]
+#   bin/field.sh up [--topomap 名前] [--max-v 0.3] [--max-w 0.6] [--w-gain 1.3] [--keep-w] [--strict-time]
 #                                       # 推論サーバ + ナビゲーション + デバッグ画面を起動して、準備ができるまで待つ (走り出さない)
 #   bin/field.sh where [topomap]        # いまのカメラ画像が topomap の何番に似ているか (スタート位置・カメラの確認)
 #   bin/field.sh start | stop           # 走行開始 / 停止 (/omnivla/enable). start は数秒後の状態も表示
@@ -215,6 +215,8 @@ case $CMD in
                 --topomap) TOPO=$2; shift ;;
                 --max-v) EXTRA+=("engine.controller.track_max_v=$2"); shift ;;
                 --max-w) EXTRA+=("engine.controller.track_max_w=$2"); shift ;;
+                --w-gain) EXTRA+=("engine.controller.track_w_gain=$2"); shift ;;
+                --keep-w) EXTRA+=("engine.controller.track_keep_w=true") ;;
                 --strict-time) STRICT=1 ;;
                 *) die "知らないオプション: $1 (bin/field.sh -h)" ;;
             esac
