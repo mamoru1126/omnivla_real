@@ -73,6 +73,12 @@ check "--topomap /data/topomaps/course_a --model edge --finetuned_dir /runs/r1/c
 check "--topomap /data/topomaps/course_a" env TOPOMAP=/data/topomaps/course_a "$B/desk_eval.sh" run1.bag
 fails "見つかりません" "$B/desk_eval.sh" run1.bag course_zzz
 check "run_eval.py --bag /bags/run1.bag --topomap /data/topomaps/course_a --out /runs/run_eval/run1_" "$B/run_eval.sh" run1.bag course_a
+check "finetune_omnivla.py --config configs/finetune_7b.yaml --run_name omnivla7b_overnight_" "$B/overnight.sh" run1.bag
+check '--bag_weights {"run1": 3}' "$B/overnight.sh" run1.bag
+check '--bag_weights {"run1": 5}' "$B/overnight.sh" run1.bag --weight 5 --course course_x
+check "tools/bag_info.py /bags/run1.bag --robot configs/robot.yaml" "$B/overnight.sh" run1.bag
+check "desk_eval_b_new_course_original_model" env FINETUNED_DIR=/runs/r1/checkpoints/step_000010 "$B/overnight.sh" run1.bag
+fails "知らないオプション" "$B/overnight.sh" run1.bag --nope
 check "--loc_topic /localization" "$B/run_eval.sh" run1.bag course_a --loc_topic /localization
 
 # --- 学習 PC で実機と同じ構成 ---

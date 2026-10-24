@@ -34,6 +34,7 @@ bin/setup.sh          # .env を作る + イメージのビルド + 公式の重
 | 5 | `bin/make_topomap.sh 名前 BAG` | `tools/make_topomap.py` |
 | 6 | `bin/desk_eval.sh BAG [topomap]` | `tools/desk_eval.py` |
 | | `bin/run_eval.sh BAG topomap` | 実走の評価: 自律走行の自己位置をコースと比べる (`tools/run_eval.py`, 自己位置は評価だけ) |
+| | `bin/overnight.sh BAG [--loc トピック]` | 夜に一式: 新しい bag をデータに追加 → topomap → 7B の学習 → 新旧モデルの机上評価 → まとめ (裏で動く) |
 | 7 | `bin/replay.sh BAG [topomap]` / `again` / `down` | `docker-compose.replay.yml` |
 | 7 | `bin/replay_video.sh BAG [topomap]` / `--log ログ` | 同じ構成で bag を流し、デバッグ画面と同じ内容を動画に (`tools/nav_video.py`) |
 | | `bin/plot_nav_log.sh [ログ]` | `tools/plot_nav_log.py` |
@@ -126,7 +127,13 @@ bin/train.sh 7b --max_steps 3000   # 設定ファイルの値をオプション�
 
 ### コースが変わったとき (新しく手で走った bag で学習し直す)
 
-新しい bag を `bags/` に置いて、上から順に打ちます (`<新しい bag>` は bag の名前)。
+まとめて 1 回で (最初の確認だけ端末で、あとは裏で動く. 朝に `log/overnight_<時刻>/summary.txt`):
+
+```bash
+bin/overnight.sh <新しい bag> --loc /<自己位置のトピック>
+```
+
+手で 1 つずつやる場合は、新しい bag を `bags/` に置いて、上から順に打ちます (`<新しい bag>` は bag の名前)。
 
 ```bash
 bin/bag_info.sh <新しい bag>
