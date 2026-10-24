@@ -5,6 +5,9 @@
 #   bin/orin.sh field <サブコマンド>  # Orin で bin/field.sh を実行 (例: bin/orin.sh field check / field start)
 #   bin/orin.sh fetch [--bags] [--images]   # Orin の記録を debug_log/orin_<日時>/ に持ってくる (既定は bag 本体と画像を除く)
 #                                    #   rsync が無ければ ssh + tar で (OMNIVLA_NO_RSYNC=1 で常にそうする). sync は scp だけ
+#   bin/orin.sh logs [--bag 名前]    # Orin の log/ (文字のファイルだけ) と configs/ .env を debug_log/orin_<日時>/ に
+#                                    #   持ってくる (bag の本体と画像は除くので数 MB. そのままコミットできる).
+#                                    #   --bag manual_<時刻>: その bag の本体を bags/ にコピー (Git には入らない)
 #   bin/orin.sh ssh                  # Orin に入る (リポジトリのフォルダで)
 #   bin/orin.sh bundle [ファイル]     # USB で運ぶ用の更新ファイル (Orin で: git fetch <ファイル> jetson && git merge --ff-only FETCH_HEAD,
 #                                    #   2 回目からは bin/field.sh update <ファイル>)
@@ -118,6 +121,46 @@ if git merge --ff-only FETCH_HEAD; then git log --oneline -1; else echo '[orin] 
         find "$DEST" -type d -empty -delete 2> /dev/null || true
         say "-> $DEST ($(du -sh "$DEST" 2> /dev/null | awk '{print $1}'))"
         say "まとめ: $(ls -1 "$DEST"/log/debug_view/*/summary.txt 2> /dev/null | tail -1)"
+        ;;
+    logs)
+        BAG=""
+        while [ $# -gt 0 ]; do
+            case $1 in
+                --bag) BAG=$2; shift ;;
+                *) die "知らないオプション: $1" ;;
+            esac
+            shift
+        done
+        DEST=${ORIN_FETCH_DEST:-$ROOT/debug_log/orin_$(date +%Y%m%d_%H%M%S)}
+        mkdir -p "$DEST"
+        say "Orin ($HOST:$REPO) から log/ configs/ .env を持ってきます (bag の本体と画像は除く)"
+        TAR="tar czf - -C $REPO --ignore-failed-read --exclude='*.db3' --exclude='*.mcap' --exclude='*.jpg' --exclude='*.png' log configs .env"
+        if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ]; then
+            echo "+ ${SSH[*]} $HOST $TAR | tar xzf - -C $DEST"
+        else
+            "${SSH[@]}" "$HOST" "$TAR" | tar xzf - -C "$DEST"
+        fi
+        # .env のままだと Git に無視されるので名前を変える
+        if [ -f "$DEST/.env" ]; then
+            mv "$DEST/.env" "$DEST/orin.env"
+        fi
+        REL=${DEST#"$ROOT"/}
+        say "-> $REL ($(du -sh "$DEST" 2> /dev/null | awk '{print $1}'))"
+        say "コミットするなら: git add $REL  ->  git commit -m \"add orin logs\"  ->  git push"
+        if [ -z "$BAG" ]; then
+            say "Orin の bag (本体を持ってくるなら bin/orin.sh logs --bag <名前>):"
+            run "${SSH[@]}" "$HOST" "du -sh $REPO/log/bags/*/ 2> /dev/null" || true
+        else
+            BD=$(host_dir bags)
+            mkdir -p "$BD"
+            say "bag $BAG -> $BD/$BAG (大きいので時間がかかります)"
+            if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ]; then
+                echo "+ ${SSH[*]} $HOST tar cf - -C $REPO/log/bags $BAG | tar xf - -C $BD"
+            else
+                "${SSH[@]}" "$HOST" "tar cf - -C $REPO/log/bags $BAG" | tar xf - -C "$BD"
+                say "-> $BD/$BAG ($(du -sh "$BD/$BAG" 2> /dev/null | awk '{print $1}'))"
+            fi
+        fi
         ;;
     ssh)
         run "${SSH[@]}" -t "$HOST" "cd $REPO && exec bash -l"

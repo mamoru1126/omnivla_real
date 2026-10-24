@@ -159,6 +159,8 @@ check "+ scp -o ProxyJump=atmobi@10.42.0.1 -P 4003" env ORIN_JUMP=atmobi@10.42.0
 check "git merge --ff-only FETCH_HEAD" env ORIN_HOST=me@orin "$B/orin.sh" sync
 check "+ ssh -t me@orin cd omnivla_real && bin/field.sh check --where" env ORIN_HOST=me@orin "$B/orin.sh" field check --where
 check "--exclude *.db3" env ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/fetch" "$B/orin.sh" fetch
+check "--exclude='*.jpg'" env ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/logs" "$B/orin.sh" logs
+check "tar cf - -C omnivla_real/log/bags manual_1" env ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/logs" BAG_DIR="$T/bags" "$B/orin.sh" logs --bag manual_1
 check "log/field && tar cf - --exclude=" env OMNIVLA_NO_RSYNC=1 ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/fetch" "$B/orin.sh" fetch
 check "+ git bundle create $T/x.bundle" "$B/orin.sh" bundle "$T/x.bundle"
 
