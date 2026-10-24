@@ -22,7 +22,8 @@ CANDIDATES = {
     "image": ("sensor_msgs/CompressedImage", "sensor_msgs/Image"),
     "odom": ("nav_msgs/Odometry",),
     "cmd": ("geometry_msgs/Twist", "geometry_msgs/TwistStamped"),
-    "localization": ("geometry_msgs/PoseWithCovarianceStamped", "geometry_msgs/PoseStamped", "nav_msgs/Odometry",
+    "localization": ("geometry_msgs/PoseWithCovarianceStamped", "geometry_msgs/PoseStamped", "geometry_msgs/Pose",
+                     "nav_msgs/Odometry",
                      "tf2_msgs/TFMessage"),
 }
 

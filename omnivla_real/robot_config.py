@@ -22,7 +22,7 @@ class TopicConfig:
     localization: str = ""                         # 任意: PoseStamped / PoseWithCovarianceStamped / Odometry / /tf
     localization_frame: str = "map"                # /tf の場合の親フレーム
     localization_child_frame: str = "base_link"    # /tf の場合の子フレーム
-    # 評価だけに使う自己位置 (PoseStamped など. localization と同じ型). 学習・走行には使わない:
+    # 評価だけに使う自己位置 (Pose / PoseStamped など. localization と同じ型. Pose は時刻が無いので記録時刻). 学習・走行には使わない:
     # 机上評価の答え合わせ (正解の軌跡・サブゴール番号) と、実走の評価 (tools/run_eval.py) のコース
     eval_localization: str = ""
     cmd_v_field: str = ""                          # 独自メッセージの場合: 例 "drive.speed"

@@ -564,6 +564,19 @@ def test_eval_localization_is_truth_only():
         shutil.rmtree(tmp)
 
 
+def test_pose_message_without_header():
+    """geometry_msgs/Pose (時刻なし) も自己位置として読める. 時刻は記録時刻になる."""
+    from omnivla_real.bag.messages import header_stamp
+    m = NS(position=NS(x=1.0, y=2.0, z=0.0), orientation=quat(0.5))
+    x, y, yaw = pose_values(m, "geometry_msgs/msg/Pose")
+    assert (x, y) == (1.0, 2.0) and abs(yaw - 0.5) < 1e-9 and header_stamp(m) is None
+    alt = [BagMessage("/loc_pose", "geometry_msgs/msg/Pose", m.t_bag, m.msg.pose) if m.topic == "/localization" else m
+           for m in course()]
+    robot = RobotConfig.load(os.path.join(CONFIGS, "robot.yaml"), {"topics": {"eval_localization": "/loc_pose"}})
+    s = read_streams(ListSource(alt), robot, None, 3.0, decode_images=False)
+    assert s.loc_eval_only and len(s.loc_t) > 10 and abs(s.loc_x[0] - 3.0) < 0.05
+
+
 def test_run_eval_cross_track_and_corners():
     from omnivla_real.run_eval import CoursePath, evaluate_run, report_text, running_mask
     # コース: 10 m 直進 -> 半径 2 m で左へ 90 度 -> 10 m
