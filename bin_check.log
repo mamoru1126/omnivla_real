@@ -1,0 +1,114 @@
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh run1.bag
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh /tmp/tmp.pxh3scTFU3/bags/run1.bag
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh /bags/run1.bag
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh split/a_0.bag,split/a_1.bag
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh ros2run
+ok  bash -c cd '/tmp/tmp.pxh3scTFU3/bags' && '/home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh' ./run1.bag
+ok  (fails) /home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh nope.bag
+ok  (fails) /home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh /tmp/tmp.pxh3scTFU3/elsewhere/x.bag
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/check_odometry.sh run1.bag --start_sec 5
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/make_dataset.sh run1.bag split/a_0.bag,split/a_1.bag --pose_source cmd
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/make_dataset.sh run1.bag split/a_0.bag,split/a_1.bag --pose_source cmd
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/train.sh 7b --max_steps 5
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/train.sh edge -d
+ok  (fails) /home/runner/work/omnivla_real/omnivla_real/bin/train.sh 13b
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/make_topomap.sh course_b run1.bag --spacing 2
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/desk_eval.sh run1.bag course_a
+ok  env NAV_MODEL=edge FINETUNED_DIR=/runs/r1/checkpoints/step_000010 /home/runner/work/omnivla_real/omnivla_real/bin/desk_eval.sh run1.bag course_a --policy oracle
+ok  env TOPOMAP=/data/topomaps/course_a /home/runner/work/omnivla_real/omnivla_real/bin/desk_eval.sh run1.bag
+ok  (fails) /home/runner/work/omnivla_real/omnivla_real/bin/desk_eval.sh run1.bag course_zzz
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/run_eval.sh run1.bag course_a
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/run_eval.sh run1.bag course_a --loc_topic /localization
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay.sh run1.bag course_a --rate 2 --manual
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay.sh split/a_0.bag,split/a_1.bag course_a
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay.sh run1.bag course_a
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay.sh again
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay.sh down
+ok  (fails) /home/runner/work/omnivla_real/omnivla_real/bin/replay.sh run1.bag
+ok  (fails) /home/runner/work/omnivla_real/omnivla_real/bin/replay.sh run1.bag course_a --fast
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/plot_nav_log.sh
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay_video.sh run1.bag course_a --rate 2
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay_video.sh run1.bag course_a --speed 4
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay_video.sh --log /tmp/tmp.pxh3scTFU3/runs/replay/nav/20261013_100000
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay_video.sh --log /runs/replay/nav/latest
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay_video.sh --log /runs/replay/nav/latest --out /tmp/tmp.pxh3scTFU3/runs/videos/a.mp4 --fps 5
+ok  (fails) /home/runner/work/omnivla_real/omnivla_real/bin/replay_video.sh --log /runs/replay/nav/latest --out /tmp/x.mp4
+ok  (fails) /home/runner/work/omnivla_real/omnivla_real/bin/replay_video.sh run1.bag course_a --fast
+ok  env NAV_MODEL=edge FINETUNED_DIR=/runs/r1/checkpoints/step_000010 TOPOMAP=course_a /home/runner/work/omnivla_real/omnivla_real/bin/to_jetson.sh me@jet
+ok  env NAV_MODEL=edge TOPOMAP=course_a /home/runner/work/omnivla_real/omnivla_real/bin/to_jetson.sh me@jet --dest /opt/o
+ok  env NAV_MODEL=edge TOPOMAP=course_a /home/runner/work/omnivla_real/omnivla_real/bin/to_jetson.sh me@jet
+ok  env TOPOMAP=course_a /home/runner/work/omnivla_real/omnivla_real/bin/to_jetson.sh me@jet --configs
+ok  env OMNIVLA_NO_RSYNC=1 TOPOMAP=course_a /home/runner/work/omnivla_real/omnivla_real/bin/to_jetson.sh me@jet --configs
+ok  env TOPOMAP=/data/topomaps/course_a /home/runner/work/omnivla_real/omnivla_real/bin/jetson.sh up --standalone
+ok  env TOPOMAP=/data/topomaps/course_a /home/runner/work/omnivla_real/omnivla_real/bin/jetson.sh up
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/jetson.sh plot
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/jetson.sh down
+ok  env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/desk_eval.sh run1.bag course_a
+ok  env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/desk_eval.sh run1.bag course_a
+ok  env OMNIVLA_JETSON=1 NAV_MODEL=edge FINETUNED_DIR=/runs/r1/checkpoints/step_000010 /home/runner/work/omnivla_real/omnivla_real/bin/desk_eval.sh run1.bag course_a
+ok  env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/desk_eval.sh run1.bag course_a --policy oracle
+ok  env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh run1.bag
+ok  env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/make_topomap.sh course_b run1.bag
+ok  env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/replay.sh run1.bag course_a
+ok  env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/replay_video.sh run1.bag course_a
+ok  env OMNIVLA_JETSON=1 bash -c source '/home/runner/work/omnivla_real/omnivla_real/bin/_lib.sh'; echo $REPLAY_POLICY_COMPOSE
+ok  env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/setup.sh none
+ok  (fails) env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/train.sh 7b
+ok  (fails) env OMNIVLA_JETSON=1 /home/runner/work/omnivla_real/omnivla_real/bin/make_dataset.sh run1.bag
+ok  env TOPOMAP=course_a /home/runner/work/omnivla_real/omnivla_real/bin/to_jetson.sh me@jet --bag run1.bag
+ok  bash -c cd '/home/runner/work/omnivla_real/omnivla_real' && REPLAY_POLICY_COMPOSE=docker-compose.jetson.yml docker compose -f docker-compose.replay.yml config policy
+ok  bash -c cd '/home/runner/work/omnivla_real/omnivla_real' && docker compose -f docker-compose.replay.yml config policy
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh up --topomap course_a --max-v 0.3
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh up --topomap course_a
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh up --topomap course_a --strict-time
+ok  (fails) env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh up
+ok  (fails) env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh up --topomap course_zzz
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh where course_a
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh where
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh start
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh stop
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh status
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh down
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= ROBOT_CONFIG=/tmp/tmp.pxh3scTFU3/robot_evalloc.yaml /home/runner/work/omnivla_real/omnivla_real/bin/field.sh record t1
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= ROBOT_CONFIG=/tmp/tmp.pxh3scTFU3/robot_evalloc.yaml /home/runner/work/omnivla_real/omnivla_real/bin/field.sh topic eval_localization /loc2
+ok  (fails) env JETSON_ROS_DISTRO=noetic /home/runner/work/omnivla_real/omnivla_real/bin/field.sh start
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= NAV_OVERRIDES=engine.tracker.image_threshold=0.93 engine.image_age_from=receive /home/runner/work/omnivla_real/omnivla_real/bin/field.sh up --topomap course_a --strict-time
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh setup
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh setup --topomap course_a
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh setup --model /runs/r2/checkpoints/step_005000
+ok  env JETSON_ROS_DISTRO=humble OMNIVLA_JETSON=1 NAV_OVERRIDES= /home/runner/work/omnivla_real/omnivla_real/bin/field.sh topic image /usb_cam/compressed
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/timesync.sh check
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/timesync.sh step
+ok  env ORIN_PORT=4003 /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh sync
+ok  env ORIN_JUMP=atmobi@10.42.0.1 ORIN_PORT=4003 /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh sync
+ok  env ORIN_PORT=22 - o ProxyJump=atmobi@10.42.0.1 /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh sync
+ok  (fails) env ORIN_PORT=22 -o ServerAliveInterval=30 /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh sync
+ok  env ORIN_HOST=me@orin /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh sync
+ok  env ORIN_HOST=me@orin /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh field check --where
+ok  env ORIN_HOST=me@orin ORIN_FETCH_DEST=/tmp/tmp.pxh3scTFU3/fetch /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh fetch
+ok  env ORIN_HOST=me@orin ORIN_FETCH_DEST=/tmp/tmp.pxh3scTFU3/logs /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh logs
+ok  env ORIN_HOST=me@orin ORIN_FETCH_DEST=/tmp/tmp.pxh3scTFU3/logs BAG_DIR=/tmp/tmp.pxh3scTFU3/bags /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh logs --bag manual_1
+ok  env ORIN_HOST=me@orin /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh send configs/robot.yaml
+ok  (fails) env ORIN_HOST=me@orin /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh send runs/nothing_here
+ok  env OMNIVLA_NO_RSYNC=1 ORIN_HOST=me@orin ORIN_FETCH_DEST=/tmp/tmp.pxh3scTFU3/fetch /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh fetch
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh bundle /tmp/tmp.pxh3scTFU3/x.bundle
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/bag_info.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/check_odometry.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/debug_view.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/desk_eval.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/field.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/jetson.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/make_dataset.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/make_topomap.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/omni.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/orin.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/plot_nav_log.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/replay_video.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/run_eval.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/setup.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/shell.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/timesync.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/to_jetson.sh -h
+ok  /home/runner/work/omnivla_real/omnivla_real/bin/train.sh -h
+all OK

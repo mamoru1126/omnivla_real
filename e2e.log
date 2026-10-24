@@ -1,0 +1,225 @@
+
+=================== make synthetic bags
+/home/runner/work/_temp/e2e/bags/course_ros1_0.bag,/home/runner/work/_temp/e2e/bags/course_ros1_1.bag
+/home/runner/work/_temp/e2e/bags/course_sqlite3
+/home/runner/work/_temp/e2e/bags/course_mcap
+/home/runner/work/_temp/e2e/bags_lap2/course_mcap
+
+=================== bag_info
+bag: /home/runner/work/_temp/e2e/bags/course_ros1_0.bag,/home/runner/work/_temp/e2e/bags/course_ros1_1.bag
+duration: 53.9 s
+
+topic                                         type                                          count      Hz
+/camera/image_raw/compressed                  sensor_msgs/CompressedImage                     808    15.0
+/cmd_vel                                      geometry_msgs/Twist                            1078    20.0
+/localization                                 geometry_msgs/PoseStamped                       539    10.0
+/odom                                         nav_msgs/Odometry                              2693    50.0
+
+robot.yaml の topics の候補:
+  image        : /camera/image_raw/compressed
+  odom         : /odom
+  cmd          : /cmd_vel
+  localization : /localization
+bag: /home/runner/work/_temp/e2e/bags/course_sqlite3
+duration: 53.9 s
+
+topic                                         type                                          count      Hz
+/camera/image_raw/compressed                  sensor_msgs/CompressedImage                     808    15.0
+/cmd_vel                                      geometry_msgs/Twist                            1078    20.0
+/localization                                 geometry_msgs/PoseStamped                       539    10.0
+/odom                                         nav_msgs/Odometry                              2693    50.0
+
+robot.yaml の topics の候補:
+  image        : /camera/image_raw/compressed
+  odom         : /odom
+  cmd          : /cmd_vel
+  localization : /localization
+bag: /home/runner/work/_temp/e2e/bags/course_mcap
+duration: 53.9 s
+
+topic                                         type                                          count      Hz
+/camera/image_raw/compressed                  sensor_msgs/CompressedImage                     808    15.0
+/cmd_vel                                      geometry_msgs/Twist                            1078    20.0
+/localization                                 geometry_msgs/PoseStamped                       539    10.0
+/odom                                         nav_msgs/Odometry                              2693    50.0
+
+robot.yaml の topics の候補:
+  image        : /camera/image_raw/compressed
+  odom         : /odom
+  cmd          : /cmd_vel
+  localization : /localization
+
+=================== check_odometry
+{
+ "horizon_s": 2.6666666666666665,
+ "cmd_to_odom_delay_s": {
+  "angular": 0.14,
+  "angular_corr": 0.9999873168603163,
+  "linear": 0.12,
+  "linear_corr": 1.0
+ },
+ "cmd_delay_used_s": 0.14,
+ "pairs": {
+  "odom vs odom_twist": {
+   "n": 153,
+   "pos_err_median_m": 0.003956070951666271,
+   "pos_err_p90_m": 0.017838294933707612,
+   "yaw_err_median_deg": 0.03006355039526031,
+   "yaw_err_p90_deg": 0.5353789761090367,
+   "distance_ratio_b_over_a": 1.0000000000677285,
+   "mean_distance_a_m": 1.2322480679206873
+  },
+  "odom vs cmd": {
+   "n": 153,
+   "pos_err_median_m": 0.003770583722184313,
+   "pos_err_p90_m": 0.004266663295247677,
+   "yaw_err_median_deg": 0.30557749068770473,
+   "yaw_err_p90_deg": 0.3055774911031615,
+   "distance_ratio_b_over_a": 1.0000014977440046,
+   "mean_distance_a_m": 1.2322480679206873
+  },
+  "odom vs localization": {
+   "n": 153,
+   "pos_err_median_m": 0.04235139235536685,
+   "pos_err_p90_m": 0.048181699993182524,
+   "yaw_err_median_deg": 0.3048314400309613,
+   "yaw_err_p90_deg": 0.31249912795084933,
+   "distance_ratio_b_over_a": 0.9700011497865697,
+   "mean_distance_a_m": 1.2322480679206873
+  },
+  "odom_twist vs cmd": {
+   "n": 153,
+   "pos_err_median_m": 0.004279889375927696,
+   "pos_err_p90_m": 0.017868430774292315,
+   "yaw_err_median_deg": 0.2893110078277578,
+   "yaw_err_p90_deg": 0.7364290433725238,
+   "distance_ratio_b_over_a": 1.0000011852139838,
+   "mean_distance_a_m": 1.232246895806215
+  },
+  "odom_twist vs localization": {
+   "n": 153,
+   "pos_err_median_m": 0.0447697036075476,
+   "pos_err_p90_m": 0.04823366686147093,
+   "yaw_err_median_deg": 0.29017544336544193,
+   "yaw_err_p90_deg": 0.722184884151364,
+   "distance_ratio_b_over_a": 0.9700011496566592,
+   "mean_distance_a_m": 1.232246895806215
+  },
+  "cmd vs localization": {
+   "n": 153,
+   "pos_err_median_m": 0.04253983864292836,
+   "pos_err_p90_m": 0.04800000000145852,
+   "yaw_err_median_deg": 0.000748884783500658,
+   "yaw_err_p90_deg": 0.015251639381568562,
+   "distance_ratio_b_over_a": 0.9699986383692326,
+   "mean_distance_a_m": 1.2323940842455914
+  }
+ },
+ "odom_over_cmd": {
+  "linear_median": 1.0,
+  "angular_median": 1.001351490692398
+ }
+}
+-> /home/runner/work/_temp/e2e/check_odometry/check_odometry.png
+check_odometry.json
+check_odometry.png
+
+=================== bag_to_dataset (ROS1 split + ROS2 sqlite3 + ROS2 mcap)
+== course_ros1_0: reading /home/runner/work/_temp/e2e/bags/course_ros1_0.bag,/home/runner/work/_temp/e2e/bags/course_ros1_1.bag
+   images 808 (15.0 Hz) -> saved 162 at 3.0 Hz, cmd 20.0 Hz, odom 50.0 Hz
+   frames 162 (valid 162, moving 130) -> used 136 in 2 segments -> 2 trajectories
+== course_sqlite3: reading /home/runner/work/_temp/e2e/bags/course_sqlite3
+   images 808 (15.0 Hz) -> saved 162 at 3.0 Hz, cmd 20.0 Hz, odom 50.0 Hz
+   frames 162 (valid 162, moving 130) -> used 136 in 2 segments -> 2 trajectories
+
+4 trajectories written. dataset: 4 trajectories, 272 frames, 48 m, metric_waypoint_spacing ~ 0.1803149800959821
+== lap2: reading /home/runner/work/_temp/e2e/bags_lap2/course_mcap
+   images 861 (15.0 Hz) -> saved 173 at 3.0 Hz, cmd 20.0 Hz, odom 50.0 Hz
+   frames 173 (valid 173, moving 158) -> used 161 in 1 segments -> 1 trajectories
+
+1 trajectories written. dataset: 5 trajectories, 433 frames, 72 m, metric_waypoint_spacing ~ 0.1803149800959821
+== course_mcap: reading /home/runner/work/_temp/e2e/bags/course_mcap
+    5000 messages (53s)
+   images 808 (15.0 Hz) -> saved 162 at 3.0 Hz, cmd 20.0 Hz, odom 50.0 Hz
+   frames 162 (valid 162, moving 130) -> used 136 in 2 segments -> 2 trajectories
+
+2 trajectories written. dataset: 2 trajectories, 136 frames, 23 m, metric_waypoint_spacing ~ 0.17490105693949204
+{
+ "trajectories": 5,
+ "frames": 433,
+ "path_length_m": 71.8831817186802,
+ "bags": [
+  "course_ros1_0",
+  "course_sqlite3",
+  "lap2"
+ ],
+ "sample_rate": [
+  3.0
+ ],
+ "pose_source": [
+  "odom"
+ ],
+ "metric_waypoint_spacing": 0.1803149800959821,
+ "turn_fraction": 0.21247113163972287,
+ "updated_at": "2026-10-24 15:16:00"
+}
+=================== inspect_dataset
+{
+  "trajectories": 5,
+  "frames": 433,
+  "total_length_m": 71.8831817186802,
+  "frames_per_traj": [
+    58,
+    86.6,
+    161
+  ],
+  "mean_step_m": 0.1776161204383629,
+  "worlds": {
+    "?": 5
+  },
+  "samples": 428,
+  "perturbed_frames": 0,
+  "trajectories_with_perturbation": 0
+}
+visualizations -> /home/runner/work/_temp/e2e/inspect
+
+=================== make_topomap (odom / localization)
+topomap: /home/runner/work/_temp/e2e/topomap
+  24 subgoals, course 23.8 m (2.2s - 51.0s of the bag), poses in 'odom' frame
+topomap: /home/runner/work/_temp/e2e/topomap_loc
+  24 subgoals, course 23.1 m (2.2s - 51.0s of the bag), poses in 'map' frame
+
+=================== desk_eval (oracle = 記録の正解軌跡を返す. 評価の仕組みの確認)
+reading /home/runner/work/_temp/e2e/bags_lap2/course_mcap at 3.0 Hz ...
+   frame 1/162 subgoal 0/23
+   frame 51/162 subgoal 8/23
+   frame 101/162 subgoal 15/23
+   frame 151/162 subgoal 22/23
+
+frames: 157 / 162  (sample_rate 3.0 Hz, controller trajectory)
+推論時間: 中央値 0 ms  p90 0 ms  最大 0 ms  (参考: waypoint の間隔 333 ms)
+
+[予測軌跡 vs 実際にその後走った軌跡]
+  ADE 0.000 m  FDE 0.000 m  向き 0.000 deg
+  曲がる場面 (n=49): ADE 0.000 m  向き 0.000 deg
+  曲がる量の比 (予測 / 実際, 10 度以上曲がる所 n=61): 1.00  (1 に近いほどよい. 0.7 なら 3 割曲がり不足)   予測の遅れ なし
+
+[指示値 vs 記録された指示値]
+  |v| 誤差 0.011 m/s  |w| 誤差 0.017 rad/s  相関(w) 0.977
+  曲がる向きの一致率 1.000 (曲がっているフレーム 46)
+
+[指示値を積算した軌跡 vs 実際の走行]
+  全体 (スタートから積算, 24.277 m): モデル 平均 0.189 m / 終点 0.111 m   (記録の指示値: 平均 0.212 m)
+  3s 窓: モデル 中央値 0.040 m (p90 0.113 m, 向き 1.559 deg)   記録の指示値 0.004 m
+  6s 窓: モデル 中央値 0.144 m (p90 0.274 m, 向き 5.127 deg)   記録の指示値 0.018 m
+  10s 窓: モデル 中央値 0.246 m (p90 0.350 m, 向き 1.451 deg)   記録の指示値 0.048 m
+
+[サブゴール (image_odom)]
+  最後まで到達: True  最後のサブゴール 23/23
+  正解 (自己位置 or 道のり) との差 (中央値) 0.000  |差| p90 1.000  類似度 中央値 0.995
+-> /home/runner/work/_temp/e2e/desk_eval_oracle
+reading /home/runner/work/_temp/e2e/bags_lap2/course_mcap at 3.0 Hz ...
+   frame 1/162 subgoal 1/23
+   frame 51/162 subgoal 8/23
+   frame 101/162 subgoal 15/23
+   frame 151/162 subgoal 22/23
