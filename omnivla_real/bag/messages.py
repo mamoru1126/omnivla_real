@@ -207,6 +207,8 @@ def pose_values(msg: Any, msgtype: Optional[str] = None, frame_id: str = "", chi
     if hasattr(msg, "transform"):                      # TransformStamped
         tr = msg.transform
         return float(tr.translation.x), float(tr.translation.y), yaw_from_quaternion(tr.rotation)
+    if hasattr(msg, "position") and hasattr(msg, "orientation"):   # geometry_msgs/Pose (時刻なし -> 記録時刻)
+        return float(msg.position.x), float(msg.position.y), yaw_from_quaternion(msg.orientation)
     pose = msg.pose
     pose = getattr(pose, "pose", pose)                 # Odometry / PoseWithCovarianceStamped は pose.pose
     return float(pose.position.x), float(pose.position.y), yaw_from_quaternion(pose.orientation)
