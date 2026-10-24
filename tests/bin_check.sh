@@ -156,6 +156,8 @@ check "+ sudo chronyd -Q -t 15 server 192.168.0.100 iburst" "$B/timesync.sh" che
 check "+ sudo chronyd -q -t 20 server 192.168.0.100 iburst" "$B/timesync.sh" step
 check "+ scp -P 4003" env ORIN_PORT=4003 "$B/orin.sh" sync
 check "+ scp -o ProxyJump=atmobi@10.42.0.1 -P 4003" env ORIN_JUMP=atmobi@10.42.0.1 ORIN_PORT=4003 "$B/orin.sh" sync
+check "+ scp -o ProxyJump=atmobi@10.42.0.1 -P 22" env 'ORIN_PORT=22 - o ProxyJump=atmobi@10.42.0.1' "$B/orin.sh" sync
+fails "ORIN_PORT はポート番号だけ" env 'ORIN_PORT=22 -o ServerAliveInterval=30' "$B/orin.sh" sync
 check "git merge --ff-only FETCH_HEAD" env ORIN_HOST=me@orin "$B/orin.sh" sync
 check "+ ssh -t me@orin cd omnivla_real && bin/field.sh check --where" env ORIN_HOST=me@orin "$B/orin.sh" field check --where
 check "--exclude *.db3" env ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/fetch" "$B/orin.sh" fetch

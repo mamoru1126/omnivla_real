@@ -23,10 +23,16 @@ source "$(dirname "$0")/_lib.sh"
 HOST=$(env_get ORIN_HOST orin)
 PORT=$(env_get ORIN_PORT "")
 REPO=$(env_get ORIN_REPO omnivla_real)
+JUMP=$(env_get ORIN_JUMP "")
+if [[ $PORT =~ ^([0-9]+)[[:space:]]+-[[:space:]]*o[[:space:]]+ProxyJump=([^[:space:]]+)$ ]]; then
+    PORT=${BASH_REMATCH[1]}
+    [ -n "$JUMP" ] || JUMP=${BASH_REMATCH[2]}
+elif [ -n "$PORT" ] && ! [[ $PORT =~ ^[0-9]+$ ]]; then
+    die "ORIN_PORT はポート番号だけを指定してください (ProxyJump は ORIN_JUMP に指定)"
+fi
 SSH=(ssh)
 SCP=(scp)
 RSH=ssh
-JUMP=$(env_get ORIN_JUMP "")
 if [ -n "$JUMP" ]; then
     SSH+=(-o "ProxyJump=$JUMP")
     SCP+=(-o "ProxyJump=$JUMP")
