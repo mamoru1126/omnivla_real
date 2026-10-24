@@ -6,6 +6,8 @@
 #                                       #   --model で FINETUNED_DIR = 学習し直したモデル. 反映は down --all -> up)
 #                                       #   ATMOBI PC のブラウザの「OmniVLA 開始」から起動した時も同じ設定になる
 #   bin/field.sh topic image|odom <名前> # robot.yaml のトピック名を変える (check で NG になった時)
+#   bin/field.sh topic eval_localization <名前>  # 評価だけに使う自己位置 (PoseStamped). record で一緒に録り、
+#                                       #   bin/run_eval.sh <bag> <コース> で実走を評価する (走行には使わない)
 #   bin/field.sh check [--where]        # 走らせる前の確認 (時計・ネットワーク・重み・topomap・トピック・ノード). OK / 注意 / NG
 #   bin/field.sh time                   # ATMOBI PC との時計のずれを測り、ずれていれば合わせる (sudo)
 #   bin/field.sh up [--topomap 名前] [--max-v 0.3] [--max-w 0.6] [--w-gain 1.3] [--strict-time]
@@ -137,14 +139,16 @@ case $CMD in
         say "元の .env は .env.bak_* に残しています. 反映: bin/field.sh up"
         ;;
     topic)
-        [ $# -eq 2 ] || die "使い方: bin/field.sh topic image|odom <トピック名>"
-        case $1 in image | odom | cmd) ;; *) die "image か odom か cmd" ;; esac
+        [ $# -eq 2 ] || die "使い方: bin/field.sh topic image|odom|cmd|eval_localization <トピック名>"
+        case $1 in image | odom | cmd | eval_localization) ;; *) die "image か odom か cmd か eval_localization" ;; esac
         RY=$(robot_yaml)
         [ "${OMNIVLA_DRY_RUN:-0}" = 1 ] || cp "$RY" "$RY.bak_$(date +%Y%m%d_%H%M%S)"
         if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ]; then
             echo "+ $RY: topics.$1: $2"
-        else
+        elif grep -qE "^[[:space:]]+$1:" "$RY"; then
             sed -i -E "s|^([[:space:]]+$1:[[:space:]]*)[^ #]*|\1$2|" "$RY"
+        else   # 古い robot.yaml には eval_localization の行が無い: topics の localization の行の後ろに足す
+            sed -i -E "/^[[:space:]]+localization:/a\\  $1: $2" "$RY"
         fi
         say "$RY: topics.$1 = $(topic_of "$1")  (反映: bin/field.sh up)"
         ;;
@@ -313,8 +317,10 @@ case $CMD in
         NAME=${1:-run}
         OUT=/workspace/log/bags/${NAME}_$(date +%Y%m%d_%H%M%S)
         mkdir -p "$ROOT/log/bags"
+        # 自己位置 (評価用 eval_localization / ナビ用 localization) も、robot.yaml に書いてあれば一緒に録る (bin/run_eval.sh 用)
         TOPICS=$(printf '%s ' "$(topic_of image)" "$(topic_of odom)" /cmd_vel "$(env_get CMD_VEL_TOPIC /omnivla/cmd_vel/raw)" \
-            /omnivla/status /omnivla/path | xargs -n1 | awk 'NF && !seen[$0]++' | xargs)
+            /omnivla/status /omnivla/path "$(topic_of eval_localization)" "$(topic_of localization)" \
+            | xargs -n1 | awk 'NF && !seen[$0]++' | xargs)
         command docker rm -f "$RECORD_NAME" > /dev/null 2>&1 || true
         jetson run -d --rm --no-deps --name "$RECORD_NAME" nav bash -c "$SETUP && exec ros2 bag record -o $OUT $TOPICS" > /dev/null
         say "記録を始めました: $(hpath "$OUT")"

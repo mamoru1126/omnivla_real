@@ -148,6 +148,11 @@ check "tools/field_probe.py --enable true" "${H[@]}" "$B/field.sh" start
 check "tools/field_probe.py --enable false" "${H[@]}" "$B/field.sh" stop
 check "tools/field_probe.py --status" "${H[@]}" "$B/field.sh" status
 check "-f docker-compose.jetson-humble.yml stop nav" "${H[@]}" "$B/field.sh" down
+printf 'topics:\n  image: /camera/compressed\n  odom: /odom\n  localization: ""\n  eval_localization: /localization_pose\n' \
+    > "$T/robot_evalloc.yaml"
+check "/omnivla/path /localization_pose" "${H[@]}" ROBOT_CONFIG="$T/robot_evalloc.yaml" "$B/field.sh" record t1
+check "+ $T/robot_evalloc.yaml: topics.eval_localization: /loc2" "${H[@]}" ROBOT_CONFIG="$T/robot_evalloc.yaml" \
+    "$B/field.sh" topic eval_localization /loc2
 fails "ROS 2" env JETSON_ROS_DISTRO=noetic "$B/field.sh" start
 check "NAV_OVERRIDES: engine.tracker.image_threshold=0.93 engine.image_age_from=stamp" \
     "${H[@]}" NAV_OVERRIDES="engine.tracker.image_threshold=0.93 engine.image_age_from=receive" "$B/field.sh" up --topomap course_a --strict-time

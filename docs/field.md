@@ -73,6 +73,23 @@ bin/orin.sh fetch                # Orin の記録を debug_log/orin_<日時>/ �
 
 LAN が無い場合は Orin で `bin/field.sh collect /media/<USB>` (bag と画像を除いた tar.gz)。
 
+## 実走を自己位置で評価する (自己位置は評価だけ. 走行には使わない)
+
+最初に 1 回、自己位置のトピック (PoseStamped) を robot.yaml に書いておくと、`record` で一緒に録ります。
+
+```bash
+bin/field.sh topic eval_localization /<自己位置のトピック>
+```
+
+自律走行を録ったあと (コースの topomap は自己位置の入った bag から作ったもの = 地図の座標):
+
+```bash
+bin/run_eval.sh log/bags/auto3_<時刻> course_b
+```
+
+- `runs/run_eval/<bag>_<時刻>/report.txt`: どこまで進んだか、コースからの横ずれ、カーブごとに外へ膨らんだ量。`/omnivla/status` で自律で走っていた間だけの集計も出ます。
+- `overview.png` (走った所を横ずれの大きさで色分け)、`xtrack.png`。作業 PC に持ってくるなら `bin/orin.sh logs` ではなく `scp` で (画像なので)。
+
 ## 学習し直したモデルと新しい topomap を入れる
 
 学習 PC の `runs/<run>/checkpoints/step_XXXXXX/` と `data/topomaps/<名前>/` を、作業 PC のリポジトリの同じ場所にコピーしてから (USB か scp)。
