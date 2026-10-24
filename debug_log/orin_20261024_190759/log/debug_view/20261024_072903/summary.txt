@@ -1,0 +1,11 @@
+debug_view まとめ (2521 秒分)
+トピック: {"image": "/camera/compressed", "odom": "/odom", "cmd": "/omnivla/cmd_vel/raw", "path": "/omnivla/path", "status": "/omnivla/status"}
+状態: {'idle': 2521}
+推論の結果 (step_state): {'': 2521}   ノードが見た画像の遅れ [s]: -
+サブゴール: - -> - / 510
+類似度: -
+推論時間 [ms]: -
+v [m/s]: -   w [rad/s]: -
+予測軌跡の終点 y (左 +) [m]: -   x [m]: -
+画像: 中央値 10.0 / 最小 4.5 / 最大 10.2 Hz   遅れ (今 - 画像の時刻) [s]: 中央値 0.84 / 最小 0.67 / 最大 2.24
+オドメトリ: 中央値 9.3 / 最小 8.5 / 最大 21.2 Hz

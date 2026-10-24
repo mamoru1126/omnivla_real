@@ -1,0 +1,124 @@
+{
+ "time": "2026-10-24 06:51:50",
+ "host_time": 1792824710.3031309,
+ "topics": {
+  "image": {
+   "/camera/compressed": {
+    "type": "sensor_msgs/msg/CompressedImage",
+    "publishers": 1,
+    "count": 56,
+    "hz": 10.016318812207222,
+    "received_minus_stamp_s": 0.21887755393981934,
+    "size": "1920x1280",
+    "brightness": 94.95486911349826,
+    "format": "rgb8; jpeg compressed bgr8"
+   }
+  },
+  "odom": {
+   "/odom": {
+    "publishers": 1,
+    "count": 43,
+    "hz": 9.76118762371473,
+    "received_minus_stamp_s": 0.11588430404663086,
+    "moved_m": 0.0
+   }
+  },
+  "cmd": {
+   "/omnivla/cmd_vel/raw": {
+    "publishers": 1,
+    "count": 0,
+    "hz": null,
+    "last": null
+   },
+   "/cmd_vel": {
+    "publishers": 1,
+    "count": 0,
+    "hz": null,
+    "last": null
+   }
+  },
+  "all": {
+   "/camera/camera_info": [
+    "sensor_msgs/msg/CameraInfo"
+   ],
+   "/camera/compressed": [
+    "sensor_msgs/msg/CompressedImage"
+   ],
+   "/cmd_vel": [
+    "geometry_msgs/msg/Twist"
+   ],
+   "/events/write_split": [
+    "rosbag2_interfaces/msg/WriteSplitEvent"
+   ],
+   "/odom": [
+    "nav_msgs/msg/Odometry"
+   ],
+   "/omnivla/cmd_vel/raw": [
+    "geometry_msgs/msg/Twist"
+   ],
+   "/omnivla/debug_image": [
+    "sensor_msgs/msg/Image"
+   ],
+   "/omnivla/enable": [
+    "std_msgs/msg/Bool"
+   ],
+   "/omnivla/path": [
+    "nav_msgs/msg/Path"
+   ],
+   "/omnivla/status": [
+    "std_msgs/msg/String"
+   ],
+   "/omnivla/topomap": [
+    "std_msgs/msg/String"
+   ],
+   "/parameter_events": [
+    "rcl_interfaces/msg/ParameterEvent"
+   ],
+   "/rosout": [
+    "rcl_interfaces/msg/Log"
+   ]
+  }
+ },
+ "checks": [
+  {
+   "level": "OK",
+   "what": "カメラ画像 10.0 Hz (1920x1280, rgb8; jpeg compressed bgr8)",
+   "detail": ""
+  },
+  {
+   "level": "OK",
+   "what": "画像の遅れ 0.22 秒",
+   "detail": ""
+  },
+  {
+   "level": "OK",
+   "what": "オドメトリ 9.8 Hz",
+   "detail": ""
+  },
+  {
+   "level": "OK",
+   "what": "ナビゲーションノード",
+   "detail": "state=idle step_state= reach_check=image subgoal=None/510 similarity=None latency=- v=0.0 w=0.0"
+  }
+ ],
+ "status": {
+  "state": "idle",
+  "subgoal": null,
+  "num_nodes": 511,
+  "reach_check": "image",
+  "similarity": null,
+  "distance": null,
+  "travel_m": 0.0,
+  "v": 0.0,
+  "w": 0.0,
+  "latency": null,
+  "time": 1792824709.6857154,
+  "step_state": "",
+  "image_age": null,
+  "max_image_age": 1.0,
+  "image_age_from": "receive",
+  "image_stamp_offset": 0.22064518928527832,
+  "topomap": "/data/topomaps/course_a",
+  "last_error": ""
+ }
+}

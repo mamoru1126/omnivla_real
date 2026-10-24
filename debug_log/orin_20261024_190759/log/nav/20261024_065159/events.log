@@ -1,0 +1,6 @@
+[-] start: 511 subgoals, reach_check=image_odom, sample_rate=3.0
+[1792824741.79] subgoal 0 -> 1/510 [image similarity 0.929 (node 0)]
+[1792824760.57] subgoal 1 -> 2/510 [passed by odometry (1.12m behind)]
+[1792824787.01] subgoal 2 -> 3/510 [passed by odometry (1.07m behind)]
+[1792824788.88] subgoal 3 -> 6/510 [image similarity 0.886 (node 5)]
+[1792824808.04] subgoal 6 -> 7/510 [image similarity 0.900 (node 6)]

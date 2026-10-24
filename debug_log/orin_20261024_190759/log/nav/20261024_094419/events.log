@@ -1,0 +1,8 @@
+[-] start: 511 subgoals, reach_check=image_odom, sample_rate=3.0
+[1792835186.95] subgoal 0 -> 1/510 [passed by odometry (1.01m behind)]
+[1792835195.79] subgoal 1 -> 2/510 [passed by odometry (1.10m behind)]
+[1792835201.57] subgoal 2 -> 3/510 [passed by odometry (1.02m behind)]
+[1792835207.41] subgoal 3 -> 4/510 [passed by odometry (1.25m behind)]
+[1792835210.36] subgoal 4 -> 5/510 [passed by odometry (1.32m behind)]
+[1792835213.28] subgoal 5 -> 6/510 [passed by odometry (1.01m behind)]
+[1792835221.44] subgoal 6 -> 7/510 [passed by odometry (1.03m behind)]

@@ -1,0 +1,13 @@
+{
+  "reason": "stopped by user",
+  "reached": false,
+  "steps": 0,
+  "sim_duration": 0.0,
+  "path_length_m": 0.0,
+  "start_pose": null,
+  "final_pose": null,
+  "final_goal_pose": null,
+  "final_dist_to_goal": null,
+  "min_dist_to_goal": null,
+  "closed_at": "2026-10-22 01:28:43"
+}

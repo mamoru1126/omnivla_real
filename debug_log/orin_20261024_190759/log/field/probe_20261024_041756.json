@@ -1,0 +1,161 @@
+{
+ "time": "2026-10-24 04:17:50",
+ "host_time": 1792815470.6935906,
+ "topics": {
+  "image": {
+   "/camera/compressed": {
+    "type": "sensor_msgs/msg/CompressedImage",
+    "publishers": 1,
+    "count": 76,
+    "hz": 10.012312453427263,
+    "received_minus_stamp_s": 1792808909.589878,
+    "size": "1920x1280",
+    "brightness": 95.34615383572049,
+    "format": "rgb8; jpeg compressed bgr8"
+   }
+  },
+  "odom": {
+   "/odom": {
+    "publishers": 1,
+    "count": 55,
+    "hz": 8.682848178440384,
+    "received_minus_stamp_s": 0.16374778747558594,
+    "moved_m": 0.13057371995602057
+   }
+  },
+  "cmd": {
+   "/omnivla/cmd_vel/raw": {
+    "publishers": 1,
+    "count": 0,
+    "hz": null,
+    "last": null
+   },
+   "/cmd_vel": {
+    "publishers": 1,
+    "count": 38,
+    "hz": 9.200012828741693,
+    "last": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "all": {
+   "/camera/camera_info": [
+    "sensor_msgs/msg/CameraInfo"
+   ],
+   "/camera/compressed": [
+    "sensor_msgs/msg/CompressedImage"
+   ],
+   "/cmd_vel": [
+    "geometry_msgs/msg/Twist"
+   ],
+   "/odom": [
+    "nav_msgs/msg/Odometry"
+   ],
+   "/omnivla/cmd_vel/raw": [
+    "geometry_msgs/msg/Twist"
+   ],
+   "/omnivla/debug_image": [
+    "sensor_msgs/msg/Image"
+   ],
+   "/omnivla/enable": [
+    "std_msgs/msg/Bool"
+   ],
+   "/omnivla/path": [
+    "nav_msgs/msg/Path"
+   ],
+   "/omnivla/status": [
+    "std_msgs/msg/String"
+   ],
+   "/omnivla/topomap": [
+    "std_msgs/msg/String"
+   ],
+   "/parameter_events": [
+    "rcl_interfaces/msg/ParameterEvent"
+   ],
+   "/rosout": [
+    "rcl_interfaces/msg/Log"
+   ]
+  }
+ },
+ "checks": [
+  {
+   "level": "OK",
+   "what": "カメラ画像 10.0 Hz (1920x1280, rgb8; jpeg compressed bgr8)",
+   "detail": ""
+  },
+  {
+   "level": "NG",
+   "what": "画像の時刻がこの PC の時計と全く違う (1792808910 秒)",
+   "detail": "カメラが起動してからの時間などを付けている. image_age_from=receive で動かす (bin/field.sh up の既定)"
+  },
+  {
+   "level": "OK",
+   "what": "オドメトリ 8.7 Hz",
+   "detail": ""
+  },
+  {
+   "level": "OK",
+   "what": "ナビゲーションノード",
+   "detail": "state=idle step_state= reach_check=image subgoal=None/510 similarity=None latency=- v=0.0 w=0.0"
+  },
+  {
+   "level": "注意",
+   "what": "いまの画像に一番似ているのは 465 番 / 510 (類似度 0.897)",
+   "detail": "0 番 (スタート) との類似度 0.865, 比べた全体の中央値 0.810. スタート位置なら 0 番の近く. 類似度が 0.9 未満なら topomap を撮った時とカメラ・景色が違う可能性"
+  }
+ ],
+ "status": {
+  "state": "idle",
+  "subgoal": null,
+  "num_nodes": 511,
+  "reach_check": "image",
+  "similarity": null,
+  "distance": null,
+  "travel_m": 5.10095662564483,
+  "v": 0.0,
+  "w": 0.0,
+  "latency": null,
+  "time": 1792815469.7320375,
+  "step_state": "",
+  "image_age": null,
+  "max_image_age": 1.0,
+  "image_age_from": "receive",
+  "image_stamp_offset": 1792808909.5869224,
+  "topomap": "/data/topomaps/course_a",
+  "last_error": ""
+ },
+ "where": {
+  "topomap": "/data/topomaps/course_a",
+  "num_nodes": 511,
+  "compared": 111,
+  "seconds": 4.844836473464966,
+  "best_node": 465,
+  "best_similarity": 0.897433041628812,
+  "top5": [
+   [
+    465,
+    0.897433041628812
+   ],
+   [
+    467,
+    0.8940085886111168
+   ],
+   [
+    462,
+    0.8911581626563576
+   ],
+   [
+    468,
+    0.8910636892944831
+   ],
+   [
+    155,
+    0.8884032758876925
+   ]
+  ],
+  "node0_similarity": 0.865125238030291,
+  "median_similarity": 0.8095531938058821
+ }
+}

@@ -1,0 +1,87 @@
+{
+  "topomap": "/data/topomaps/usb_camera_test",
+  "topomap_meta": {},
+  "num_nodes": 1,
+  "final_goal_pose": null,
+  "model": {
+    "model": "remote",
+    "weights": "",
+    "finetuned_dir": "",
+    "device": "cuda:0",
+    "half": false,
+    "metric_waypoint_spacing": 0.0,
+    "url": "http://127.0.0.1:8765",
+    "timeout": 10.0
+  },
+  "robot": {
+    "name": "usb_camera_simulator_test",
+    "topics": {
+      "image": "/camera/compressed",
+      "odom": "",
+      "cmd": "/omnivla/cmd_vel/raw",
+      "localization": "",
+      "localization_frame": "map",
+      "localization_child_frame": "base_link",
+      "cmd_v_field": "",
+      "cmd_w_field": ""
+    },
+    "image": {
+      "crop": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "width": 320,
+      "rotate180": false,
+      "jpeg_quality": 95
+    },
+    "camera": {
+      "hfov_deg": 90.0,
+      "height": 0.5,
+      "x_offset": 0.2,
+      "pitch_deg": 0.0
+    },
+    "time_source": "auto"
+  },
+  "engine": {
+    "modality": "image",
+    "sample_rate": 3.0,
+    "controller": {
+      "mode": "trajectory",
+      "track_horizon": 4,
+      "track_max_v": 0.05,
+      "track_max_w": 0.15,
+      "track_phi_scale": 0.15,
+      "waypoint_index": 4,
+      "dt": 0.3333333333333333,
+      "max_linear_raw": 0.5,
+      "max_angular_raw": 1.0,
+      "max_v": 0.3,
+      "max_w": 0.3,
+      "respect_predicted_speed": true,
+      "lookahead": 0.5,
+      "pp_speed": 0.3,
+      "pp_max_w": 0.8,
+      "rotate_in_place_angle": 1.2
+    },
+    "tracker": {
+      "reach_check": "none",
+      "subgoal_radius": 0.5,
+      "goal_radius": 0.5,
+      "reach_angle_deg": 30.0,
+      "pass_radius": 1.5,
+      "pass_angle_deg": 90.0,
+      "image_threshold": 0.8,
+      "goal_image_threshold": 0.85,
+      "search_window": 2,
+      "confirm": 2,
+      "odom_gate_m": 2.5,
+      "odom_pass_m": 1.0,
+      "goal_odom_gate_m": 1.5,
+      "min_travel_m": 0.2,
+      "forward_correction": 0.1
+    }
+  },
+  "started_at": "2026-10-22 01:24:51"
+}
