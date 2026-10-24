@@ -26,7 +26,7 @@ sys.path.insert(0, HERE)
 
 from omnivla_real import controller, data_utils, geometry, odometry  # noqa: E402
 from omnivla_real.bag.messages import image_to_rgb, pose_values, stamp_to_sec, twist_values  # noqa: E402
-from omnivla_real.bag.reader import ListSource  # noqa: E402
+from omnivla_real.bag.reader import BagMessage, ListSource  # noqa: E402
 from omnivla_real.convert import (ConvertConfig, build_frames, convert_streams, idle_mask,  # noqa: E402
                                   segment_frames, update_dataset_info)
 from omnivla_real.desk_eval import (DeskEvalConfig, OraclePolicy, integrate_commands, prepare_frames,  # noqa: E402
@@ -163,6 +163,34 @@ def test_extract_and_convert_course_run():
             a = data_utils.compute_action_targets(tr["position"], tr["yaw"], t, metric_spacing=0.2)
             yaws.append(math.degrees(math.atan2(a[-1, 3], a[-1, 2])))
         assert max(yaws) > 40 and min(yaws) > -5
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_foreign_camera_clock_and_missing_cmd():
+    """カメラが別の時計 (0 = 1970 年, 起動からの時間など) を付けている bag と、/cmd_vel が無い bag (Orin で録った bag)."""
+    from omnivla_real.extract import check_clock
+    alt = []
+    for m in course():
+        if m.topic == "/cmd_vel":
+            continue
+        if m.topic == "/camera/image_raw/compressed":
+            m = BagMessage(m.topic, m.msgtype, m.t_bag,
+                           NS(header=header(m.t_bag - 950.0, "camera"), format=m.msg.format, data=m.msg.data))
+        alt.append(m)
+    tmp = tempfile.mkdtemp()
+    try:
+        s = read_streams(ListSource(alt), robot_cfg(), os.path.join(tmp, "_frames", "r"), 3.0, name="r")
+        assert s.time_source_used == "bag" and any("another clock" in n for n in s.notes)
+        assert any("/cmd_vel" in n for n in s.notes) and len(s.cmd_t) == 0
+        assert abs(s.image_t[0] - s.odom_t[0]) < 1.0              # 画像もオドメトリも記録時刻にそろう
+        assert any("another clock" in w for w in check_clock(s))
+        res = convert_streams(s, ConvertConfig(), os.path.join(tmp, "ds"), "r")
+        assert len(res["trajectories"]) == 2                        # 普通の bag と同じく 2 区間
+        tr = load_trajectory(res["trajectories"][0])
+        assert np.isnan(tr["cmd_v"]).all() and np.isfinite(tr["position"]).all()
+        s2 = read_streams(ListSource(course()), robot_cfg(), None, 3.0, decode_images=False)
+        assert s2.time_source_used == "auto" and not s2.notes       # 普通の bag は今までどおり header の時刻
     finally:
         shutil.rmtree(tmp)
 

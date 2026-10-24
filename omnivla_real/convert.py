@@ -110,8 +110,12 @@ def build_frames(s: Streams, cfg: ConvertConfig, track: Optional[PoseTrack] = No
     t = s.image_t
     gap = cfg.max_pose_gap if cfg.pose_source in ("odom", "localization") else 1e9
     x, y, yaw, valid = track.at(t, gap)
-    cmd_v = zero_order_hold(s.cmd_t, s.cmd_v, t, cfg.cmd_timeout)
-    cmd_w = zero_order_hold(s.cmd_t, s.cmd_w, t, cfg.cmd_timeout)
+    if len(s.cmd_t):
+        cmd_v = zero_order_hold(s.cmd_t, s.cmd_v, t, cfg.cmd_timeout)
+        cmd_w = zero_order_hold(s.cmd_t, s.cmd_w, t, cfg.cmd_timeout)
+    else:   # 指令のトピックが bag に無い (pose_source が cmd 以外ならラベル作りには要らない)
+        cmd_v = np.full(len(t), np.nan)
+        cmd_w = np.full(len(t), np.nan)
     if len(s.odom_t) >= 2:
         odom_v = np.interp(t, s.odom_t, s.odom_v)
         odom_w = np.interp(t, s.odom_t, s.odom_w)
