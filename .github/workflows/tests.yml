@@ -59,7 +59,7 @@ jobs:
           E=$RUNNER_TEMP/e2e
           D=/tmp/cilog; rm -rf $D; mkdir -p $D
           cp ci/*.log $D/ 2>/dev/null || true
-          for d in check_odometry desk_eval_oracle desk_eval_oracle_loc desk_eval_edge topomap topomap_loc inspect; do
+          for d in check_odometry desk_eval_oracle desk_eval_oracle_loc desk_eval_oracle_evalloc run_eval desk_eval_edge topomap topomap_loc inspect; do
             [ -d $E/$d ] || continue
             mkdir -p $D/$d
             find $E/$d -maxdepth 1 \( -name "*.txt" -o -name "*.json" -o -name "*.png" -o -name "*.yaml" \) -exec cp {} $D/$d/ \;

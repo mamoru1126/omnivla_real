@@ -46,6 +46,7 @@ class Streams:
     loc_x: np.ndarray = field(default_factory=lambda: np.zeros(0))
     loc_y: np.ndarray = field(default_factory=lambda: np.zeros(0))
     loc_yaw: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    loc_eval_only: bool = False      # 自己位置は topics.eval_localization (答え合わせだけに使う. ナビには渡さない)
     bag_start: float = 0.0
     bag_end: float = 0.0
     clock_offsets: Dict[str, float] = field(default_factory=dict)       # topic -> median(header - bag) [s]
@@ -105,8 +106,11 @@ def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_ra
     if tp.image and tp.image not in topics:
         raise KeyError(f"topic '{tp.image}' is not in the bag. available topics:\n  " + listing)
     s = Streams(name=name, bag_start=source.start_time, bag_end=source.end_time)
+    # 自己位置: topics.localization (ナビにも使う) が無ければ topics.eval_localization (答え合わせだけ)
+    loc_topic = tp.localization or tp.eval_localization
+    s.loc_eval_only = bool(loc_topic and not tp.localization)
     wanted = [tp.image] if tp.image else []
-    for t in (tp.odom, tp.cmd, tp.localization):
+    for t in (tp.odom, tp.cmd, loc_topic):
         if not t:
             continue
         if t in topics:
@@ -170,7 +174,7 @@ def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_ra
             x, y, yaw = pose_values(m.msg, m.msgtype)
             v, w = twist_values(m.msg, m.msgtype)
             odom.append((_msg_time(stamp, m.t_bag, mode), x, y, yaw, v, w))
-        elif m.topic == tp.localization:
+        elif m.topic == loc_topic:
             pose = pose_values(m.msg, m.msgtype, tp.localization_frame, tp.localization_child_frame)
             if pose is None:
                 continue
