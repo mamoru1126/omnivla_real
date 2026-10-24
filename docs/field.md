@@ -81,7 +81,7 @@ LAN が無い場合は Orin で `bin/field.sh collect /media/<USB>` (bag と画�
 | カメラ画像が届かない (check で NG) | 似た名前のトピックが表示される | `bin/field.sh topic image <名前>` → `bin/field.sh up` |
 | 時計がずれている | `bin/field.sh time` | NTP で届かなければ `ATMOBI_SSH=<user>@192.168.0.100 bin/timesync.sh step` |
 | 類似度が低い / サブゴールが進まない (`where` で 0.9 未満) | topomap を撮った時とカメラ・景色が違う | 2 で録った bag から topomap を作り直す: `bin/field.sh topomap log/bags/manual_<時刻> course_today` → `bin/field.sh up --topomap course_today` |
-| 曲がりが弱い (外に膨らむ) | `summary` の v が上限に張り付いている → `--max-v` で w も一緒に落ちている | `bin/field.sh up --max-v 0.3 --keep-w` (v だけ落とす). まだ弱ければ `--w-gain 1.3` |
+| 曲がりが弱い (外に膨らむ) | モデルの予測軌跡そのものが曲がり不足 (机上評価で実際の 7 割ほど) | `bin/field.sh up --max-v 0.3 --w-gain 1.3` (曲がる量を 1.3 倍. 1.5 までで様子を見る). `--max-v` で速度を落としても曲がり方 (曲率) は変わらない |
 | 推論が遅い | `status` の latency (7B は 600 ms 前後) | 速度を下げる (`up --max-v 0.2`) |
 | ノードの様子 | `bin/jetson.sh logs nav` / `bin/jetson.sh logs policy` | |
 

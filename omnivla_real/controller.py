@@ -45,7 +45,8 @@ class ControllerConfig:
     track_max_w: float = 1.0        # お手本の最大角速度 0.8rad/s に余裕を持たせた上限
     track_phi_scale: float = 0.15   # 予測点までの距離がこれより近いときは、位置より予測した向きで旋回量を決める [m]
     track_w_gain: float = 1.0       # 旋回量に掛ける (曲がりが弱いとき 1.2〜1.5. 上限 track_max_w は効く)
-    track_keep_w: bool = False      # True: 速度上限で v を落としても w は落とさない (きつく曲がる). False: 曲率を保って両方落とす
+    track_keep_w: bool = False      # True: 速度上限で v を落としても w は落とさない. 速度を大きく落とすと曲率が
+                                    #   (予測速度 / 上限) 倍になり曲がりすぎるので通常は False (曲率を保つ)
     # --- upstream ---
     waypoint_index: int = 4         # 公式は waypoints[0][4] を使う
     dt: float = 1.0 / 3.0           # 公式の DT (tick_rate=3Hz)
