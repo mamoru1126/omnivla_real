@@ -263,6 +263,15 @@ class SubgoalTracker:
     def nodes(self) -> List[GoalNode]:
         return self.map.nodes
 
+    def use_odometry(self) -> None:
+        """image -> image_odom に切り替える (走り出してからオドメトリが届いた). 今のサブゴールの道のりから数える."""
+        if not self.map.has_poses():
+            raise ValueError("image_odom needs node poses in poses.yaml")
+        self.mode = "image_odom"
+        self._anchor_s = self.dist[self.index]
+        self._anchor_travel = None
+        self._travel_at_switch = 0.0
+
     @property
     def current(self) -> GoalNode:
         return self.nodes[self.index]

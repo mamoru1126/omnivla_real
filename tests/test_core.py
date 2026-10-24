@@ -824,6 +824,31 @@ def test_image_age_from_receive():
     assert st["similarity"] is not None and st["image_age_from"] == "receive" and st["image_stamp_offset"] > 1e6
 
 
+def test_odometry_arriving_after_start_switches_to_image_odom():
+    """start の時点でオドメトリが無い (届くのが遅れた) と auto は image になる. 届いたら image_odom に切り替える."""
+    tm = Topomap([GoalNode(render(k, 0, 0), pose=(float(k), 0.0, 0.0), s=float(k)) for k in range(6)],
+                 start=(0.0, 0.0, 0.0))
+    nav = load_nav_config(os.path.join(CONFIGS, "navigator.yaml"), {"engine.image_age_from": "receive"})
+    nav.io.log_dir = tempfile.mkdtemp()
+    eng = NavEngine(_FakePolicy(), tm, nav.engine, robot_cfg())
+    assert eng.start() == "image"                                   # まだオドメトリが無い
+    eng.on_image(1.0, lambda: np.asarray(render(0.2, 0, 0)))
+    eng.step(1.0)
+    eng.on_odom(1.1, (5.0, 3.0, 0.5))                               # 遅れて届いた
+    st = eng.status()
+    assert st["reach_check"] == "image_odom" and eng.tracker.mode == "image_odom"
+    assert eng.odom_start == (5.0, 3.0, 0.5) and eng.travel == 0.0
+    eng.on_odom(1.2, (5.5, 3.0, 0.5))
+    assert abs(eng.travel - 0.5) < 1e-9
+    eng.on_image(1.3, lambda: np.asarray(render(0.6, 0, 0)))
+    r = eng.step(1.3)
+    assert r.state == "running" and any("odometry arrived after start" in e for e in r.events)
+    # 最初からオドメトリがあれば今までどおり
+    eng2 = NavEngine(_FakePolicy(), tm, nav.engine, robot_cfg())
+    eng2.on_odom(0.0, (0.0, 0.0, 0.0))
+    assert eng2.start() == "image_odom"
+
+
 def test_trajectory_turn_gain_and_keep_w():
     from omnivla_real.controller import ControllerConfig, trajectory_command
     # 0.45 m/s, 0.6 rad/s の円弧

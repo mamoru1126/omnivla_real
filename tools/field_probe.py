@@ -140,7 +140,12 @@ def quick(args) -> int:
             rclpy.spin_once(node, timeout_sec=0.1)
         if "s" in got:
             try:
-                print("  " + status_line(json.loads(got["s"])))
+                st = json.loads(got["s"])
+                print("  " + status_line(st))
+                if args.enable == "true" and st.get("reach_check") == "image":
+                    print("注意  reach_check=image: オドメトリが届いていないので、サブゴールを画像だけで判定しています "
+                          "(似ているだけで先へ飛びやすい). 届けば自動で image_odom に切り替わります. "
+                          "確認: bin/field.sh check")
             except ValueError:
                 print("  " + got["s"])
         else:
@@ -260,7 +265,8 @@ def main():
         rep["topics"]["odom"] = {tp.odom: to}
         if not r:
             check(WARN, f"オドメトリ {tp.odom} が届いていない",
-                  "サブゴールは画像だけで判定 (image) になる. 届けば道のりも使う (image_odom)")
+                  "このまま start するとサブゴールは画像だけで判定 (image) になり、似ているだけで先へ飛びやすい. "
+                  "start のあとで届けば自動で道のりも使う (image_odom) が、届いてから start するのが安全")
         else:
             check(OK, f"オドメトリ {to['hz'] or 0:.1f} Hz")
     # --- ナビゲーションノード ---

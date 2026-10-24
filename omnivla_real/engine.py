@@ -86,6 +86,7 @@ class NavEngine:
         self._next_hist: Optional[float] = None
         self.odom: Optional[Pose] = None
         self.odom_start: Optional[Pose] = None
+        self._pending_events: List[str] = []
         self.travel = 0.0
         self.loc: Optional[Pose] = None
         self.n_step = 0
@@ -120,9 +121,28 @@ class NavEngine:
         return self._img_cache
 
     def on_odom(self, t: float, pose: Pose) -> None:
+        late = self.odom is None and self.state == "running" and self.tracker is not None
         if self.odom is not None:
             self.travel += math.hypot(pose[0] - self.odom[0], pose[1] - self.odom[1])
         self.odom = tuple(pose)
+        if late:
+            self._odometry_arrived_late(t)
+
+    def _odometry_arrived_late(self, t: float) -> None:
+        """走り出した (start) あとで初めてオドメトリが届いた. start の時点で無かったので reach_check=auto が
+        画像だけ (image) になり、サブゴールが画像の似ているだけで先へ飛んでいく. ここから道のりも使う."""
+        self.travel = 0.0
+        if self.tracker.index == 0:
+            self.odom_start = self.odom      # まだスタート地点: ここを topomap のスタートに重ねる
+        if self.cfg.tracker.reach_check != "auto" or self.mode != "image":
+            return
+        new = resolve_mode("auto", self.loc is not None, True, self.map)
+        if new == "image_odom":
+            self.mode = new
+            self.tracker.use_odometry()
+            msg = f"odometry arrived after start: reach_check image -> image_odom (from subgoal {self.tracker.index})"
+            self._event(msg, t)
+            self._pending_events.append(msg)     # 次の step の events でノードのログにも出す
 
     def on_localization(self, t: float, pose: Pose) -> None:
         self.loc = tuple(pose)
@@ -168,7 +188,8 @@ class NavEngine:
 
     def step(self, t: float) -> StepResult:
         n = len(self.map)
-        events: List[str] = []
+        events: List[str] = self._pending_events
+        self._pending_events = []
         if self.state != "running" or self.tracker is None:
             return self._result(0.0, 0.0, None, self.state, events=events)
         if self._img_t is None:
