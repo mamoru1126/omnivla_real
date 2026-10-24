@@ -101,6 +101,7 @@ check "rsync -aR --info=progress2 $T/data/./topomaps/course_a me@jet:/opt/o/data
     env NAV_MODEL=edge TOPOMAP=course_a "$B/to_jetson.sh" me@jet --dest /opt/o
 check "$T/checkpoints/./omnivla-edge me@jet:omnivla_real/checkpoints/" env NAV_MODEL=edge TOPOMAP=course_a "$B/to_jetson.sh" me@jet
 check "configs/./robot.yaml configs/./navigator.yaml me@jet:omnivla_real/configs/" env TOPOMAP=course_a "$B/to_jetson.sh" me@jet --configs
+check "tar cf - -C configs robot.yaml navigator.yaml | ssh me@jet tar xf - -C omnivla_real/configs" env OMNIVLA_NO_RSYNC=1 TOPOMAP=course_a "$B/to_jetson.sh" me@jet --configs
 check "docker compose -f docker-compose.jetson.yml --profile standalone up -d" env TOPOMAP=/data/topomaps/course_a "$B/jetson.sh" up --standalone
 check "docker compose -f docker-compose.jetson.yml up -d" env TOPOMAP=/data/topomaps/course_a "$B/jetson.sh" up
 check "nav python3 tools/plot_nav_log.py /workspace/log/nav/latest" "$B/jetson.sh" plot
@@ -157,6 +158,7 @@ check "+ scp -P 4003" env ORIN_PORT=4003 "$B/orin.sh" sync
 check "git merge --ff-only FETCH_HEAD" env ORIN_HOST=me@orin "$B/orin.sh" sync
 check "+ ssh -t me@orin cd omnivla_real && bin/field.sh check --where" env ORIN_HOST=me@orin "$B/orin.sh" field check --where
 check "--exclude *.db3" env ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/fetch" "$B/orin.sh" fetch
+check "log/field && tar cf - --exclude=" env OMNIVLA_NO_RSYNC=1 ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/fetch" "$B/orin.sh" fetch
 check "+ git bundle create $T/x.bundle" "$B/orin.sh" bundle "$T/x.bundle"
 
 # --- 使い方の表示 ---

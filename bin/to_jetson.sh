@@ -9,6 +9,7 @@
 #        --dest DIR   Jetson 側のリポジトリ   --configs  configs/robot.yaml と navigator.yaml も送る
 #        --bag BAG    bag も送る (何回でも. 分割 bag はカンマ区切り)
 #        --dry-run    送るものを表示するだけ
+# rsync がこの PC か Jetson に無ければ ssh + tar で送る (毎回全部. OMNIVLA_NO_RSYNC=1 で常にそうする).
 # Jetson 側の .env の BAG_DIR / DATA_DIR / RUNS_DIR / CHECKPOINT_DIR は既定 (./bags など) のままとする.
 source "$(dirname "$0")/_lib.sh"
 [ $# -ge 1 ] && [[ $1 != -* ]] || usage 1
@@ -18,6 +19,7 @@ DEST=omnivla_real
 CONFIGS=0
 BAGS=()
 RSYNC=(rsync -aR --info=progress2)
+DRY=0
 while [ $# -gt 0 ]; do
     case $1 in
         --dest) DEST=$2; shift ;;
@@ -27,7 +29,10 @@ while [ $# -gt 0 ]; do
             BAGS+=("${_b[@]}")
             shift
             ;;
-        --dry-run | -n) RSYNC+=(-n -v) ;;
+        --dry-run | -n)
+            RSYNC+=(-n -v)
+            DRY=1
+            ;;
         *) die "知らないオプション: $1" ;;
     esac
     shift
@@ -72,6 +77,29 @@ if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ]; then
     rsync() { echo "+ rsync $*"; }
 fi
 ssh "$HOST" "mkdir -p $DEST/bags $DEST/data $DEST/runs $DEST/checkpoints"
+# rsync が無ければ ssh + tar で送る
+USE_RSYNC=1
+if [ "${OMNIVLA_NO_RSYNC:-0}" = 1 ]; then
+    USE_RSYNC=0
+elif [ "${OMNIVLA_DRY_RUN:-0}" != 1 ]; then
+    command -v rsync > /dev/null 2>&1 || USE_RSYNC=0
+    [ "$USE_RSYNC" = 0 ] || ssh "$HOST" "command -v rsync" > /dev/null 2>&1 || USE_RSYNC=0
+fi
+[ "$USE_RSYNC" = 1 ] || say "rsync が無いので ssh + tar で送ります (毎回全部送るので、重みは時間がかかります)"
+# send <元のフォルダ> <その下のパス...> <送り先のフォルダ>
+send() {
+    local base=$1 to=${*: -1}
+    local items=("${@:2:$#-2}")
+    if [ "$USE_RSYNC" = 1 ]; then
+        local src=()
+        for i in "${items[@]}"; do src+=("$base/./$i"); done
+        "${RSYNC[@]}" "${src[@]}" "$HOST:$to/"
+    elif [ "$DRY" = 1 ] || [ "${OMNIVLA_DRY_RUN:-0}" = 1 ]; then
+        echo "+ tar cf - -C $base ${items[*]} | ssh $HOST tar xf - -C $to"
+    else
+        tar cf - -C "$base" "${items[@]}" | ssh "$HOST" "mkdir -p $to && tar xf - -C $to"
+    fi
+}
 for p in "${SEND[@]}"; do
     case $p in
         /runs/* | /data/* | /checkpoints/* | /bags/*) ;;
@@ -81,11 +109,11 @@ for p in "${SEND[@]}"; do
     k=${k%%/*}
     need "$p"
     say "$p"
-    "${RSYNC[@]}" "$(host_dir "$k")/./${p#/"$k"/}" "$HOST:$DEST/$k/"
+    send "$(host_dir "$k")" "${p#/"$k"/}" "$DEST/$k"
 done
 if [ "$CONFIGS" = 1 ]; then
     say "configs/robot.yaml configs/navigator.yaml"
-    "${RSYNC[@]}" configs/./robot.yaml configs/./navigator.yaml "$HOST:$DEST/configs/"
+    send configs robot.yaml navigator.yaml "$DEST/configs"
 fi
 say "送りました. Jetson の $DEST/.env に次を書いて bin/jetson.sh up:"
 echo "NAV_MODEL=$MODEL"
