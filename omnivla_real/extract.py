@@ -2,16 +2,20 @@
 
 画像は sample_rate [Hz] ごとに 1 枚だけデコードして JPEG で保存する (全フレームはメモリに載せない)。
 時刻は robot.yaml の time_source に従う:
-  auto   : メッセージに header.stamp があればそれ、無ければ bag の記録時刻
+  auto   : メッセージに header.stamp があればそれ、無ければ bag の記録時刻.
+           ただし header.stamp が記録時刻から 60 秒以上ずれているトピックがあれば (カメラが 0 = 1970 年や起動からの
+           時間を付けている等, 別の時計)、その bag は全トピック記録時刻にする (時刻の基準を混ぜない)
   header : header.stamp (無いメッセージ (Twist など) は記録時刻)
   bag    : 全て記録時刻 (センサの時計がずれているロボット向け)
+画像以外のトピック (odom / cmd / localization) が bag に無いときは警告だけ出して読み飛ばす
+(Orin で録った bag には /cmd_vel が無いことがある. pose_source: odom ならラベル作りに cmd は要らない)。
 """
 from __future__ import annotations
 
 import math
 import os
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -45,6 +49,8 @@ class Streams:
     bag_start: float = 0.0
     bag_end: float = 0.0
     clock_offsets: Dict[str, float] = field(default_factory=dict)       # topic -> median(header - bag) [s]
+    time_source_used: str = ""                                          # 実際に使った時刻 (auto / header / bag)
+    notes: List[str] = field(default_factory=list)                      # 読み込み時の注意 (無いトピック, 時刻の切替)
 
     def odom_track(self) -> PoseTrack:
         return PoseTrack.from_arrays(self.odom_t, self.odom_x, self.odom_y, self.odom_yaw)
@@ -72,20 +78,43 @@ def _msg_time(stamp: Optional[float], t_bag: float, mode: str) -> float:
     return stamp
 
 
+CLOCK_MISMATCH_S = 60.0   # header.stamp と記録時刻がこれ以上ずれていたら「別の時計」とみなす
+
+
+def detect_clock_mismatch(source, topics: Sequence[str], start: Optional[float] = None,
+                          stop: Optional[float] = None, max_msgs: int = 400) -> Dict[str, float]:
+    """bag の先頭 max_msgs 件で、header.stamp - 記録時刻 の中央値が CLOCK_MISMATCH_S を超えるトピック -> その値."""
+    offs: Dict[str, List[float]] = {}
+    for k, m in enumerate(source.messages(topics, start=start, stop=stop)):
+        stamp = header_stamp(m.msg)
+        if stamp is not None:
+            offs.setdefault(m.topic, []).append(stamp - m.t_bag)
+        if k + 1 >= max_msgs:
+            break
+    med = {t: float(np.median(v)) for t, v in offs.items() if v}
+    return {t: o for t, o in med.items() if abs(o) > CLOCK_MISMATCH_S}
+
+
 def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_rate: float,
                  start_sec: Optional[float] = None, end_sec: Optional[float] = None, name: str = "",
                  progress: Optional[Callable[[str], None]] = None, decode_images: bool = True) -> Streams:
     """source: BagReader (open 済み) か ListSource. start_sec/end_sec は bag 先頭からの秒数."""
     tp = robot.topics
     topics = source.topics()
-    wanted = [t for t in (tp.image, tp.odom, tp.cmd, tp.localization) if t]
-    for t in wanted:
-        if t not in topics:
-            raise KeyError(f"topic '{t}' is not in the bag. available topics:\n  "
-                           + "\n  ".join(f"{k}  [{v[0]}]" for k, v in sorted(topics.items())))
+    listing = "\n  ".join(f"{k}  [{v[0]}]" for k, v in sorted(topics.items()))
+    if tp.image and tp.image not in topics:
+        raise KeyError(f"topic '{tp.image}' is not in the bag. available topics:\n  " + listing)
+    s = Streams(name=name, bag_start=source.start_time, bag_end=source.end_time)
+    wanted = [tp.image] if tp.image else []
+    for t in (tp.odom, tp.cmd, tp.localization):
+        if not t:
+            continue
+        if t in topics:
+            wanted.append(t)
+        else:   # 画像以外は無くても読む (使う所で必要なら分かりやすいエラーになる)
+            s.notes.append(f"topic '{t}' is not in the bag (skipped)")
     if tp.image and short_type(topics[tp.image][0]) not in IMAGE_TYPES:
         raise ValueError(f"{tp.image} is {topics[tp.image][0]}, not an image")
-    s = Streams(name=name, bag_start=source.start_time, bag_end=source.end_time)
     t_start = s.bag_start + start_sec if start_sec is not None else None
     t_stop = s.bag_start + end_sec if end_sec is not None else None
     if frame_dir and decode_images:
@@ -98,6 +127,14 @@ def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_ra
     next_due = None
     count = 0
     mode = robot.time_source
+    if mode == "auto":
+        bad = detect_clock_mismatch(source, wanted, t_start, t_stop)
+        if bad:
+            mode = "bag"
+            s.notes.append("header.stamp is from another clock (" + ", ".join(
+                f"{t}: {o:+.0f}s from the bag time" for t, o in sorted(bad.items()))
+                + "); using the bag (record) time for all topics")
+    s.time_source_used = mode
     for m in source.messages(wanted, start=t_start, stop=t_stop):
         count += 1
         if progress and count % 5000 == 0:
@@ -158,8 +195,10 @@ def read_streams(source, robot: RobotConfig, frame_dir: Optional[str], sample_ra
 
 
 def check_clock(streams: Streams, warn_threshold: float = 0.3) -> List[str]:
-    """header の時刻と記録時刻が大きくずれているトピックがあれば警告文を返す."""
-    msgs = []
+    """header の時刻と記録時刻が大きくずれているトピックがあれば警告文を返す (読み込み時の注意も含める)."""
+    msgs = list(streams.notes)
+    if streams.time_source_used == "bag":
+        return msgs
     for topic, off in streams.clock_offsets.items():
         if abs(off) > warn_threshold:
             msgs.append(f"{topic}: header.stamp is {off:+.2f}s from the bag time. If sensors use different "
