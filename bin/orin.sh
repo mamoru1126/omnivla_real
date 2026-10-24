@@ -8,6 +8,9 @@
 #   bin/orin.sh logs [--bag 名前]    # Orin の log/ (文字のファイルだけ) と configs/ .env を debug_log/orin_<日時>/ に
 #                                    #   持ってくる (bag の本体と画像は除くので数 MB. そのままコミットできる).
 #                                    #   --bag manual_<時刻>: その bag の本体を bags/ にコピー (Git には入らない)
+#   bin/orin.sh send <パス>...        # この PC のリポジトリの下のファイル・フォルダを、Orin のリポジトリの同じ場所へ送る
+#                                    #   (学習し直したモデルや topomap. 例 bin/orin.sh send runs/<run>/checkpoints/step_005000
+#                                    #   data/topomaps/course_b). ssh + tar なので rsync は要らない
 #   bin/orin.sh ssh                  # Orin に入る (リポジトリのフォルダで)
 #   bin/orin.sh bundle [ファイル]     # USB で運ぶ用の更新ファイル (Orin で: git fetch <ファイル> jetson && git merge --ff-only FETCH_HEAD,
 #                                    #   2 回目からは bin/field.sh update <ファイル>)
@@ -167,6 +170,23 @@ if git merge --ff-only FETCH_HEAD; then git log --oneline -1; else echo '[orin] 
                 say "-> $BD/$BAG ($(du -sh "$BD/$BAG" 2> /dev/null | awk '{print $1}'))"
             fi
         fi
+        ;;
+    send)
+        [ $# -ge 1 ] || die "使い方: bin/orin.sh send <パス>... (例 runs/<run>/checkpoints/step_005000 data/topomaps/course_b)"
+        REL=()
+        for p in "$@"; do
+            h=$(cd "$CALLER_PWD" && realpath -m -- "$p")
+            [ -e "$h" ] || die "見つかりません: $p"
+            [[ $h == "$ROOT"/* ]] || die "$p はリポジトリ ($ROOT) の下にありません (runs/ や data/ の下に置いてから)"
+            REL+=("${h#"$ROOT"/}")
+        done
+        say "Orin ($HOST:$REPO) へ送ります: ${REL[*]} ($(cd "$ROOT" && du -shc "${REL[@]}" 2> /dev/null | tail -1 | awk '{print $1}'))"
+        if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ]; then
+            echo "+ tar cf - -C $ROOT ${REL[*]} | ${SSH[*]} $HOST tar xf - -C $REPO"
+        else
+            tar cf - -C "$ROOT" "${REL[@]}" | "${SSH[@]}" "$HOST" "tar xf - -C $REPO"
+        fi
+        say "送りました. Orin で: bin/field.sh setup --model <runs/...> / --topomap <名前>  ->  bin/field.sh down --all  ->  bin/field.sh up"
         ;;
     ssh)
         run "${SSH[@]}" -t "$HOST" "cd $REPO && exec bash -l"

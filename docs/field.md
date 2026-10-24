@@ -73,12 +73,29 @@ bin/orin.sh fetch                # Orin の記録を debug_log/orin_<日時>/ �
 
 LAN が無い場合は Orin で `bin/field.sh collect /media/<USB>` (bag と画像を除いた tar.gz)。
 
+## 学習し直したモデルと新しい topomap を入れる
+
+学習 PC の `runs/<run>/checkpoints/step_XXXXXX/` と `data/topomaps/<名前>/` を、作業 PC のリポジトリの同じ場所にコピーしてから (USB か scp)。
+
+```bash
+# 作業 PC で
+bin/orin.sh send runs/<run>/checkpoints/step_005000 data/topomaps/course_b
+# Orin で
+bin/field.sh setup --model runs/<run>/checkpoints/step_005000 --topomap course_b
+bin/field.sh down --all
+bin/field.sh up --max-v 0.3
+```
+
+- `down --all` で推論サーバも止めて、`up` で新しいモデルを読み込ませる (推論サーバは起動したときのモデルのまま)。
+- 曲がりが足りなければ `--w-gain`。目安は 1 / (机上評価の「曲がる量の比」)。0.8 なら `--w-gain 1.2`。
+
 ## 困ったとき
 
 | 症状 | 確認 | 対処 |
 |---|---|---|
 | 指示値が 0 で類似度が null | `bin/field.sh status` が `step_state=waiting_image` | `bin/field.sh check` で画像の遅れを見る。`up` は既定で受け取ってからの時間で判定するので、時計のずれでは止まらない |
 | カメラ画像が届かない (check で NG) | 似た名前のトピックが表示される | `bin/field.sh topic image <名前>` → `bin/field.sh up` |
+| `start` で `reach_check=image` と出る / サブゴールが走っていないのに進む | `check` で「オドメトリが届いていない」 | /odom が届いてから `start` する (遅れて届けば自動で image_odom に切り替わる) |
 | 時計がずれている | `bin/field.sh time` | NTP で届かなければ `ATMOBI_SSH=<user>@192.168.0.100 bin/timesync.sh step` |
 | 類似度が低い / サブゴールが進まない (`where` で 0.9 未満) | topomap を撮った時とカメラ・景色が違う | 2 で録った bag から topomap を作り直す: `bin/field.sh topomap log/bags/manual_<時刻> course_today` → `bin/field.sh up --topomap course_today` |
 | 曲がりが弱い (外に膨らむ) | モデルの予測軌跡そのものが曲がり不足 (机上評価で実際の 7 割ほど) | `bin/field.sh up --max-v 0.3 --w-gain 1.3` (曲がる量を 1.3 倍. 1.5 までで様子を見る). `--max-v` で速度を落としても曲がり方 (曲率) は変わらない |

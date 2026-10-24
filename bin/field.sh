@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # 実機での走行の手順をまとめたもの (Orin の上で. ROS 2 Humble: .env の JETSON_ROS_DISTRO=humble). ネット不要.
 #
-#   bin/field.sh setup [--topomap 名前] # .env に走行用の値を書く (NAV_AUTOSTART=false, 画像の古さは受け取ってから, TOPOMAP)
+#   bin/field.sh setup [--topomap 名前] [--model runs/<run>/checkpoints/step_XXXXXX]
+#                                       # .env に走行用の値を書く (NAV_AUTOSTART=false, 画像の古さは受け取ってから, TOPOMAP,
+#                                       #   --model で FINETUNED_DIR = 学習し直したモデル. 反映は down --all -> up)
 #                                       #   ATMOBI PC のブラウザの「OmniVLA 開始」から起動した時も同じ設定になる
 #   bin/field.sh topic image|odom <名前> # robot.yaml のトピック名を変える (check で NG になった時)
 #   bin/field.sh check [--where]        # 走らせる前の確認 (時計・ネットワーク・重み・topomap・トピック・ノード). OK / 注意 / NG
@@ -112,6 +114,16 @@ case $CMD in
         while [ $# -gt 0 ]; do
             case $1 in
                 --topomap) set_env TOPOMAP "$(topomap_path "$2")"; shift ;;
+                --model)
+                    M=$(cpath runs "" "$2")
+                    [ -d "$(hpath "$M")/lora_adapter" ] || [ "${OMNIVLA_DRY_RUN:-0}" = 1 ] \
+                        || die "学習結果ではありません (lora_adapter/ が無い): $(hpath "$M")"
+                    set_env FINETUNED_DIR "$M"
+                    if running policy; then
+                        say "推論サーバは前のモデルのまま動いています. 読み込み直すには: bin/field.sh down --all -> bin/field.sh up"
+                    fi
+                    shift
+                    ;;
                 *) die "知らないオプション: $1" ;;
             esac
             shift

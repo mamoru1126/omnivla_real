@@ -151,6 +151,7 @@ check "NAV_OVERRIDES: engine.tracker.image_threshold=0.93 engine.image_age_from=
     "${H[@]}" NAV_OVERRIDES="engine.tracker.image_threshold=0.93 engine.image_age_from=receive" "$B/field.sh" up --topomap course_a --strict-time
 check "+ .env: NAV_OVERRIDES=\"engine.image_age_from=receive engine.max_image_age=1.0\"" "${H[@]}" "$B/field.sh" setup
 check "+ .env: TOPOMAP=/data/topomaps/course_a" "${H[@]}" "$B/field.sh" setup --topomap course_a
+check "+ .env: FINETUNED_DIR=/runs/r2/checkpoints/step_005000" "${H[@]}" "$B/field.sh" setup --model /runs/r2/checkpoints/step_005000
 check "topics.image: /usb_cam/compressed" "${H[@]}" "$B/field.sh" topic image /usb_cam/compressed
 check "+ sudo chronyd -Q -t 15 server 192.168.0.100 iburst" "$B/timesync.sh" check
 check "+ sudo chronyd -q -t 20 server 192.168.0.100 iburst" "$B/timesync.sh" step
@@ -163,6 +164,8 @@ check "+ ssh -t me@orin cd omnivla_real && bin/field.sh check --where" env ORIN_
 check "--exclude *.db3" env ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/fetch" "$B/orin.sh" fetch
 check "--exclude='*.jpg'" env ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/logs" "$B/orin.sh" logs
 check "tar cf - -C omnivla_real/log/bags manual_1" env ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/logs" BAG_DIR="$T/bags" "$B/orin.sh" logs --bag manual_1
+check "tar xf - -C omnivla_real" env ORIN_HOST=me@orin "$B/orin.sh" send configs/robot.yaml
+fails "見つかりません" env ORIN_HOST=me@orin "$B/orin.sh" send runs/nothing_here
 check "log/field && tar cf - --exclude=" env OMNIVLA_NO_RSYNC=1 ORIN_HOST=me@orin ORIN_FETCH_DEST="$T/fetch" "$B/orin.sh" fetch
 check "+ git bundle create $T/x.bundle" "$B/orin.sh" bundle "$T/x.bundle"
 
