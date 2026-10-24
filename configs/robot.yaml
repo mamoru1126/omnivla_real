@@ -9,7 +9,7 @@ topics:
   localization: ""                      # 任意: 自己位置 (PoseStamped / PoseWithCovarianceStamped / Odometry / /tf)
   localization_frame: map               # localization が /tf のとき: 親フレーム
   localization_child_frame: base_link   #                            子フレーム
-  eval_localization: ""                 # 評価だけに使う自己位置 (Pose / PoseStamped). 学習・走行には使わない
+  eval_localization: /atmobi/robot_pose                 # 評価だけに使う自己位置 (Pose / PoseStamped). 学習・走行には使わない
                                         #   (topomap を地図の座標で作る, 机上評価の答え合わせ, bin/run_eval.sh)
   cmd_v_field: ""                       # 指示値が独自メッセージの場合のフィールド (例 "drive.speed")
   cmd_w_field: ""
