@@ -51,6 +51,14 @@ def parse_modality_weights(weights: Dict) -> Dict[int, float]:
     return {modality_id(k): float(v) for k, v in weights.items()}
 
 
+def bag_factor(name: str, bag_weights: Dict[str, float]) -> float:
+    """bag の引く重み. bag_weights のキーは bag 名そのものか、その先頭部分 (例 "manual" で manual_1024_...). 無ければ 1."""
+    for k, v in (bag_weights or {}).items():
+        if name == str(k) or name.startswith(str(k)):
+            return float(v)
+    return 1.0
+
+
 def goal_dist(value) -> Optional[tuple]:
     """設定の image_goal_dist_m ([lo, hi] [m] / 空) -> (lo, hi) / None."""
     if not value:
@@ -68,6 +76,11 @@ def describe_data_options(cfg, ds: "BaseNavDataset") -> str:
                                else f"{cfg.image_goal_offset[0]}-{cfg.image_goal_offset[1]} frames ahead"),
              f"yaw_aug_deg={getattr(cfg, 'yaw_aug_deg', 0.0):g} (hfov {getattr(cfg, 'yaw_aug_hfov_deg', 90.0):g}deg)",
              f"{ds.num_cut_dropped} samples dropped (labels ran past a chunk cut)"]
+    bw = getattr(cfg, "bag_weights", None) or {}
+    counts = ds.bag_counts()
+    if counts:
+        parts.append("samples per bag: " + ", ".join(
+            f"{b}={n}" + (f" (x{bag_factor(b, bw):g})" if bw else "") for b, n in sorted(counts.items())))
     return "data: " + ", ".join(parts)
 
 
@@ -100,7 +113,7 @@ class BaseNavDataset(Dataset):
                 cut = cut_end_mask(n, 8, cfg.waypoint_spacing)
                 self.num_cut_dropped += int((valid & cut)[:n - 1].sum())
                 valid &= ~cut
-            self.trajs.append({"dir": d, "name": os.path.basename(d), "position": pos,
+            self.trajs.append({"dir": d, "name": os.path.basename(d), "bag": str(meta.get("bag", "")), "position": pos,
                                "yaw": yaw, "n": n, "arc": arc_length(pos),
                                "turn": turn_flags(pos, yaw, cfg.turn_horizon, cfg.turn_threshold_deg),
                                "perturbed": data["perturbed"], "valid": valid})
@@ -128,8 +141,25 @@ class BaseNavDataset(Dataset):
     def recovery_fraction(self) -> float:
         return float(self.recovery.mean()) if len(self.recovery) else 0.0
 
-    def sample_weights(self, turn_ratio: float, recovery_ratio: float = 0.0) -> np.ndarray:
-        return reweight(balanced_weights(self.turn, turn_ratio), self.recovery, recovery_ratio)
+    def sample_weights(self, turn_ratio: float, recovery_ratio: float = 0.0,
+                       bag_weights: Optional[Dict[str, float]] = None) -> np.ndarray:
+        w = reweight(balanced_weights(self.turn, turn_ratio), self.recovery, recovery_ratio)
+        if bag_weights:
+            w = w * self.bag_factors(bag_weights)
+            w = w / w.sum()
+        return w
+
+    def bag_factors(self, bag_weights: Dict[str, float]) -> np.ndarray:
+        """サンプルごとの bag の重み (bag_factor)."""
+        per_traj = [bag_factor(t["bag"], bag_weights) for t in self.trajs]
+        return np.array([per_traj[ti] for ti, _ in self.index], dtype=np.float64)
+
+    def bag_counts(self) -> Dict[str, int]:
+        out: Dict[str, int] = {}
+        for ti, _ in self.index:
+            b = self.trajs[ti]["bag"] or "?"
+            out[b] = out.get(b, 0) + 1
+        return out
 
     def num_frames(self) -> int:
         return int(sum(t["n"] for t in self.trajs))

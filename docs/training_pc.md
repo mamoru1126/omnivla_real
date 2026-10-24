@@ -123,6 +123,29 @@ bin/train.sh 7b --max_steps 3000   # 設定ファイルの値をオプション�
 - 学習のログの `data:` の行に、これらの設定と、60 秒ごとの区切りで外したサンプルの数が出ます (区切っただけの所の末尾は「その先で止まる」というウソの正解になるので使いません)。
 - 一番効くのはお手本の取り方です。走らせる速さで、なめらかに曲がり、何周か (コースの左寄り・右寄りも) 走ります。自律走行させた bag (モデル自身の動き) は学習に入れません。
 
+### コースが変わったとき (新しく手で走った bag で学習し直す)
+
+新しい bag を `bags/` に置いて、上から順に打ちます (`<新しい bag>` は bag の名前)。
+
+```bash
+bin/bag_info.sh <新しい bag>
+bin/make_dataset.sh <新しい bag>
+bin/shell.sh python3 tools/turn_stats.py /data/dataset
+bin/make_topomap.sh course_b <新しい bag>
+bin/train.sh 7b -d --val_bags --bag_weights '{"<新しい bag>": 3.0}'
+```
+
+- `bag_info.sh`: 画像・オドメトリのトピック名が `configs/robot.yaml` と同じか確認する。違えば robot.yaml を直す。`/cmd_vel` は無くてもよい。カメラの時刻 (header.stamp) が別の時計なら、変換が自動で記録時刻を使う (変換のログに `another clock` と出る)。
+- `make_dataset.sh`: 今の `data/dataset` に追加する (前の bag はそのまま)。
+- `turn_stats.py`: 新しい bag の「倒し切り %」が高ければ `label_smooth_sec` を 0.7〜1.0 に (`bin/train.sh 7b ... --label_smooth_sec 0.8`)。
+- `train.sh`: 前のコースの bag も全部使い、新しい bag を 3 倍引く。`--val_bags` (値なし) で検証用に bag を取り分けず、60 秒の塊の 1 割をランダムに検証に回す (`val_ratio`)。新しいコースの bag を 2 本以上録ったなら、1 本を `--val_bags <その bag>` で検証に回すとよい。7B は 5000 step で 6 時間ほど。ログは `docker logs -f omnivla_train_7b`。
+- 終わったら机上評価で前のモデルと比べる (`--finetuned_dir` で切り替え)。「曲がる量の比」(`turn_gain`) が 1 に近い方を使う。
+
+```bash
+bin/desk_eval.sh <新しい bag> course_b --finetuned_dir /runs/<新しい run>/checkpoints/step_005000
+bin/desk_eval.sh <新しい bag> course_b --finetuned_dir /runs/omnivla7b_20261009_134144/checkpoints/step_005000
+```
+
 ## 5. サブゴール画像列 (topomap) を作る
 
 コースを 1 回走った bag から、1 m ごとに画像を切り出します。

@@ -68,6 +68,7 @@ class EdgeFinetuneConfig:
     label_smooth_sec: float = 0.0                 # 正解をならす (7B と同じ)
     context_stride: int = 1                       # 観測履歴の間隔 [フレーム] (sample_rate 3Hz なら 1/3 秒おき)
     turn_sample_ratio: float = 0.5
+    bag_weights: Dict[str, float] = field(default_factory=dict)   # bag ごとの引く重み (7B と同じ)
     turn_threshold_deg: float = 45.0
     turn_horizon: int = 10
     val_turn_ratio: float = 0.5
@@ -256,8 +257,8 @@ def main(argv=None):
     say(f"samples: train={len(train_ds)} val={len(val_ds) if val_ds else 0}, "
         f"turning {train_ds.turn_fraction() * 100:.1f}% -> sampled at {cfg.turn_sample_ratio * 100:.0f}%")
     say(describe_data_options(cfg, train_ds))
-    sampler = WeightedEpochSampler(train_ds.sample_weights(cfg.turn_sample_ratio), len(train_ds), cfg.seed) \
-        if cfg.turn_sample_ratio > 0 else None
+    sampler = WeightedEpochSampler(train_ds.sample_weights(cfg.turn_sample_ratio, 0.0, cfg.bag_weights),
+                                   len(train_ds), cfg.seed) if cfg.turn_sample_ratio > 0 or cfg.bag_weights else None
     train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, sampler=sampler, shuffle=sampler is None,
                               num_workers=cfg.num_workers, collate_fn=edge_collate, drop_last=True,
                               persistent_workers=cfg.num_workers > 0)

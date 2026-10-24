@@ -21,6 +21,8 @@ label_smooth_sec: 0.5             # 正解 (この先の経路) を 0.5 秒で�
                                   #   いつ曲がるかが画像で決まらずモデルが遅く弱く曲がるため.
                                   #   目安: tools/turn_stats.py の「倒し切り %」が高い bag なら 0.5〜1.0, なめらかなら 0
 turn_sample_ratio: 0.5            # 曲がる場面を学習の 5 割で引く (コース走行は直進が多いため)
+bag_weights: {}                   # bag ごとの引く倍率 (bag 名かその先頭部分). コースが変わったら新しい bag を多めに:
+                                  #   {"manual_1024": 3.0}  (bag 名は python3 tools/turn_stats.py /data/dataset で確認)
 turn_threshold_deg: 15.0          # 曲がる場面の判定. データに合わせる: python3 tools/turn_stats.py /data/dataset
 turn_horizon: 10
 val_turn_ratio: 0.5

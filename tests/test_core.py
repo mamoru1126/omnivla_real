@@ -314,6 +314,17 @@ def test_nav_dataset_cut_ends_smoothing_and_goal_distance():
             tr = ds.trajs[ti]
             if trajectory_cut_end(tr["dir"]):
                 assert t + 8 <= tr["n"] - 1
+        # bag ごとの倍率: 同じ走行を別名 (manual_x) でもう 1 本入れて、そちらを 3 倍引く
+        s2 = read_streams(ListSource(course()), robot_cfg(), os.path.join(tmp, "_frames", "m"), 3.0, name="manual_x")
+        convert_streams(s2, ConvertConfig(chunk_sec=6.0), os.path.join(tmp, "ds"), "manual_x")
+        ds2 = BaseNavDataset(find_trajectories(os.path.join(tmp, "ds")), NavDatasetConfig(metric_waypoint_spacing=0.2),
+                             train=False)
+        counts = ds2.bag_counts()
+        assert counts["r"] == counts["manual_x"] > 0
+        is_m = ds2.bag_factors({"manual": 3.0}) == 3.0
+        assert abs(ds2.sample_weights(0.0)[is_m].sum() - 0.5) < 1e-9
+        assert abs(ds2.sample_weights(0.0, bag_weights={"manual": 3.0})[is_m].sum() - 0.75) < 1e-9
+        assert abs(ds2.sample_weights(0.5, bag_weights={"manual": 3.0}).sum() - 1.0) < 1e-9
         cfg = NavDatasetConfig(metric_waypoint_spacing=0.2, label_smooth_sec=0.7,
                                goal=data_utils.GoalSamplingConfig(image_goal_dist_m=(0.5, 2.0),
                                                                  modality_weights={6: 1.0}))
