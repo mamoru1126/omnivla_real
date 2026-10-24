@@ -79,6 +79,8 @@ class FinetuneConfig:
     # 繰り返した曲がりは、いつ倒すかが画像で決まらず、モデルが遅くて弱い曲がりを覚えるので均す (0.5〜1.0)
     label_smooth_sec: float = 0.0
     turn_sample_ratio: float = 0.5     # 学習で「この先曲がる」サンプルを引く割合 (0 で一様 = 以前と同じ)
+    # bag ごとの引く重み (bag 名かその先頭部分 -> 倍率). コースが変わったとき新しい bag を多めに: {"manual_1024": 3.0}
+    bag_weights: Dict[str, float] = field(default_factory=dict)
     turn_threshold_deg: float = 45.0   # 曲がるサンプルの判定: turn_horizon フレーム以内に何度以上曲がるか
     turn_horizon: int = 10
     val_turn_ratio: float = 0.5        # 検証サンプルに含める曲がるサンプルの割合 (turn/ade で別集計)
@@ -225,10 +227,10 @@ def save_checkpoint(run_dir: Path, step: int, cfg: FinetuneConfig, vla, action_h
 
 
 def make_loader(ds, cfg: FinetuneConfig, shuffle: bool, distributed: bool, rank: int, world: int, collate_fn):
-    if shuffle and (cfg.turn_sample_ratio > 0 or cfg.recovery_sample_ratio > 0):
+    if shuffle and (cfg.turn_sample_ratio > 0 or cfg.recovery_sample_ratio > 0 or cfg.bag_weights):
         # 曲がるサンプルを turn_sample_ratio の割合で引く (元データはほぼ直進なので、そのままだと直進ばかり学習する)
-        # 外乱からの立て直しサンプルは少なくとも recovery_sample_ratio の割合で引く
-        weights = ds.sample_weights(cfg.turn_sample_ratio, cfg.recovery_sample_ratio)
+        # 外乱からの立て直しサンプルは少なくとも recovery_sample_ratio の割合で引く. bag_weights で bag ごとに倍率
+        weights = ds.sample_weights(cfg.turn_sample_ratio, cfg.recovery_sample_ratio, cfg.bag_weights)
         sampler = WeightedEpochSampler(weights, len(ds) // world, cfg.seed, rank)
     elif distributed:
         sampler = DistributedSampler(ds, num_replicas=world, rank=rank, shuffle=shuffle, seed=cfg.seed)
