@@ -79,6 +79,10 @@ check '--bag_weights {"run1": 5}' "$B/overnight.sh" run1.bag --weight 5 --course
 check "tools/bag_info.py /bags/run1.bag --robot configs/robot.yaml" "$B/overnight.sh" run1.bag
 check "desk_eval_b_new_course_original_model" env FINETUNED_DIR=/runs/r1/checkpoints/step_000010 "$B/overnight.sh" run1.bag
 fails "知らないオプション" "$B/overnight.sh" run1.bag --nope
+check "--goal_mode hindsight --pose_source odom --finetuned_dir /runs/r1/checkpoints/step_000010" \
+    "$B/turn_check.sh" run1.bag --new /runs/r1/checkpoints/step_000010
+check "5_new_course_topomap_strict_new" env FINETUNED_DIR=/runs/r1/checkpoints/step_000010 TURN_CHECK_COURSE=course_a \
+    "$B/turn_check.sh" run1.bag --new /runs/r1/checkpoints/step_000010
 check "--loc_topic /localization" "$B/run_eval.sh" run1.bag course_a --loc_topic /localization
 
 # --- 学習 PC で実機と同じ構成 ---
