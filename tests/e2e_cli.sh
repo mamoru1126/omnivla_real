@@ -65,9 +65,11 @@ python3 - "$OUT" <<'PY'
 import json, sys
 o = sys.argv[1]
 d = json.load(open(f"{o}/desk_eval_oracle_evalloc/report.json"))["subgoals"]
-print("desk_eval (eval_localization) reach_check", d["reach_check"], "reached", d["reached_goal"],
+print("desk_eval (eval_localization) reach_check", d["reach_check"], "last", d["last_subgoal"], "/", d["num_nodes"] - 1,
       "|index - truth| p90", d["index_minus_truth_abs_p90"])
-assert d["reach_check"] == "image_odom" and d["reached_goal"]
+# ナビは実機と同じ画像 + 道のり (自己位置は渡さない). 正解のサブゴール番号は自己位置から
+assert d["reach_check"] == "image_odom" and d["last_subgoal"] >= d["num_nodes"] - 2
+assert d["index_minus_truth_abs_p90"] is not None and d["index_minus_truth_abs_p90"] <= 2
 r = json.load(open(f"{o}/run_eval/report.json"))
 print("run_eval completion", r["progress"]["completion"], "|xtrack| p95", r["all"]["abs_xtrack_m"]["p95"],
       "corners", len(r["corners"]))
