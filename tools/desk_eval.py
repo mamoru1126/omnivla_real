@@ -130,6 +130,12 @@ def text_report(s: dict) -> str:
     L.append(f"  ADE {fmt(w.get('ade_m'), ' m')}  FDE {fmt(w.get('fde_m'), ' m')}  向き {fmt(w.get('heading_err_deg'), ' deg')}")
     t = w.get("turn", {})
     L.append(f"  曲がる場面 (n={t.get('n')}): ADE {fmt(t.get('ade_m'), ' m')}  向き {fmt(t.get('heading_err_deg'), ' deg')}")
+    if w.get("turn_gain") is not None:
+        lag = w.get("turn_lag_frames")
+        L.append(f"  曲がる量の比 (予測 / 実際, 10 度以上曲がる所 n={w.get('turn_gain_n')}): {w['turn_gain']:.2f}"
+                 f"  (1 に近いほどよい. 0.7 なら 3 割曲がり不足)"
+                 + (f"   予測の遅れ {-lag} フレーム" if lag is not None and lag < 0 else
+                    ("   予測の遅れ なし" if lag is not None else "")))
     L.append("")
     L.append("[指示値 vs 記録された指示値]")
     L.append(f"  |v| 誤差 {fmt(c.get('v_mae'), ' m/s')}  |w| 誤差 {fmt(c.get('w_mae'), ' rad/s')}  "

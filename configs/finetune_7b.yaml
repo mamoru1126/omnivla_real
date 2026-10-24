@@ -11,11 +11,16 @@ val_bags: ["20260919_150554"]    # 例 [run3] : この bag の走行を検証に
 metric_waypoint_spacing: 0.0      # 0 = dataset_info.json の値 (1 フレームあたりの移動量) を使う
 waypoint_spacing: 1
 max_goal_dist: 30.0
-image_goal_offset: [2, 30]        # ゴール画像は 2〜30 フレーム先 (サブゴール間隔 1m が入る範囲に)
+image_goal_offset: [2, 30]        # (image_goal_dist_m が空のとき) ゴール画像は 2〜30 フレーム先
+image_goal_dist_m: [0.5, 2.5]     # ゴール画像は道のりで 0.5〜2.5 m 先 (走行のサブゴールは topomap の 1 m 間隔で
+                                  #   0.3〜1.5 m 先. 速さの違う bag を混ぜても同じ距離になる)
 pose_goal_offset: [2, 300]
 modality_weights:                 # 画像ゴールのみで学習 (自己位置があれば image_pose / pose を足してもよい)
   image: 1.0
-turn_sample_ratio: 0.3            # 曲がる場面を学習の 5 割で引く (コース走行は直進が多いため)
+label_smooth_sec: 0.5             # 正解 (この先の経路) を 0.5 秒でならす. 手動操作でスティックを短く倒して曲がると、
+                                  #   いつ曲がるかが画像で決まらずモデルが遅く弱く曲がるため.
+                                  #   目安: tools/turn_stats.py の「倒し切り %」が高い bag なら 0.5〜1.0, なめらかなら 0
+turn_sample_ratio: 0.5            # 曲がる場面を学習の 5 割で引く (コース走行は直進が多いため)
 turn_threshold_deg: 15.0          # 曲がる場面の判定. データに合わせる: python3 tools/turn_stats.py /data/dataset
 turn_horizon: 10
 val_turn_ratio: 0.5
@@ -24,6 +29,9 @@ crop_v: 0.1
 crop_h: 0.05
 flip_prob: 0.5
 color_jitter: 0.2
+yaw_aug_deg: 5.0                  # 現在画像を左右にずらして「向きが最大 5 度ずれた」状態を作り、元の経路へ戻る正解で
+                                  #   学習する (外れたら戻る). 0 で無し
+yaw_aug_hfov_deg: 90.0            # カメラの実際の水平画角 [deg] (robot.yaml の camera.hfov_deg と同じ値にする)
 num_workers: 6
 
 # --- optimization ---

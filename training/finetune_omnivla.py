@@ -52,7 +52,8 @@ from prismatic.vla.action_tokenizer import ActionTokenizer  # noqa: E402
 
 from common import action_loss, evaluate, parse_dataclass  # noqa: E402
 from nav_dataset import (NavDatasetConfig, OmniVLADataset, WeightedEpochSampler, data_summary,  # noqa: E402
-                         parse_modality_weights, resolve_metric_spacing, split_trajectories)
+                         describe_data_options, goal_dist, parse_modality_weights, resolve_metric_spacing,
+                         split_trajectories)
 
 
 @dataclass
@@ -69,8 +70,14 @@ class FinetuneConfig:
     waypoint_spacing: int = 1
     max_goal_dist: float = 30.0
     image_goal_offset: List[int] = field(default_factory=lambda: [2, 30])
+    # 画像ゴールを道のり [m] で選ぶ (例 [0.5, 2.5]). 空ならフレーム数 (image_goal_offset). 走行のサブゴールは
+    # topomap の 1m 間隔なので、速さの違う bag を混ぜても同じ距離のゴールで学習できる
+    image_goal_dist_m: List[float] = field(default_factory=list)
     pose_goal_offset: List[int] = field(default_factory=lambda: [2, 300])
     modality_weights: Dict[str, float] = field(default_factory=lambda: {"image": 1.0})
+    # 正解の位置と向きを時間方向にならす (ガウスの sigma [秒]. 0 で無し). 手動操作で「スティックを短く倒す」を
+    # 繰り返した曲がりは、いつ倒すかが画像で決まらず、モデルが遅くて弱い曲がりを覚えるので均す (0.5〜1.0)
+    label_smooth_sec: float = 0.0
     turn_sample_ratio: float = 0.5     # 学習で「この先曲がる」サンプルを引く割合 (0 で一様 = 以前と同じ)
     turn_threshold_deg: float = 45.0   # 曲がるサンプルの判定: turn_horizon フレーム以内に何度以上曲がるか
     turn_horizon: int = 10
@@ -83,6 +90,10 @@ class FinetuneConfig:
     crop_h: float = 0.05
     flip_prob: float = 0.5
     color_jitter: float = 0.2
+    # 向きのずれの水増し: 現在画像を左右にずらして (カメラを最大 yaw_aug_deg 回したのと同じ見え方)、正解を
+    # 元の経路へ戻る向きに回す。「向きがずれたら戻る」を教える. yaw_aug_hfov_deg = カメラの実際の水平画角
+    yaw_aug_deg: float = 0.0
+    yaw_aug_hfov_deg: float = 90.0
     num_workers: int = 6
     # --- optimization ---
     batch_size: int = 2
@@ -346,11 +357,13 @@ def main(argv=None):
         max_goal_dist=cfg.max_goal_dist,
         goal=GoalSamplingConfig(image_goal_offset=tuple(cfg.image_goal_offset),
                                 pose_goal_offset=tuple(cfg.pose_goal_offset),
-                                modality_weights=parse_modality_weights(cfg.modality_weights)),
+                                modality_weights=parse_modality_weights(cfg.modality_weights),
+                                image_goal_dist_m=goal_dist(cfg.image_goal_dist_m)),
         aug=AugmentConfig(enabled=cfg.augment, crop_v=cfg.crop_v, crop_h=cfg.crop_h, flip_prob=cfg.flip_prob,
-                          color_jitter=cfg.color_jitter),
+                          color_jitter=cfg.color_jitter, yaw_deg=cfg.yaw_aug_deg, hfov_deg=cfg.yaw_aug_hfov_deg),
         turn_horizon=cfg.turn_horizon,
         turn_threshold_deg=cfg.turn_threshold_deg,
+        label_smooth_sec=cfg.label_smooth_sec,
     )
     action_tokenizer = ActionTokenizer(processor.tokenizer)
     train_ds = OmniVLADataset(train_dirs, processor, action_tokenizer, ds_cfg, train=True, seed=cfg.seed)
@@ -363,6 +376,7 @@ def main(argv=None):
     say(f"turning samples in train data: {train_ds.turn_fraction() * 100:.1f}% "
         f"(> {cfg.turn_threshold_deg:.0f}deg within {cfg.turn_horizon} frames) -> sampled at "
         + (f"{cfg.turn_sample_ratio * 100:.0f}%" if cfg.turn_sample_ratio > 0 else "natural rate"))
+    say(describe_data_options(cfg, train_ds))
 
     def collate_fn(items):
         return collate(items, processor.tokenizer.pad_token_id, processor.tokenizer.model_max_length)

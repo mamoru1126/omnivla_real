@@ -107,6 +107,20 @@ def denormalize_actions(actions_norm: np.ndarray, metric_spacing: float) -> np.n
     return a
 
 
+def rotate_labels(actions: np.ndarray, goal_pose: np.ndarray, dyaw: float) -> Tuple[np.ndarray, np.ndarray]:
+    """ロボットの向きが dyaw [rad] (左が正) だけずれていたとしたときの正解 (同じ位置・同じ未来の経路を、
+    ずれた向きのロボット座標で見たもの). 位置は -dyaw 回転、向きは -dyaw."""
+    actions = np.array(actions, dtype=np.float32, copy=True)
+    goal_pose = np.array(goal_pose, dtype=np.float32, copy=True)
+    c, s = math.cos(dyaw), math.sin(dyaw)
+    for a in (actions.reshape(-1, 4), goal_pose.reshape(-1, 4)):
+        x, y = a[:, 0].copy(), a[:, 1].copy()
+        a[:, 0], a[:, 1] = c * x + s * y, -s * x + c * y
+        co, si = a[:, 2].copy(), a[:, 3].copy()
+        a[:, 2], a[:, 3] = co * c + si * s, si * c - co * s   # cos/sin(θ - dyaw)
+    return actions, goal_pose
+
+
 def flip_left_right(actions: np.ndarray, goal_pose: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """画像の左右反転に合わせて y と sin(yaw) の符号を反転 (公式 dataset と同じ)."""
     actions = np.array(actions, copy=True)
@@ -128,6 +142,9 @@ class GoalSamplingConfig:
     pose_goal_offset: Tuple[int, int] = (2, 300)    # ポーズを含む modality の場合
     # modality id -> 重み
     modality_weights: Dict[int, float] = field(default_factory=lambda: {6: 0.5, 5: 0.25, 4: 0.25})
+    # 画像のみの場合、ゴールを「道のりで何 m 先」で選ぶ (lo, hi). None ならフレーム数 (image_goal_offset).
+    # 走行中のサブゴール (topomap, 1m 間隔) は 0.3〜1.5m 先なので、速さの違う bag を混ぜても同じ距離になるようにする
+    image_goal_dist_m: Optional[Tuple[float, float]] = None
 
 
 def build_sample_index(traj_lengths: Sequence[int], min_len: int = 2) -> List[Tuple[int, int]]:
@@ -167,12 +184,29 @@ def choose_modality(rng: np.random.Generator, weights: Dict[int, float]) -> int:
     return int(rng.choice(ids, p=p / p.sum()))
 
 
+def arc_length(positions: np.ndarray) -> np.ndarray:
+    """各フレームまでの道のり [m] (先頭 0)."""
+    p = np.asarray(positions, dtype=np.float64).reshape(-1, 2)
+    if len(p) == 0:
+        return np.zeros(0)
+    return np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(p, axis=0).T))])
+
+
 def sample_goal_offset(rng: np.random.Generator, t: int, n: int, modality: int,
-                       cfg: GoalSamplingConfig) -> int:
-    """modality に応じたゴールのフレームオフセット (>=1) を返す."""
+                       cfg: GoalSamplingConfig, arc: Optional[np.ndarray] = None) -> int:
+    """modality に応じたゴールのフレームオフセット (>=1) を返す.
+    arc (各フレームの道のり) と cfg.image_goal_dist_m があれば、画像のみのゴールは道のりで選ぶ。"""
     remaining = n - 1 - t
     if remaining < 1:
         raise ValueError("t must have at least one future frame")
+    if modality == 6 and cfg.image_goal_dist_m and arc is not None:
+        lo, hi = float(cfg.image_goal_dist_m[0]), float(cfg.image_goal_dist_m[1])
+        d = np.asarray(arc[t + 1:n], dtype=np.float64) - float(arc[t])
+        cand = np.nonzero((d >= lo) & (d <= hi))[0]
+        if cand.size:
+            return int(cand[rng.integers(cand.size)]) + 1
+        within = np.nonzero(d <= hi)[0]   # 止まっている・軌跡の終わりが近い: hi 以内で一番先
+        return int(within[-1]) + 1 if within.size else 1
     if modality == 6:  # 画像のみ: 近距離ゴール
         lo, hi = cfg.image_goal_offset
     else:
@@ -225,27 +259,64 @@ class AugmentConfig:
     flip_prob: float = 0.5     # 左右反転 (行動・ゴールの y と sin も反転)
     color_jitter: float = 0.2  # 明るさ/コントラスト/彩度の変動幅
     image_size: int = 224      # OmniVLA の入力解像度 (固定)
+    # 向きのずれの水増し: 現在画像だけを左右にずらし (= カメラを最大 yaw_deg 回したのと同じ見え方)、
+    # 正解をそのずれから元の経路に戻る向きに回す。「向きがずれたら戻る」(コース外からの立て直し) を教える。
+    # hfov_deg はカメラの実際の水平画角 (robot.yaml の camera.hfov_deg. 画像のずらし量 <-> 角度の換算に使う)
+    yaw_deg: float = 0.0
+    hfov_deg: float = 90.0
 
 
 def make_targets(rng: np.random.Generator, positions: np.ndarray, yaws: np.ndarray, t: int,
                  goal_cfg: GoalSamplingConfig, metric_spacing: float, waypoint_spacing: int = 1,
-                 max_goal_dist: float = 30.0, force_modality: Optional[int] = None):
+                 max_goal_dist: float = 30.0, force_modality: Optional[int] = None,
+                 arc: Optional[np.ndarray] = None):
     """1 サンプル分の (modality, goal_t, actions(8,4), goal_pose(4,)) を作る (hindsight relabeling)."""
     n = len(positions)
     mod = int(force_modality) if force_modality is not None else choose_modality(rng, goal_cfg.modality_weights)
-    goal_t = t + sample_goal_offset(rng, t, n, mod, goal_cfg)
+    if arc is None and goal_cfg.image_goal_dist_m:
+        arc = arc_length(positions)
+    goal_t = t + sample_goal_offset(rng, t, n, mod, goal_cfg, arc)
     actions = compute_action_targets(positions, yaws, t, NUM_ACTIONS_CHUNK, waypoint_spacing, metric_spacing)
     goal_pose = compute_goal_pose(positions, yaws, t, goal_t, metric_spacing, max_goal_dist)
     return mod, goal_t, actions, goal_pose
 
 
+def yaw_shift_boxes(width: int, height: int, box: Tuple[int, int, int, int], yaw: float, hfov: float):
+    """切り抜き box (左, 上, 右, 下. 左右対称) を左右に動かして、カメラを yaw [rad] (左が正) 回したのと
+    ほぼ同じ見え方にする (小さい角度なら回転 = 横ずらし). 動かす余白が足りなければ窓を左右とも細くする.
+
+    戻り値: (現在画像の box, ゴール画像の box (同じ大きさで中央), 実際にずらした角度 [rad])
+    """
+    left, top, right, bottom = box
+    f = (width / 2.0) / math.tan(hfov / 2.0)          # 焦点距離 [px]
+    dx = int(round(-f * math.tan(yaw)))                 # 左を向く = 窓を左へ
+    margin = min(left, width - right)
+    if abs(dx) > margin:
+        extra = abs(dx) - margin
+        if right - left - 2 * extra < max(8, width // 4):   # 細くなりすぎる: ずらせる所まで
+            extra = max(0, (right - left - max(8, width // 4)) // 2)
+            dx = int(np.sign(dx)) * (margin + extra)
+        left, right = left + extra, right - extra
+    cur = (left + dx, top, right + dx, bottom)
+    return cur, (left, top, right, bottom), math.atan(-dx / f)
+
+
 def augment_pair(rng: np.random.Generator, cur: Image.Image, goal: Image.Image, actions: np.ndarray,
                  goal_pose: np.ndarray, aug: AugmentConfig, train: bool):
-    """クロップ (両画像同じ) -> 224x224 に縮小 -> 左右反転 (両画像+ラベル) -> 色変動 (画像ごと)."""
+    """クロップ (両画像同じ. yaw_deg>0 なら現在画像だけ左右にずらして正解を回す) -> 224x224 に縮小
+    -> 左右反転 (両画像+ラベル) -> 色変動 (画像ごと)."""
     if train and aug.enabled:
         u = (rng.random(), rng.random())
-        cur = cur.crop(random_crop_box(None, cur.width, cur.height, aug.crop_v, aug.crop_h, u))
-        goal = goal.crop(random_crop_box(None, goal.width, goal.height, aug.crop_v, aug.crop_h, u))
+        box_c = random_crop_box(None, cur.width, cur.height, aug.crop_v, aug.crop_h, u)
+        box_g = random_crop_box(None, goal.width, goal.height, aug.crop_v, aug.crop_h, u)
+        if aug.yaw_deg > 0:
+            want = math.radians(float(rng.uniform(-aug.yaw_deg, aug.yaw_deg)))
+            box_c, same_g, applied = yaw_shift_boxes(cur.width, cur.height, box_c, want, math.radians(aug.hfov_deg))
+            if goal.size == cur.size:
+                box_g = same_g
+            actions, goal_pose = rotate_labels(actions, goal_pose, applied)
+        cur = cur.crop(box_c)
+        goal = goal.crop(box_g)
     cur = resize_naive(cur, aug.image_size)
     goal = resize_naive(goal, aug.image_size)
     if train and aug.enabled:
@@ -309,6 +380,36 @@ def reweight(weights: Sequence[float], flags: Sequence[bool], ratio: float) -> n
     ratio = min(float(ratio), 1.0)
     w = np.where(flags, w * ratio / m_pos, w * (1.0 - ratio) / (1.0 - m_pos))
     return w / w.sum()
+
+
+def cut_end_mask(n: int, len_pred: int = NUM_ACTIONS_CHUNK, spacing: int = 1) -> np.ndarray:
+    """区切っただけの軌跡の末尾で、正解 (この先 len_pred 点) が軌跡の外にはみ出すフレーム (True = 使わない)."""
+    out = np.zeros(int(n), dtype=bool)
+    k = int(len_pred) * max(1, int(spacing))
+    out[max(0, int(n) - k):] = True
+    return out
+
+
+def smooth_trajectory(positions: np.ndarray, yaws: np.ndarray, sigma_frames: float) -> Tuple[np.ndarray, np.ndarray]:
+    """位置と向きを時間方向にガウスでならす (sigma_frames [フレーム]).
+
+    手動操作で「スティックを短く倒す」を繰り返した曲がり方は、いつ倒すかが画像から決まらないので、そのまま
+    正解にするとモデルは平均 (遅くて弱い曲がり) を覚える。ならして「なめらかに曲がる経路」を正解にする。
+    端は点対称に折り返す (端での速度を保つ). 向きは unwrap してからならす (返す向きも unwrap のまま)."""
+    p = np.asarray(positions, dtype=np.float64).reshape(-1, 2)
+    y = np.unwrap(np.asarray(yaws, dtype=np.float64).reshape(-1))
+    n = len(y)
+    if sigma_frames <= 0 or n < 3:
+        return p.copy(), y
+    m = min(int(math.ceil(3.0 * sigma_frames)), n - 1)
+    k = np.exp(-0.5 * (np.arange(-m, m + 1) / float(sigma_frames)) ** 2)
+    k /= k.sum()
+
+    def sm(a: np.ndarray) -> np.ndarray:
+        pad = np.concatenate([2 * a[0] - a[m:0:-1], a, 2 * a[-1] - a[-2:-m - 2:-1]])
+        return np.convolve(pad, k, mode="valid")
+
+    return np.stack([sm(p[:, 0]), sm(p[:, 1])], axis=1), sm(y)
 
 
 def summarize_spacing(positions: np.ndarray) -> Optional[float]:
