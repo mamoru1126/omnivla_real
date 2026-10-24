@@ -13,6 +13,7 @@
 #   ORIN_HOST  ~/.ssh/config の名前か user@IP (既定 orin)
 #   ORIN_PORT  ssh のポート (22 以外のとき. 例 4003. ~/.ssh/config に書いてあれば不要)
 #   ORIN_REPO  Orin のリポジトリ (既定 omnivla_real = ホームの下)
+#   ORIN_JUMP  踏み台 (例 atmobi@10.42.0.1. 作業 PC → 踏み台 → Orin. 踏み台のポートが 22 以外なら atmobi@10.42.0.1:2222)
 # 重み・topomap・bag を送るのは bin/to_jetson.sh <ホスト> (ポートは ~/.ssh/config に書く)
 source "$(dirname "$0")/_lib.sh"
 
@@ -22,10 +23,16 @@ REPO=$(env_get ORIN_REPO omnivla_real)
 SSH=(ssh)
 SCP=(scp)
 RSH=ssh
+JUMP=$(env_get ORIN_JUMP "")
+if [ -n "$JUMP" ]; then
+    SSH+=(-o "ProxyJump=$JUMP")
+    SCP+=(-o "ProxyJump=$JUMP")
+    RSH="$RSH -o ProxyJump=$JUMP"
+fi
 if [ -n "$PORT" ]; then
     SSH+=(-p "$PORT")
     SCP+=(-P "$PORT")
-    RSH="ssh -p $PORT"
+    RSH="$RSH -p $PORT"
 fi
 if [ "${OMNIVLA_DRY_RUN:-0}" = 1 ]; then
     run() { echo "+ $*"; }
