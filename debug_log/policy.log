@@ -1,0 +1,30 @@
+policy-1  |   File "/workspace/tools/policy_server.py", line 79, in <module>
+policy-1  |     main()
+policy-1  |   File "/workspace/tools/policy_server.py", line 54, in main
+policy-1  |     policy = make_policy(nav.model)
+policy-1  |   File "/workspace/omnivla_real/nav_config.py", line 93, in make_policy
+policy-1  |     return load_policy(m.model, m.weights, m.finetuned_dir, m.device, m.metric_waypoint_spacing or None, m.half,
+policy-1  |   File "/workspace/omnivla_real/policy_base.py", line 30, in load_policy
+policy-1  |     return OmniVLAPolicy(PolicyConfig(vla_path=weights or "/checkpoints/omnivla-original",
+policy-1  |   File "/workspace/omnivla_real/policy.py", line 55, in __init__
+policy-1  |     self.c = components or load_omnivla(cfg.vla_path, cfg.step, cfg.finetuned_dir, cfg.device, cfg.merge_lora)
+policy-1  |   File "/workspace/omnivla_real/omnivla_model.py", line 171, in load_omnivla
+policy-1  |     vla, processor = load_base_vla(base, dev)
+policy-1  |   File "/workspace/omnivla_real/omnivla_model.py", line 121, in load_base_vla
+policy-1  |     vla.to(dtype=dtype, device=device)
+policy-1  |   File "/usr/local/lib/python3.10/dist-packages/transformers/modeling_utils.py", line 2692, in to
+policy-1  |     return super().to(*args, **kwargs)
+policy-1  |   File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1174, in to
+policy-1  |     return self._apply(convert)
+policy-1  |   File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 780, in _apply
+policy-1  |     module._apply(fn)
+policy-1  |   File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 780, in _apply
+policy-1  |     module._apply(fn)
+policy-1  |   File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 780, in _apply
+policy-1  |     module._apply(fn)
+policy-1  |   [Previous line repeated 3 more times]
+policy-1  |   File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 805, in _apply
+policy-1  |     param_applied = fn(param)
+policy-1  |   File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1160, in convert
+policy-1  |     return t.to(
+policy-1  | RuntimeError: NVML_SUCCESS == r INTERNAL ASSERT FAILED at "/opt/pytorch/c10/cuda/CUDACachingAllocator.cpp":838, please report a bug to PyTorch. 
