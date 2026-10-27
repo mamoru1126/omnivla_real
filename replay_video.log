@@ -1,0 +1,5 @@
+/runs/replay/nav/20261027_022935: 317 steps, 50.5 s -> 127 frames (10 fps, x4)
+  0/127
+-> /runs/replay/video.mp4
+[replay_video] 動画: /tmp/e2e/runs_replay/replay/video.mp4
+duration 12.700000 s

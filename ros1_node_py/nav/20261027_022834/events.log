@@ -1,0 +1,21 @@
+[-] start: 24 subgoals, reach_check=image_odom, sample_rate=3.0
+[1002.84] subgoal 0 -> 1/23 [image similarity 1.000 (node 0)]
+[1006.12] subgoal 1 -> 2/23 [passed by odometry (1.09m behind)]
+[1007.97] subgoal 2 -> 3/23 [passed by odometry (1.01m behind)]
+[1009.96] subgoal 3 -> 4/23 [passed by odometry (1.01m behind)]
+[1011.99] subgoal 4 -> 5/23 [passed by odometry (1.02m behind)]
+[1014.27] subgoal 5 -> 6/23 [passed by odometry (1.12m behind)]
+[1016.57] subgoal 6 -> 7/23 [passed by odometry (1.02m behind)]
+[1017.23] subgoal 7 -> 8/23 [image similarity 1.000 (node 7)]
+[1026.65] subgoal 8 -> 9/23 [passed by odometry (1.06m behind)]
+[1028.79] subgoal 9 -> 10/23 [passed by odometry (1.08m behind)]
+[1031.15] subgoal 10 -> 11/23 [passed by odometry (1.03m behind)]
+[1033.34] subgoal 11 -> 12/23 [passed by odometry (1.00m behind)]
+[1033.84] subgoal 12 -> 13/23 [image similarity 1.000 (node 12)]
+[1037.26] subgoal 13 -> 14/23 [passed by odometry (1.03m behind)]
+[1039.11] subgoal 14 -> 15/23 [passed by odometry (1.00m behind)]
+[1041.38] subgoal 15 -> 16/23 [passed by odometry (1.15m behind)]
+[1041.89] subgoal 16 -> 17/23 [image similarity 1.000 (node 16)]
+[1045.88] subgoal 17 -> 18/23 [passed by odometry (1.02m behind)]
+[-] stop: shutdown
+[1047.28] run closed: shutdown

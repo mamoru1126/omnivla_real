@@ -1,0 +1,28 @@
+run: /runs/replay/nav/20261027_022935
+topomap: /data/topomap (24 subgoals)  modality: image  controller: trajectory  reach_check: auto
+model: {'device': 'cuda:0', 'finetuned_dir': '', 'half': False, 'metric_waypoint_spacing': 0.0, 'model': 'edge', 'server_model': 'edge', 'timeout': 10.0, 'url': 'http://127.0.0.1:8765', 'weights': ''}
+summary: reason=reached, reached=True, steps=317, final_dist_to_goal=0.12278875386813858, min_dist_to_goal=0.12278875386813858, path_length_m=23.68307124700366
+
+== サブゴールごとの区間 ==
+subgoal  0: steps 1-17 (17 steps)  goal_bearing +0 -> +180 deg  dist 0.00 -> -0.31 m
+subgoal  1: steps 18-25 (8 steps)  goal_bearing +0 -> +180 deg  dist -0.41 -> 0.00 m
+subgoal  4: steps 26-60 (35 steps)  goal_bearing +0 -> +180 deg  dist -0.10 -> -0.17 m
+subgoal  6: steps 61-89 (29 steps)  goal_bearing +0 -> +173 deg  dist -0.26 -> -0.61 m
+subgoal  9: steps 90-105 (16 steps)  goal_bearing +48 -> +19 deg  dist -0.69 -> 1.13 m
+subgoal 10: steps 106-119 (14 steps)  goal_bearing +20 -> -1 deg  dist 1.04 -> 1.00 m
+subgoal 12: steps 120-165 (46 steps)  goal_bearing +8 -> +12 deg  dist 0.90 -> 2.27 m
+subgoal 13: steps 166-186 (21 steps)  goal_bearing +30 -> +35 deg  dist 2.19 -> 1.35 m
+subgoal 15: steps 187-208 (22 steps)  goal_bearing +50 -> -0 deg  dist 1.28 -> 1.40 m
+subgoal 17: steps 209-232 (24 steps)  goal_bearing -1 -> +0 deg  dist 1.31 -> 1.14 m
+subgoal 19: steps 233-261 (29 steps)  goal_bearing +4 -> +14 deg  dist 1.05 -> 0.39 m
+subgoal 22: steps 262-291 (30 steps)  goal_bearing +65 -> +3 deg  dist 0.30 -> 1.16 m
+subgoal 23: steps 292-317 (26 steps)  goal_bearing +2 -> +0 deg  dist 1.08 -> -0.61 m
+
+== 予測軌跡がサブゴールと逆側を向いたステップ (0/317) ==
+   (サブゴールが |bearing|>15deg の横にあるのに, 予測の 5 点目が反対側) -> モデル側の問題
+
+== 旋回指令が予測軌跡と逆のステップ (0/317) ==
+   -> 制御 (軌跡 -> v, w の変換) 側の問題。0 であるべき
+
+== 予測した旋回を実行できていない区間 (0/317 steps) ==
+   (予測 8 点が |w|>=0.15rad/s の旋回を表すのに, 指令 w がその 50% 未満) -> 制御側の問題。0 に近いべき

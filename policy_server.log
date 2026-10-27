@@ -1,0 +1,25 @@
+[policy_server] loading edge ...
+/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[edge] ready (device=cpu, metric_waypoint_spacing=0.1803149800959821, context_stride=1)
+[policy_server] loaded in 2.7s
+[policy_server] warmup done (latency 126 ms)
+[policy_server] image preprocess (robot.yaml): crop=[0.0, 0.0, 0.0, 0.0] width=320 rotate180=False
+[policy_server] edge on http://127.0.0.1:8765
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 33042)
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/http/server.py", line 439, in handle
+    self.handle_one_request()
+  File "/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/http/server.py", line 405, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+  File "/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/socket.py", line 717, in readinto
+    return self._sock.recv_into(b)
+ConnectionResetError: [Errno 104] Connection reset by peer
+----------------------------------------

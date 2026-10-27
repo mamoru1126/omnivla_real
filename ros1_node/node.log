@@ -1,0 +1,22 @@
+[0m[INFO] [1793068054.925687716]: note: the C++ node always uses the policy server (model: edge runs in the server)[0m
+[0m[INFO] [1793068054.927928485]: connecting to the policy server http://127.0.0.1:8765[0m
+[0m[INFO] [1793068054.928893538]: policy server: edge at 127.0.0.1:8765 (history=yes)[0m
+[0m[INFO] [1793068054.928979871]: ready: model=edge, sample_rate=3.000000 Hz, topomap=/tmp/e2e/topomap (24 subgoals)[0m
+[0m[INFO] [1793068054.929155984]: debug page: http://<this machine>:8090[0m
+[0m[INFO] [1793068054.936552686]: waiting for /camera/image_raw/compressed and /odom[0m
+[0m[INFO] [1793068059.141289131, 1000.072955617]: start: 24 subgoals, reach_check=image_odom, log=/tmp/e2e/ros1_node/nav/20261027_022739[0m
+[0m[INFO] [1793068061.931240878, 1002.867140665]: subgoal 0 -> 1/23 [image similarity 1.000 (node 0)][0m
+[0m[INFO] [1793068063.492303233, 1004.430127477]: subgoal 1 -> 4/23 [image similarity 1.000 (node 3)][0m
+[0m[INFO] [1793068066.642931073, 1007.577969606]: subgoal 4 -> 6/23 [image similarity 1.000 (node 5)][0m
+[0m[INFO] [1793068073.959680011, 1014.891591271]: subgoal 6 -> 9/23 [image similarity 1.000 (node 8)][0m
+[0m[INFO] [1793068076.596994214, 1017.533396375]: subgoal 9 -> 10/23 [image similarity 1.000 (node 9)][0m
+[0m[INFO] [1793068078.452747975, 1019.389650986]: subgoal 10 -> 12/23 [image similarity 1.000 (node 11)][0m
+[0m[INFO] [1793068087.823342184, 1028.761044779]: subgoal 12 -> 13/23 [image similarity 1.000 (node 12)][0m
+[0m[INFO] [1793068089.544939642, 1030.476991770]: subgoal 13 -> 15/23 [image similarity 1.000 (node 14)][0m
+[0m[INFO] [1793068091.315935521, 1032.252728642]: subgoal 15 -> 16/23 [image similarity 1.000 (node 15)][0m
+[0m[INFO] [1793068094.313768381, 1035.248226023]: subgoal 16 -> 17/23 [image similarity 1.000 (node 16)][0m
+[0m[INFO] [1793068094.939847630, 1035.873352407]: subgoal 17 -> 18/23 [image similarity 1.000 (node 17)][0m
+[0m[INFO] [1793068096.185714472, 1037.123927624]: subgoal 18 -> 19/23 [image similarity 1.000 (node 18)][0m
+[0m[INFO] [1793068097.447199169, 1038.385549265]: subgoal 19 -> 20/23 [image similarity 1.000 (node 19)][0m
+[0m[INFO] [1793068100.155679809, 1041.088645105]: subgoal 20 -> 21/23 [image similarity 1.000 (node 20)][0m
+[0m[INFO] [1793068102.391666402, 1043.327354796]: subgoal 21 -> 23/23 [image similarity 1.000 (node 22)][0m

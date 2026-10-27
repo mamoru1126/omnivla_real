@@ -1,0 +1,33 @@
+run: /tmp/e2e/ros1_node/nav/20261027_022739
+topomap: /tmp/e2e/topomap (24 subgoals)  modality: image  controller: trajectory  reach_check: auto
+model: {'device': 'cuda:0', 'finetuned_dir': '', 'half': False, 'metric_waypoint_spacing': 0.0, 'model': 'edge', 'server_model': 'edge', 'timeout': 10.0, 'url': 'http://127.0.0.1:8765', 'weights': ''}
+
+== サブゴールごとの区間 ==
+subgoal  0: steps 1-17 (17 steps)  goal_bearing +0 -> +180 deg  dist 0.00 -> -0.22 m
+subgoal  1: steps 18-27 (10 steps)  goal_bearing +0 -> +180 deg  dist -0.31 -> -0.00 m
+subgoal  4: steps 28-47 (20 steps)  goal_bearing +0 -> +0 deg  dist -0.09 -> 1.25 m
+subgoal  6: steps 48-94 (47 steps)  goal_bearing +0 -> +169 deg  dist 1.15 -> -0.82 m
+subgoal  9: steps 95-111 (17 steps)  goal_bearing +45 -> +13 deg  dist -0.90 -> 0.92 m
+subgoal 10: steps 112-123 (12 steps)  goal_bearing +13 -> -1 deg  dist 0.84 -> 0.96 m
+subgoal 12: steps 124-183 (60 steps)  goal_bearing +8 -> +21 deg  dist 0.88 -> 0.94 m
+subgoal 13: steps 184-194 (11 steps)  goal_bearing +44 -> +29 deg  dist 0.85 -> 0.97 m
+subgoal 15: steps 195-205 (11 steps)  goal_bearing +42 -> +13 deg  dist 0.90 -> 2.14 m
+subgoal 16: steps 206-224 (19 steps)  goal_bearing +11 -> -0 deg  dist 2.07 -> 1.42 m
+subgoal 17: steps 225-228 (4 steps)  goal_bearing +0 -> +0 deg  dist 1.34 -> 2.00 m
+subgoal 18: steps 229-236 (8 steps)  goal_bearing +0 -> +0 deg  dist 1.90 -> 2.26 m
+subgoal 19: steps 237-244 (8 steps)  goal_bearing +4 -> +5 deg  dist 2.16 -> 2.44 m
+subgoal 20: steps 245-261 (17 steps)  goal_bearing +18 -> +29 deg  dist 2.34 -> 1.71 m
+subgoal 21: steps 262-275 (14 steps)  goal_bearing +48 -> +49 deg  dist 1.62 -> 1.42 m
+subgoal 23: steps 276-302 (27 steps)  goal_bearing +56 -> -1 deg  dist 1.35 -> 0.84 m
+
+== 予測軌跡がサブゴールと逆側を向いたステップ (0/302) ==
+   (サブゴールが |bearing|>15deg の横にあるのに, 予測の 5 点目が反対側) -> モデル側の問題
+
+== 旋回指令が予測軌跡と逆のステップ (0/302) ==
+   -> 制御 (軌跡 -> v, w の変換) 側の問題。0 であるべき
+
+== 予測した旋回を実行できていない区間 (0/302 steps) ==
+   (予測 8 点が |w|>=0.15rad/s の旋回を表すのに, 指令 w がその 50% 未満) -> 制御側の問題。0 に近いべき
+
+-> /tmp/e2e/ros1_node/nav/20261027_022739/overview.png
+-> /tmp/e2e/ros1_node/nav/20261027_022739/timeline.png
