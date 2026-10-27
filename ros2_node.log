@@ -1,0 +1,43 @@
+node ready
+----- check
+/cmd_vel: 470 msgs (467 non-zero)
+   v in [0.000, 0.040]  w in [0.000, 1.000]
+/omnivla/path: 281 msgs, poses per path [9]
+/omnivla/status: 47 msgs, states ['idle', 'running']
+   last: {"state": "running", "subgoal": 17, "num_nodes": 24, "reach_check": "image_odom", "similarity": 1.0000000586046482, "distance": -1.0425039643581684, "travel_m": 21.165045855876713, "v": 0.03978066727524494, "w": 1.0, "latency": 0.13485264778137207, "time": 1793067968.6570542, "topomap": "/tmp/e2e/topomap"}
+OK
+----- node.log (tail)
+[INFO] [1793067916.956388395] [omnivla_navigator]: loading model (edge) ...
+/usr/local/lib/python3.10/dist-packages/torch/nn/modules/transformer.py:286: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+[edge] ready (device=cpu, metric_waypoint_spacing=0.1803149800959821, context_stride=1)
+[INFO] [1793067918.679308246] [omnivla_navigator]: ready: model=edge, sample_rate=3.0 Hz, topomap=/tmp/e2e/topomap (24 subgoals)
+[INFO] [1793067918.687516715] [omnivla_navigator]: waiting for /camera/image_raw/compressed and /odom
+[INFO] [1793067922.757758458] [omnivla_navigator]: start: 24 subgoals, reach_check=image_odom, log=/tmp/e2e/ros2_node/nav/20261027_022522
+[INFO] [1793067925.661344670] [omnivla_navigator]: subgoal 0 -> 1/23 [image similarity 1.000 (node 0)]
+[INFO] [1793067928.811177099] [omnivla_navigator]: subgoal 1 -> 2/23 [passed by odometry (1.02m behind)]
+[INFO] [1793067930.817214529] [omnivla_navigator]: subgoal 2 -> 3/23 [passed by odometry (1.02m behind)]
+[INFO] [1793067932.819009571] [omnivla_navigator]: subgoal 3 -> 4/23 [passed by odometry (1.03m behind)]
+[INFO] [1793067934.970623295] [omnivla_navigator]: subgoal 4 -> 5/23 [passed by odometry (1.11m behind)]
+[INFO] [1793067936.811707089] [omnivla_navigator]: subgoal 5 -> 6/23 [passed by odometry (1.01m behind)]
+[INFO] [1793067939.625081400] [omnivla_navigator]: subgoal 6 -> 7/23 [passed by odometry (1.12m behind)]
+[INFO] [1793067940.302100616] [omnivla_navigator]: subgoal 7 -> 8/23 [image similarity 1.000 (node 7)]
+[INFO] [1793067949.626771156] [omnivla_navigator]: subgoal 8 -> 9/23 [passed by odometry (1.14m behind)]
+[INFO] [1793067951.482650076] [omnivla_navigator]: subgoal 9 -> 10/23 [passed by odometry (1.02m behind)]
+[INFO] [1793067953.964115074] [omnivla_navigator]: subgoal 10 -> 11/23 [passed by odometry (1.04m behind)]
+[INFO] [1793067956.151274368] [omnivla_navigator]: subgoal 11 -> 12/23 [passed by odometry (1.00m behind)]
+[INFO] [1793067956.670346454] [omnivla_navigator]: subgoal 12 -> 13/23 [image similarity 1.000 (node 12)]
+[INFO] [1793067960.032520643] [omnivla_navigator]: subgoal 13 -> 14/23 [passed by odometry (1.01m behind)]
+[INFO] [1793067961.910238991] [omnivla_navigator]: subgoal 14 -> 15/23 [passed by odometry (1.00m behind)]
+[INFO] [1793067964.009967426] [omnivla_navigator]: subgoal 15 -> 16/23 [passed by odometry (1.06m behind)]
+[INFO] [1793067964.510386741] [omnivla_navigator]: subgoal 16 -> 17/23 [image similarity 1.000 (node 16)]
+[INFO] [1793067968.890619419] [omnivla_navigator]: subgoal 17 -> 18/23 [passed by odometry (1.09m behind)]
+----- play.log (tail)
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1793067922.630148781] [rosbag2_storage]: Opened database '/tmp/e2e/bags/course_sqlite3/course_sqlite3.db3' for READ_ONLY.
+[INFO] [1793067922.630200007] [rosbag2_player]: Set rate to 1
+[INFO] [1793067922.637356046] [rosbag2_player]: Adding keyboard callbacks.
+[INFO] [1793067922.637390240] [rosbag2_player]: Press SPACE for Pause/Resume
+[INFO] [1793067922.637400460] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[INFO] [1793067922.637408955] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[INFO] [1793067922.637416770] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[INFO] [1793067922.637797864] [rosbag2_storage]: Opened database '/tmp/e2e/bags/course_sqlite3/course_sqlite3.db3' for READ_ONLY.
