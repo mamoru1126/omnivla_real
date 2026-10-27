@@ -1,0 +1,60 @@
+{
+ "course_length_m": 22.949177989727584,
+ "duration_s": 57.200000000013006,
+ "driven_m": 23.064676350314656,
+ "progress": {
+  "start_s": 0.0,
+  "max_s": 22.93812434750946,
+  "completion": 0.999518342564467
+ },
+ "all": {
+  "samples": 287,
+  "seconds": 57.40000000001305,
+  "abs_xtrack_m": {
+   "n": 287,
+   "median": 0.0008394004037318528,
+   "p95": 0.09137146984007395,
+   "max": 0.10218047694822648
+  },
+  "abs_heading_err_deg": {
+   "n": 287,
+   "median": 0.20336564408312188,
+   "p95": 17.1874308579245,
+   "max": 24.109566341108728
+  },
+  "off_course_0p5m_ratio": 0.0,
+  "off_course_1m_ratio": 0.0,
+  "worst": {
+   "t": 19.200000000004366,
+   "s": 7.797978222098308,
+   "xtrack_m": -0.10218047694822648
+  },
+  "faster_than_cap_ratio": 0.6898954703832753
+ },
+ "corners": [
+  {
+   "s0": 3.5,
+   "s1": 16.0,
+   "turn_deg": 179.9795917392749,
+   "reached_end": true,
+   "samples": 143,
+   "max_outward_m": 0.10218047694822648,
+   "max_inward_m": 0.0034835059532899028,
+   "mean_abs_xtrack_m": 0.023100972471780196
+  },
+  {
+   "s0": 15.0,
+   "s1": 22.949177989727584,
+   "turn_deg": 89.85715875281383,
+   "reached_end": false,
+   "samples": 106,
+   "max_outward_m": 0.09910736587888075,
+   "max_inward_m": 0.0015546308869509322,
+   "mean_abs_xtrack_m": 0.016852710141651264
+  }
+ ],
+ "bag": "/home/runner/work/_temp/e2e/bags_lap2/course_mcap",
+ "topomap": "/home/runner/work/_temp/e2e/topomap_evalloc",
+ "loc_topic": "/localization",
+ "status_messages": 0
+}
